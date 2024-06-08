@@ -51,6 +51,44 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+// Fetch shopping cart items
+app.get('/api/cart', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM shopping_cart');
+        res.json({ success: true, items: result.rows });
+    } catch (error) {
+        console.error('Error fetching cart items:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+// Update item quantity
+app.put('/api/cart/:id', async (req, res) => {
+    const itemId = req.params.id;
+    const { quantity } = req.body;
+
+    try {
+        await pool.query('UPDATE shopping_cart SET quantity = $1 WHERE id = $2', [quantity, itemId]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating item quantity:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+// Remove item from cart
+app.delete('/api/cart/:id', async (req, res) => {
+    const itemId = req.params.id;
+
+    try {
+        await pool.query('DELETE FROM shopping_cart WHERE id = $1', [itemId]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error removing item from cart:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
 // Serve login.html as the default page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/login.html'));

@@ -66,3 +66,72 @@ nav ul li a {
     text-align: center;
     margin-top: 10px;
 }
+
+/* New styles for the shopping cart button and container */
+#shoppingCartButton {
+    background-color: #28a745; /* Green background */
+    margin-top: 20px;
+}
+
+#shoppingCartButton:hover {
+    background-color: #218838; /* Darker green on hover */
+}
+
+#cartItemsContainer {
+    border: 1px solid #ccc;
+    padding: 20px;
+    margin: 20px;
+    background-color: #fff;
+    display: none; /* Initially hidden */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#cartItemsList {
+    list-style-type: none;
+    padding: 0;
+}
+
+#cartItemsList li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+#cartItemsList li:last-child {
+    border-bottom: none;
+}
+
+.cart-item-details {
+    display: flex;
+    align-items: center;
+}
+
+.cart-item-details span {
+    margin-right: 10px;
+}
+
+.cart-item-quantity {
+    display: flex;
+    align-items: center;
+}
+
+.cart-item-quantity button {
+    padding: 5px;
+    font-size: 14px;
+    margin: 0 5px;
+}
+
+.remove-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.remove-button:hover {
+    background-color: #c82333;
+}
