@@ -24,26 +24,36 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 app.post('/api/register', async (req, res) => {
     const { username, password, role } = req.body;
     console.log('Registration request received:', { username, role });
-    const hashedPassword = await bcrypt.hash(password, 10);
+    if (!username || !password || !role) {
+        return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
     try {
+        const hashedPassword = await bcrypt.hash(password, 10);
         const result = await pool.query('INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING *', [username, hashedPassword, role]);
         console.log('User registered:', result.rows[0]);
         res.json({ success: true, user: result.rows[0] });
     } catch (error) {
         console.error('Error registering user:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        if (error.code === '23505') {
+            // Duplicate username
+            res.status(400).json({ success: false, message: 'Username already exists' });
+        } else {
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
     }
 });
-
-
 
 // User login
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
+    console.log('Login request received:', { username });
+    if (!username || !password) {
+        return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
     try {
         const user = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
         if (user.rows.length > 0 && await bcrypt.compare(password, user.rows[0].password)) {
-            const token = jwt.sign({ id: user.rows[0].id, role: user.rows[0].role }, 'your_secret_key');
+            const token = jwt.sign({ id: user.rows[0].id, role: user.rows[0].role }, 'your_secret_key', { expiresIn: '1h' });
             res.json({ token, role: user.rows[0].role });
         } else {
             res.status(401).json({ success: false, message: 'Invalid credentials' });

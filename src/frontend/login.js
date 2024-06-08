@@ -45,6 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add event listener for the "Create Account" button
     document.getElementById('createAccountBtn').addEventListener('click', () => {
-        window.location.href = 'create-account.html';
+        window.location.href = 'createaccount.html';
     });
 });
