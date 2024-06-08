@@ -14,7 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({ username, password })
             });
-            const data = await response.json();
+
+            // Log the response status
+            console.log('Response status:', response.status);
+
+            // Log the response text
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+
+            // Attempt to parse the response as JSON
+            const data = JSON.parse(responseText);
+            console.log('Response data:', data);
 
             if (response.ok && data.token) {
                 // If login is successful, store the token, role, and userId in localStorage
