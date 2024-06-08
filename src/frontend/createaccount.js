@@ -1,52 +1,131 @@
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM fully loaded and parsed');
+const express = require('express');
+const bodyParser = require('body-parser');
+const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
+const path = require('path');
+const cors = require('cors'); // Import the cors package
 
-    const createAccountForm = document.getElementById('createAccountForm');
+const app = express();
+const port = 3000;
 
-    if (createAccountForm) {
-        console.log('Create account form found');
+const pool = new Pool({
+    user: 'postgres',
+    host: 'localhost',
+    database: 'marketplace',
+    port: 5432,
+});
 
-        createAccountForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            console.log('Form submission prevented');
+app.use(bodyParser.json());
+app.use(cors()); // Use the cors middleware
 
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const role = document.getElementById('role').value;
+// Serve static files from the frontend directory
+app.use(express.static(path.join(__dirname, '../frontend')));
 
-            console.log('Submitting registration:', { username, password, role });
+// User registration endpoint
+app.post('/api/register', async (req, res) => {
+    const { username, password, role } = req.body;
+    console.log('Registration request received:', { username, role });
 
-            try {
-                const response = await fetch('http://localhost:3000/api/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ username, password, role })
-                });
+    if (!username || !password || !role) {
+        console.log('Missing fields');
+        return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
 
-                console.log('Response received with status:', response.status);
+    try {
+        console.log('Hashing password...');
+        const hashedPassword = await bcrypt.hash(password, 10);
+        console.log('Password hashed:', hashedPassword);
 
-                if (response.status === 405) {
-                    console.error('Method Not Allowed');
-                } else {
-                    const data = await response.json();
-                    console.log('Response data:', data);
+        console.log('Inserting user into database...');
+        const result = await pool.query('INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING *', [username, hashedPassword, role]);
+        console.log('User registered:', result.rows[0]);
 
-                    if (response.ok) {
-                        alert('Account created successfully!');
-                        window.location.href = '/login.html';
-                    } else {
-                        console.error('Registration failed:', data.message);
-                        alert('Registration failed: ' + data.message);
-                    }
-                }
-            } catch (error) {
-                console.error('Registration failed:', error);
-                alert('An error occurred during registration.');
-            }
-        });
-    } else {
-        console.error('Create account form not found');
+        res.json({ success: true, user: result.rows[0] });
+    } catch (error) {
+        console.error('Error registering user:', error);
+
+        if (error.code === '23505') {
+            // Duplicate username
+            res.status(400).json({ success: false, message: 'Username already exists' });
+        } else {
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
     }
 });
+
+// User login endpoint
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+        const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        const user = result.rows[0];
+
+        if (user && await bcrypt.compare(password, user.password)) {
+            // Assuming you have a function to generate a token
+            const token = generateToken(user.id); // Implement your token generation logic
+            res.json({ success: true, userId: user.id, role: user.role, token });
+        } else {
+            res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+    } catch (error) {
+        console.error('Error during login:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+// Fetch shopping cart items
+app.get('/api/cart', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM shopping_cart');
+        res.json({ success: true, items: result.rows });
+    } catch (error) {
+        console.error('Error fetching cart items:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+// Update item quantity
+app.put('/api/cart/:id', async (req, res) => {
+    const itemId = req.params.id;
+    const { quantity } = req.body;
+
+    try {
+        await pool.query('UPDATE shopping_cart SET quantity = $1 WHERE id = $2', [quantity, itemId]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating item quantity:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+// Remove item from cart
+app.delete('/api/cart/:id', async (req, res) => {
+    const itemId = req.params.id;
+
+    try {
+        await pool.query('DELETE FROM shopping_cart WHERE id = $1', [itemId]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error removing item from cart:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+// Serve login.html as the default page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/login.html'));
+});
+
+// Start the server
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+});
+
+// Function to generate a token (You need to implement this based on your auth strategy)
+function generateToken(userId) {
+    // Example using JSON Web Token (JWT)
+    const jwt = require('jsonwebtoken');
+    const secretKey = 'your_secret_key'; // Use a more secure key in production
+    return jwt.sign({ userId }, secretKey, { expiresIn: '1h' });
+}
