@@ -18,21 +18,16 @@
   "bugs": "",
   "keywords": [],
   "author": {
-    "name": "",
-    "email": "",
-    "url": ""
+    "name": "Dailin Wang",
+    "email": "dailinwang@umass.edu",
+    "spireid": "33884634"
   },
-  "contributors": [
-
-  ],
+  "contributors": [],
   "scripts": {
-    "dev": "",
-    "test": ""
+    "start": "http-server src/frontend -p 3000 -c-1 -o -s"
   },
   "dependencies": {
-
-  },
-  "devDependencies": {
-
+    "http-server": "^14.1.1",
+    "pg": "^8.12.0"
   }
 }
