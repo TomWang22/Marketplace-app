@@ -66,7 +66,6 @@ app.post('/api/login', async (req, res) => {
         const user = result.rows[0];
 
         if (user && await bcrypt.compare(password, user.password)) {
-            // Assuming you have a function to generate a token
             const token = generateToken(user.id); // Implement your token generation logic
             res.json({ success: true, userId: user.id, role: user.role, token });
         } else {
@@ -128,7 +127,6 @@ app.listen(port, () => {
 
 // Function to generate a token (You need to implement this based on your auth strategy)
 function generateToken(userId) {
-    // Example using JSON Web Token (JWT)
     const jwt = require('jsonwebtoken');
     const secretKey = 'your_secret_key'; // Use a more secure key in production
     return jwt.sign({ userId }, secretKey, { expiresIn: '1h' });
