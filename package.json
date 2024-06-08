@@ -2,9 +2,9 @@
   "name": "marketplace-app",
   "version": "1.0.0",
   "description": "A marketplace application for managing users, products, and suppliers.",
-  "main": "src/backend/server.cjs",
-  "type": "module",
-  "license": "AGPL-version-3.0",
+  "main": "src/backend/server.js",
+  "type": "commonjs",
+  "license": "AGPL-3.0",
   "private": false,
   "engines": {
     "node": ">= 14.0.0",
@@ -26,7 +26,7 @@
   },
   "contributors": [],
   "scripts": {
-    "start": "node src/backend/server.cjs",
+    "start": "node src/backend/server.js",
     "dev": "http-server src/frontend -p 3000 -c-1 -o -s"
   },
   "dependencies": {

@@ -12,6 +12,7 @@ const pool = new Pool({
     user: 'postgres',
     host: 'localhost',
     database: 'marketplace',
+    password: 'your_password', // Ensure you replace this with your actual database password
     port: 5432,
 });
 
@@ -24,16 +25,25 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 app.post('/api/register', async (req, res) => {
     const { username, password, role } = req.body;
     console.log('Registration request received:', { username, role });
+
     if (!username || !password || !role) {
+        console.log('Missing fields');
         return res.status(400).json({ success: false, message: 'All fields are required' });
     }
+
     try {
+        console.log('Hashing password...');
         const hashedPassword = await bcrypt.hash(password, 10);
+        console.log('Password hashed:', hashedPassword);
+
+        console.log('Inserting user into database...');
         const result = await pool.query('INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING *', [username, hashedPassword, role]);
         console.log('User registered:', result.rows[0]);
+
         res.json({ success: true, user: result.rows[0] });
     } catch (error) {
-        console.error('Error registering user:', error);
+        console.error('Error registering user:', error.message);
+
         if (error.code === '23505') {
             // Duplicate username
             res.status(400).json({ success: false, message: 'Username already exists' });
@@ -47,19 +57,25 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     console.log('Login request received:', { username });
+
     if (!username || !password) {
         return res.status(400).json({ success: false, message: 'All fields are required' });
     }
+
     try {
-        const user = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-        if (user.rows.length > 0 && await bcrypt.compare(password, user.rows[0].password)) {
-            const token = jwt.sign({ id: user.rows[0].id, role: user.rows[0].role }, 'your_secret_key', { expiresIn: '1h' });
-            res.json({ token, role: user.rows[0].role });
+        const userResult = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+        const user = userResult.rows[0];
+        console.log('User found:', user);
+
+        if (user && await bcrypt.compare(password, user.password)) {
+            const token = jwt.sign({ id: user.id, role: user.role }, 'your_secret_key', { expiresIn: '1h' });
+            res.json({ token, role: user.role });
         } else {
+            console.log('Invalid credentials');
             res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
     } catch (error) {
-        console.error('Login failed:', error);
+        console.error('Login failed:', error.message);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
