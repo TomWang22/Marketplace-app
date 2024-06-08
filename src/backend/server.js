@@ -2,7 +2,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const path = require('path');
 
 const app = express();
@@ -20,7 +19,7 @@ app.use(bodyParser.json());
 // Serve static files from the frontend directory
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// User registration
+// User registration endpoint
 app.post('/api/register', async (req, res) => {
     const { username, password, role } = req.body;
     console.log('Registration request received:', { username, role });
@@ -41,7 +40,7 @@ app.post('/api/register', async (req, res) => {
 
         res.json({ success: true, user: result.rows[0] });
     } catch (error) {
-        console.error('Error registering user:', error.message);
+        console.error('Error registering user:', error);
 
         if (error.code === '23505') {
             // Duplicate username
@@ -49,35 +48,6 @@ app.post('/api/register', async (req, res) => {
         } else {
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
-    }
-});
-
-// User login
-app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body;
-    console.log('Login request received:', { username });
-
-    if (!username || !password) {
-        console.log('Missing fields');
-        return res.status(400).json({ success: false, message: 'All fields are required' });
-    }
-
-    try {
-        const userResult = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-        const user = userResult.rows[0];
-        console.log('User found:', user);
-
-        if (user && await bcrypt.compare(password, user.password)) {
-            const token = jwt.sign({ id: user.id, role: user.role }, 'your_secret_key', { expiresIn: '1h' });
-            console.log('Login successful, token generated:', token);
-            res.json({ token, role: user.role });
-        } else {
-            console.log('Invalid credentials');
-            res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-    } catch (error) {
-        console.error('Login failed:', error.message);
-        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
 
