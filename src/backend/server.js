@@ -12,7 +12,6 @@ const pool = new Pool({
     user: 'postgres',
     host: 'localhost',
     database: 'marketplace',
-    password: 'your_password', // Ensure you replace this with your actual database password
     port: 5432,
 });
 
@@ -59,6 +58,7 @@ app.post('/api/login', async (req, res) => {
     console.log('Login request received:', { username });
 
     if (!username || !password) {
+        console.log('Missing fields');
         return res.status(400).json({ success: false, message: 'All fields are required' });
     }
 
@@ -69,6 +69,7 @@ app.post('/api/login', async (req, res) => {
 
         if (user && await bcrypt.compare(password, user.password)) {
             const token = jwt.sign({ id: user.id, role: user.role }, 'your_secret_key', { expiresIn: '1h' });
+            console.log('Login successful, token generated:', token);
             res.json({ token, role: user.role });
         } else {
             console.log('Invalid credentials');
