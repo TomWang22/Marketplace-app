@@ -17,9 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (response.ok && data.token) {
-                // If login is successful, store the token and role in localStorage
+                // If login is successful, store the token, role, and userId in localStorage
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('role', data.role);
+                localStorage.setItem('userId', data.userId);
 
                 // Redirect the user based on their role
                 if (data.role === 'merchant') {

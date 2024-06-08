@@ -3,10 +3,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartItemsContainer = document.getElementById('cartItemsContainer');
     const cartItemsList = document.getElementById('cartItemsList');
 
+    // Retrieve the userId from local storage
+    const userId = localStorage.getItem('userId');
+
+    if (!userId) {
+        alert('User not logged in!');
+        window.location.href = '/login.html';
+        return;
+    }
+
     // Function to fetch cart items from the server
     const fetchCartItems = async () => {
         try {
-            const response = await fetch('http://localhost:3000/api/cart');
+            const response = await fetch(`http://localhost:3000/api/cart?userId=${userId}`);
             const data = await response.json();
             return data.items;
         } catch (error) {
@@ -28,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const itemDetails = document.createElement('div');
             itemDetails.className = 'cart-item-details';
-            itemDetails.innerHTML = `<span>${item.name} - $${item.price.toFixed(2)}</span>`;
+            itemDetails.innerHTML = `<span>${item.product} - $${item.price.toFixed(2)}</span>`;
 
             const itemQuantity = document.createElement('div');
             itemQuantity.className = 'cart-item-quantity';
@@ -50,20 +59,20 @@ document.addEventListener('DOMContentLoaded', () => {
             // Event listener for quantity decrease
             itemQuantity.querySelector('.quantity-decrease').addEventListener('click', async () => {
                 if (item.quantity > 1) {
-                    await updateCartItemQuantity(item.id, item.quantity - 1);
+                    await updateCartItemQuantity(item.id, item.quantity - 1, userId);
                     displayCartItems();
                 }
             });
 
             // Event listener for quantity increase
             itemQuantity.querySelector('.quantity-increase').addEventListener('click', async () => {
-                await updateCartItemQuantity(item.id, item.quantity + 1);
+                await updateCartItemQuantity(item.id, item.quantity + 1, userId);
                 displayCartItems();
             });
 
             // Event listener for remove button
             removeButton.addEventListener('click', async () => {
-                await removeCartItem(item.id);
+                await removeCartItem(item.id, userId);
                 displayCartItems();
             });
         });
@@ -73,14 +82,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Function to update item quantity in the cart
-    const updateCartItemQuantity = async (itemId, quantity) => {
+    const updateCartItemQuantity = async (itemId, quantity, userId) => {
         try {
             await fetch(`http://localhost:3000/api/cart/${itemId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ quantity })
+                body: JSON.stringify({ quantity, userId })
             });
         } catch (error) {
             console.error('Error updating item quantity:', error);
@@ -88,10 +97,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Function to remove item from the cart
-    const removeCartItem = async (itemId) => {
+    const removeCartItem = async (itemId, userId) => {
         try {
             await fetch(`http://localhost:3000/api/cart/${itemId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId })
             });
         } catch (error) {
             console.error('Error removing item from cart:', error);
