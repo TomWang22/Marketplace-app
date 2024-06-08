@@ -13,8 +13,12 @@
         <input type="text" id="username" name="username" required>
         <label for="password">Password:</label>
         <input type="password" id="password" name="password" required>
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
+        <label for="role">Role:</label>
+        <select id="role" name="role" required>
+            <option value="merchant">Merchant</option>
+            <option value="supplier">Supplier</option>
+            <option value="shopper">Shopper</option>
+        </select>
         <button type="submit">Create Account</button>
     </form>
     <script src="create-account.js"></script>

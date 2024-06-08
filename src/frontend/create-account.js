@@ -4,7 +4,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-        const email = document.getElementById('email').value;
+        const role = document.getElementById('role').value;
+
+        console.log('Submitting registration:', { username, password, role });
 
         // Send registration data to the server
         try {
@@ -13,11 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ username, password, email })
+                body: JSON.stringify({ username, password, role })
             });
+            console.log('Response status:', response.status);
             const data = await response.json();
+            console.log('Response data:', data);
 
-            if (data.success) {
+            if (response.ok) {
                 // If registration is successful, redirect to the login page
                 alert('Account created successfully!');
                 window.location.href = '/login.html';

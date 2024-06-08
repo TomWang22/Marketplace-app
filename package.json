@@ -1,8 +1,8 @@
 {
-  "name": "",
+  "name": "marketplace-app",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "A marketplace application for managing users, products, and suppliers.",
+  "main": "src/backend/server.cjs",
   "type": "module",
   "license": "AGPL-version-3.0",
   "private": false,
@@ -10,13 +10,15 @@
     "node": ">= 14.0.0",
     "npm": ">= 6.0.0"
   },
-  "homepage": "",
+  "homepage": "https://github.com/dailinwang/marketplace-app",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/dailinwang/marketplace-app.git"
   },
-  "bugs": "",
-  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/dailinwang/marketplace-app/issues"
+  },
+  "keywords": ["marketplace", "ecommerce", "nodejs", "express", "postgresql"],
   "author": {
     "name": "Dailin Wang",
     "email": "dailinwang@umass.edu",
@@ -24,10 +26,15 @@
   },
   "contributors": [],
   "scripts": {
-    "start": "http-server src/frontend -p 3000 -c-1 -o -s"
+    "start": "node src/backend/server.cjs",
+    "dev": "http-server src/frontend -p 3000 -c-1 -o -s"
   },
   "dependencies": {
-    "http-server": "^14.1.1",
-    "pg": "^8.12.0"
+    "express": "^4.17.1",
+    "body-parser": "^1.19.0",
+    "pg": "^8.12.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^8.5.1",
+    "http-server": "^14.1.1"
   }
 }
