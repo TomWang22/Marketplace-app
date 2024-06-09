@@ -214,6 +214,21 @@ if (cluster.isMaster) {
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });
+    // Endpoint to add a new product
+app.post('/api/products', async (req, res) => {
+    const { name, description, price, stock } = req.body;
+    try {
+        const result = await pool.query(
+            'INSERT INTO products (name, description, price, stock) VALUES ($1, $2, $3, $4) RETURNING *',
+            [name, description, price, stock]
+        );
+        res.json({ success: true, product: result.rows[0] });
+    } catch (error) {
+        console.error('Error adding product:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
 
     // Update item quantity
     app.put('/api/cart/:id', async (req, res) => {

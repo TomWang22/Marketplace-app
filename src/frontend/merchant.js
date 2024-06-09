@@ -1,7 +1,49 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const addProductButton = document.getElementById('addProductButton');
     const receiveSuppliesButton = document.getElementById('receiveSuppliesButton');
     const sendMerchandiseButton = document.getElementById('sendMerchandiseButton');
+    const notificationsList = document.getElementById('notificationsList');
+
+    // Function to fetch the current user information
+    async function getCurrentUser() {
+        try {
+            const response = await fetch('http://localhost:3000/api/current-user', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching current user:', error);
+            return null;
+        }
+    }
+
+    // Function to display notifications
+    function displayNotification(message) {
+        const listItem = document.createElement('li');
+        listItem.textContent = message;
+        notificationsList.appendChild(listItem);
+    }
+
+    // Retrieve the userId from local storage
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('token');
+
+    if (!userId || !token) {
+        alert('User not logged in!');
+        window.location.href = '/login.html';
+        return;
+    }
+
+    // Fetch current user and check if they are a merchant
+    const user = await getCurrentUser();
+    if (!user || user.role !== 'merchant') {
+        alert('Access denied. Only merchants can access this functionality.');
+        window.location.href = '/login.html';
+        return;
+    }
 
     // Function to add a new product
     async function addProduct(name, description, price, stock) {
@@ -9,7 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('http://localhost:3000/api/products', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ name, description, price, stock })
             });
@@ -30,7 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('http://localhost:3000/api/receive-supplies', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ productId, quantity })
             });
@@ -51,7 +95,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('http://localhost:3000/api/send-merchandise', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ customerId, productId, quantity })
             });
@@ -64,14 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error sending merchandise:', error);
         }
-    }
-
-    // Function to display notifications
-    function displayNotification(message) {
-        const notificationsList = document.getElementById('notificationsList');
-        const listItem = document.createElement('li');
-        listItem.textContent = message;
-        notificationsList.appendChild(listItem);
     }
 
     // Add event listeners for buttons
