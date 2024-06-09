@@ -8,7 +8,40 @@
 </head>
 <body>
     <h1>Merchant Dashboard</h1>
-    <!-- Merchant-specific content -->
+
+    <!-- Section to add a new product -->
+    <section id="add-product-section">
+        <h2>Add New Product</h2>
+        <input type="text" id="productName" placeholder="Product Name" />
+        <input type="text" id="productDescription" placeholder="Product Description" />
+        <input type="number" id="productPrice" placeholder="Product Price" />
+        <input type="number" id="productStock" placeholder="Product Stock" />
+        <button id="addProductButton">Add Product</button>
+    </section>
+
+    <!-- Section to receive supplies -->
+    <section id="receive-supplies-section">
+        <h2>Receive Supplies</h2>
+        <input type="text" id="productId" placeholder="Product ID" />
+        <input type="number" id="quantity" placeholder="Quantity" />
+        <button id="receiveSuppliesButton">Receive Supplies</button>
+    </section>
+
+    <!-- Section to send merchandise -->
+    <section id="send-merchandise-section">
+        <h2>Send Merchandise</h2>
+        <input type="text" id="customerId" placeholder="Customer ID" />
+        <input type="text" id="productIdToSend" placeholder="Product ID" />
+        <input type="number" id="quantityToSend" placeholder="Quantity" />
+        <button id="sendMerchandiseButton">Send Merchandise</button>
+    </section>
+
+    <!-- Section to display notifications -->
+    <section id="notifications-section">
+        <h2>Notifications</h2>
+        <ul id="notificationsList"></ul>
+    </section>
+
     <script src="merchant.js"></script>
 </body>
 </html>

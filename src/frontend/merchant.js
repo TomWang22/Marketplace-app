@@ -1,58 +1,98 @@
-// merchant.js
+document.addEventListener('DOMContentLoaded', () => {
+    const addProductButton = document.getElementById('addProductButton');
+    const receiveSuppliesButton = document.getElementById('receiveSuppliesButton');
+    const sendMerchandiseButton = document.getElementById('sendMerchandiseButton');
 
-// Import necessary modules for database interaction
-const { Pool } = require('pg');
+    // Function to add a new product
+    async function addProduct(name, description, price, stock) {
+        try {
+            const response = await fetch('http://localhost:3000/api/products', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, description, price, stock })
+            });
+            const data = await response.json();
+            if (data.success) {
+                displayNotification(`Product "${name}" added successfully.`);
+            } else {
+                displayNotification(`Failed to add product: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Error adding product:', error);
+        }
+    }
 
-// Create a new Pool instance to connect to your PostgreSQL database
-const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'marketplace',
-    port: 5432 // Default PostgreSQL port
+    // Function to receive supplies
+    async function receiveSupplies(productId, quantity) {
+        try {
+            const response = await fetch('http://localhost:3000/api/receive-supplies', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ productId, quantity })
+            });
+            const data = await response.json();
+            if (data.success) {
+                displayNotification(`Received ${quantity} units of product ID ${productId}`);
+            } else {
+                displayNotification(`Failed to receive supplies: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Error receiving supplies:', error);
+        }
+    }
+
+    // Function to send merchandise
+    async function sendMerchandise(customerId, productId, quantity) {
+        try {
+            const response = await fetch('http://localhost:3000/api/send-merchandise', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ customerId, productId, quantity })
+            });
+            const data = await response.json();
+            if (data.success) {
+                displayNotification(`Sent ${quantity} units of product ID ${productId} to customer ID ${customerId}`);
+            } else {
+                displayNotification(`Failed to send merchandise: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Error sending merchandise:', error);
+        }
+    }
+
+    // Function to display notifications
+    function displayNotification(message) {
+        const notificationsList = document.getElementById('notificationsList');
+        const listItem = document.createElement('li');
+        listItem.textContent = message;
+        notificationsList.appendChild(listItem);
+    }
+
+    // Add event listeners for buttons
+    addProductButton.addEventListener('click', () => {
+        const name = document.getElementById('productName').value;
+        const description = document.getElementById('productDescription').value;
+        const price = document.getElementById('productPrice').value;
+        const stock = document.getElementById('productStock').value;
+        addProduct(name, description, price, stock);
+    });
+
+    receiveSuppliesButton.addEventListener('click', () => {
+        const productId = document.getElementById('productId').value;
+        const quantity = document.getElementById('quantity').value;
+        receiveSupplies(productId, quantity);
+    });
+
+    sendMerchandiseButton.addEventListener('click', () => {
+        const customerId = document.getElementById('customerId').value;
+        const productId = document.getElementById('productIdToSend').value;
+        const quantity = document.getElementById('quantityToSend').value;
+        sendMerchandise(customerId, productId, quantity);
+    });
 });
-
-// Function to add a new product to the inventory
-async function addProduct(name, description, price, stock) {
-    try {
-        const query = 'INSERT INTO products (name, description, price, stock) VALUES ($1, $2, $3, $4) RETURNING *';
-        const values = [name, description, price, stock];
-        const result = await pool.query(query, values);
-        console.log('Product added:', result.rows[0]);
-    } catch (error) {
-        console.error('Error adding product:', error);
-    }
-}
-
-// Function to update an existing product in the inventory
-async function updateProduct(productId, updatedFields) {
-    try {
-        const query = 'UPDATE products SET name = $1, description = $2, price = $3, stock = $4 WHERE id = $5 RETURNING *';
-        const values = [updatedFields.name, updatedFields.description, updatedFields.price, updatedFields.stock, productId];
-        const result = await pool.query(query, values);
-        console.log('Product updated:', result.rows[0]);
-    } catch (error) {
-        console.error('Error updating product:', error);
-    }
-}
-
-// Function to delete a product from the inventory
-async function deleteProduct(productId) {
-    try {
-        const query = 'DELETE FROM products WHERE id = $1';
-        const values = [productId];
-        await pool.query(query, values);
-        console.log('Product deleted:', productId);
-    } catch (error) {
-        console.error('Error deleting product:', error);
-    }
-}
-
-// Example usage:
-// Add a new product to the inventory
-addProduct('Product A', 'Description of Product A', 19.99, 50);
-
-// Update an existing product in the inventory
-updateProduct(1, { name: 'Updated Product A', description: 'Updated description', price: 29.99, stock: 100 });
-
-// Delete a product from the inventory
-deleteProduct(1);

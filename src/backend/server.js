@@ -155,7 +155,7 @@ app.post('/api/return-merchandise', async (req, res) => {
         await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [refundAmount, userId]);
 
         // Update inventory for the merchant
-        await pool.query('UPDATE inventory SET quantity = quantity + $1 WHERE product_id = $2', [quantity, productId]);
+        await pool.query('UPDATE products SET stock = stock + $1 WHERE id = $2', [quantity, productId]);
 
         res.json({ success: true, message: 'Merchandise returned and refunded successfully.' });
     } catch (error) {
@@ -166,13 +166,12 @@ app.post('/api/return-merchandise', async (req, res) => {
 
 // Receive supplies endpoint
 app.post('/api/receive-supplies', async (req, res) => {
-    const { merchantId, productId, quantity } = req.body;
+    const { productId, quantity } = req.body;
 
     try {
         // Update inventory for the merchant
-        await pool.query('UPDATE inventory SET quantity = quantity + $1 WHERE product_id = $2 AND merchant_id = $3', [quantity, productId, merchantId]);
-
-        res.json({ success: true, message: 'Supplies received successfully.' });
+        const result = await pool.query('UPDATE products SET stock = stock + $1 WHERE id = $2 RETURNING *', [quantity, productId]);
+        res.json({ success: true, message: 'Supplies received successfully', product: result.rows[0] });
     } catch (error) {
         console.error('Error receiving supplies:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
