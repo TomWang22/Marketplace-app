@@ -18,16 +18,22 @@ document.addEventListener('DOMContentLoaded', () => {
             // Log the response status
             console.log('Response status:', response.status);
 
+            // Log the response headers
+            console.log('Response headers:', [...response.headers]);
+
+            // Log the response text for debugging
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+
             // Ensure the response is OK (status in the range 200-299)
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Login failed:', errorText);
-                alert('Login failed: ' + errorText);
+                console.error('Login failed:', responseText);
+                alert('Login failed: ' + responseText);
                 return;
             }
 
             // Parse the response JSON
-            const data = await response.json();
+            const data = JSON.parse(responseText);
             console.log('Response data:', data);
 
             if (data.success && data.token) {
