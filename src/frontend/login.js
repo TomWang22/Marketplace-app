@@ -18,25 +18,19 @@ document.addEventListener('DOMContentLoaded', () => {
             // Log the response status
             console.log('Response status:', response.status);
 
-            // Log the response headers
-            console.log('Response headers:', [...response.headers]);
-
-            // Log the response text
-            const responseText = await response.text();
-            console.log('Response text:', responseText);
-
-            // Attempt to parse the response as JSON
-            let data;
-            try {
-                data = JSON.parse(responseText);
-                console.log('Response data:', data);
-            } catch (e) {
-                console.error('Failed to parse JSON:', e);
-                alert('Failed to parse JSON: ' + responseText);
-                return; // Exit the function if JSON parsing fails
+            // Ensure the response is OK (status in the range 200-299)
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Login failed:', errorText);
+                alert('Login failed: ' + errorText);
+                return;
             }
 
-            if (response.ok && data.token) {
+            // Parse the response JSON
+            const data = await response.json();
+            console.log('Response data:', data);
+
+            if (data.success && data.token) {
                 // If login is successful, store the token, role, and userId in localStorage
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('role', data.role);

@@ -62,23 +62,24 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
 
-    if (!username || !password) {
-        return res.status(400).json({ success: false, message: 'Username and password are required' });
-    }
-
     try {
         const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
         const user = result.rows[0];
 
         if (user && await bcrypt.compare(password, user.password)) {
             const token = generateToken(user.id); // Implement your token generation logic
-            res.json({ success: true, userId: user.id, role: user.role, token });
+            const response = { success: true, userId: user.id, role: user.role, token };
+            console.log('Login successful:', response);
+            res.json(response);
         } else {
-            res.status(401).json({ success: false, message: 'Invalid credentials' });
+            const response = { success: false, message: 'Invalid credentials' };
+            console.log('Login failed:', response);
+            res.status(401).json(response);
         }
     } catch (error) {
         console.error('Error during login:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        const response = { success: false, message: 'Internal server error' };
+        res.status(500).json(response);
     }
 });
 
@@ -97,10 +98,6 @@ app.get('/api/cart', async (req, res) => {
 app.put('/api/cart/:id', async (req, res) => {
     const itemId = req.params.id;
     const { quantity } = req.body;
-
-    if (quantity == null) {
-        return res.status(400).json({ success: false, message: 'Quantity is required' });
-    }
 
     try {
         await pool.query('UPDATE shopping_cart SET quantity = $1 WHERE id = $2', [quantity, itemId]);
