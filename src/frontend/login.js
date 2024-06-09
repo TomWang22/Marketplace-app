@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Send login credentials to the server for verification
         try {
-            const response = await fetch('/api/login', {
+            const response = await fetch('http://localhost:3000/api/login', { // Specify full URL
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
