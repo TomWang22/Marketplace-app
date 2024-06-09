@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Log the response status
             console.log('Response status:', response.status);
 
+            // Log the response headers
+            console.log('Response headers:', [...response.headers]);
+
             // Log the response text
             const responseText = await response.text();
             console.log('Response text:', responseText);

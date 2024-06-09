@@ -3,7 +3,8 @@ const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const path = require('path');
-const cors = require('cors'); // Import the cors package
+const cors = require('cors');
+const jwt = require('jsonwebtoken'); // Ensure you import the jwt package
 
 const app = express();
 const port = 3000;
@@ -61,6 +62,10 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
 
+    if (!username || !password) {
+        return res.status(400).json({ success: false, message: 'Username and password are required' });
+    }
+
     try {
         const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
         const user = result.rows[0];
@@ -92,6 +97,10 @@ app.get('/api/cart', async (req, res) => {
 app.put('/api/cart/:id', async (req, res) => {
     const itemId = req.params.id;
     const { quantity } = req.body;
+
+    if (quantity == null) {
+        return res.status(400).json({ success: false, message: 'Quantity is required' });
+    }
 
     try {
         await pool.query('UPDATE shopping_cart SET quantity = $1 WHERE id = $2', [quantity, itemId]);
@@ -127,7 +136,6 @@ app.listen(port, () => {
 
 // Function to generate a token (You need to implement this based on your auth strategy)
 function generateToken(userId) {
-    const jwt = require('jsonwebtoken');
     const secretKey = 'your_secret_key'; // Use a more secure key in production
     return jwt.sign({ userId }, secretKey, { expiresIn: '1h' });
 }
