@@ -2,6 +2,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const shoppingCartButton = document.getElementById('shoppingCartButton');
     const cartItemsContainer = document.getElementById('cartItemsContainer');
     const cartItemsList = document.getElementById('cartItemsList');
+    const addFundsButton = document.getElementById('addFundsButton');
+    const fundsAmountInput = document.getElementById('fundsAmount');
+    const returnMerchandiseButton = document.getElementById('returnMerchandiseButton');
+    const productIdInput = document.getElementById('productId');
+    const returnQuantityInput = document.getElementById('returnQuantity');
 
     // Retrieve the userId from local storage
     const userId = localStorage.getItem('userId');
@@ -111,7 +116,70 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Event listener for shopping cart button
+    // Function to add funds
+    const addFunds = async () => {
+        const amount = parseFloat(fundsAmountInput.value);
+
+        if (isNaN(amount) || amount <= 0) {
+            alert('Please enter a valid amount');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:3000/api/add-funds', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, amount })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert('Funds added successfully.');
+            } else {
+                alert('Failed to add funds: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error adding funds:', error);
+            alert('An error occurred while adding funds.');
+        }
+    };
+
+    // Function to return merchandise
+    const returnMerchandise = async () => {
+        const productId = parseInt(productIdInput.value);
+        const quantity = parseInt(returnQuantityInput.value);
+
+        if (isNaN(productId) || isNaN(quantity) || quantity <= 0) {
+            alert('Please enter valid product ID and quantity');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:3000/api/return-merchandise', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, productId, quantity })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                alert('Merchandise returned successfully.');
+            } else {
+                alert('Failed to return merchandise: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error returning merchandise:', error);
+            alert('An error occurred while returning merchandise.');
+        }
+    };
+
+    // Event listeners for buttons
+    addFundsButton.addEventListener('click', addFunds);
+    returnMerchandiseButton.addEventListener('click', returnMerchandise);
     shoppingCartButton.addEventListener('click', () => {
         displayCartItems();
     });
