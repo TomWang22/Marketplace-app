@@ -23,8 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Response text:', responseText);
 
             // Attempt to parse the response as JSON
-            const data = JSON.parse(responseText);
-            console.log('Response data:', data);
+            let data;
+            try {
+                data = JSON.parse(responseText);
+                console.log('Response data:', data);
+            } catch (e) {
+                console.error('Failed to parse JSON:', e);
+                alert('Failed to parse JSON: ' + responseText);
+                return; // Exit the function if JSON parsing fails
+            }
 
             if (response.ok && data.token) {
                 // If login is successful, store the token, role, and userId in localStorage
