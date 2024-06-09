@@ -273,6 +273,17 @@ app.post('/api/products', async (req, res) => {
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });
+    // Fetch products endpoint
+app.get('/api/products', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM products');
+        res.json({ success: true, products: result.rows });
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
 
     // Serve login.html as the default page
     app.get('/', (req, res) => {
