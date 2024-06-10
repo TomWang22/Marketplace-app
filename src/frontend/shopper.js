@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const returnQuantityInput = document.getElementById('returnQuantity');
     const shopButton = document.getElementById('shopButton');
     const cartItemCount = document.getElementById('cartItemCount');
+    const totalCostElement = document.getElementById('totalCost');
 
     // Retrieve the userId from local storage
     const userId = localStorage.getItem('userId');
@@ -41,6 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear the current list
         cartItemsList.innerHTML = '';
 
+        let totalCost = 0;
+
         // Populate the list with cart items
         cartItems.forEach(item => {
             const listItem = document.createElement('li');
@@ -66,6 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
             listItem.appendChild(removeButton);
             cartItemsList.appendChild(listItem);
 
+            totalCost += item.price * item.quantity;
+
             // Event listener for quantity decrease
             itemQuantity.querySelector('.quantity-decrease').addEventListener('click', async () => {
                 if (item.quantity > 1) {
@@ -86,6 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayCartItems();
             });
         });
+
+        totalCostElement.textContent = `Total: $${totalCost.toFixed(2)}`;
 
         // Show the cart items container
         cartItemsContainer.style.display = 'block';
@@ -189,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         displayCartItems();
     });
 
+    // Event listener for Shop button
     shopButton.addEventListener('click', () => {
         window.location.href = 'marketplace.html';
     });

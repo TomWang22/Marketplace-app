@@ -127,8 +127,9 @@ if (cluster.isMaster) {
 
     // Fetch shopping cart items endpoint
     app.get('/api/cart', async (req, res) => {
+        const userId = req.query.userId;
         try {
-            const result = await pool.query('SELECT * FROM shopping_cart');
+            const result = await pool.query('SELECT * FROM shopping_cart WHERE user_id = $1', [userId]);
             res.json({ success: true, items: result.rows });
         } catch (error) {
             console.error('Error fetching cart items:', error);
