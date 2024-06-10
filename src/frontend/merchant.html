@@ -7,41 +7,52 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Merchant Dashboard</h1>
+    <header>
+        <div class="logo">Merchant Dashboard</div>
+        <nav>
+            <a href="shopper.html">Shopper</a>
+            <a href="supplier.html">Supplier</a>
+        </nav>
+    </header>
+    <main>
+        <section id="add-product-section">
+            <h2>Add New Product</h2>
+            <form>
+                <input type="text" id="productName" placeholder="Product Name">
+                <input type="text" id="productDescription" placeholder="Product Description">
+                <input type="number" id="productPrice" placeholder="Product Price">
+                <input type="number" id="productStock" placeholder="Product Stock">
+                <button id="addProductButton">Add Product</button>
+            </form>
+        </section>
 
-    <!-- Section to add a new product -->
-    <section id="add-product-section">
-        <h2>Add New Product</h2>
-        <input type="text" id="productName" placeholder="Product Name" />
-        <input type="text" id="productDescription" placeholder="Product Description" />
-        <input type="number" id="productPrice" placeholder="Product Price" />
-        <input type="number" id="productStock" placeholder="Product Stock" />
-        <input type="text" id="productImageUrl" placeholder="Product Image URL" />
-        <button id="addProductButton">Add Product</button>
-    </section>
+        <section id="receive-supplies-section">
+            <h2>Receive Supplies</h2>
+            <button id="showReceivedSuppliesButton">Show Received Supplies</button>
+            <div id="receivedSuppliesList" style="display: none;"></div>
+        </section>
 
-    <!-- Section to view received supplies -->
-    <section id="view-received-supplies-section">
-        <h2>Received Supplies</h2>
-        <button id="viewReceivedSuppliesButton">View Received Supplies</button>
-        <ul id="receivedSuppliesList"></ul>
-    </section>
+        <section id="send-merchandise-section">
+            <h2>Send Merchandise</h2>
+            <form>
+                <input type="text" id="customerId" placeholder="Customer ID">
+                <input type="text" id="productIdToSend" placeholder="Product ID">
+                <input type="number" id="quantityToSend" placeholder="Quantity">
+                <button id="sendMerchandiseButton">Send Merchandise</button>
+            </form>
+        </section>
 
-    <!-- Section to send merchandise -->
-    <section id="send-merchandise-section">
-        <h2>Send Merchandise</h2>
-        <input type="text" id="customerId" placeholder="Customer ID" />
-        <input type="text" id="productIdToSend" placeholder="Product ID" />
-        <input type="number" id="quantityToSend" placeholder="Quantity" />
-        <button id="sendMerchandiseButton">Send Merchandise</button>
-    </section>
-
-    <!-- Section to display notifications -->
-    <section id="notifications-section">
-        <h2>Notifications</h2>
-        <ul id="notificationsList"></ul>
-    </section>
-
+        <section id="notifications-section">
+            <h2>Notifications</h2>
+            <ul id="notificationsList"></ul>
+        </section>
+    </main>
+    <footer>
+        <nav>
+            <a href="#">Home</a>
+            <a href="#">Contact</a>
+        </nav>
+    </footer>
     <script src="merchant.js"></script>
 </body>
 </html>

@@ -7,35 +7,47 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Supplier Dashboard</h1>
+    <header>
+        <div class="logo">Supplier Dashboard</div>
+        <nav>
+            <a href="shopper.html">Shopper</a>
+            <a href="merchant.html">Merchant</a>
+        </nav>
+    </header>
+    <main>
+        <section id="send-supplies-section">
+            <h2>Send Supplies</h2>
+            <form>
+                <input type="text" id="merchantId" placeholder="Merchant ID">
+                <input type="text" id="productIdToSupply" placeholder="Product ID">
+                <input type="number" id="quantityToSupply" placeholder="Quantity">
+                <button id="sendSuppliesButton">Send Supplies</button>
+            </form>
+        </section>
 
-    <!-- Section to add a new supply -->
-    <section id="add-supply-section">
-        <h2>Add New Supply</h2>
-        <input type="text" id="supplyName" placeholder="Supply Name" />
-        <input type="text" id="supplyDescription" placeholder="Supply Description" />
-        <input type="number" id="supplyPrice" placeholder="Supply Price" />
-        <input type="number" id="supplyCost" placeholder="Supply Cost" />
-        <input type="number" id="supplyStock" placeholder="Supply Stock" />
-        <input type="text" id="supplyImageURL" placeholder="Supply Image URL" />
-        <button id="addSupplyButton">Add Supply</button>
-    </section>
+        <section id="add-supplies-section">
+            <h2>Add Supplies</h2>
+            <form>
+                <input type="text" id="supplyName" placeholder="Supply Name">
+                <input type="text" id="supplyDescription" placeholder="Supply Description">
+                <input type="number" id="supplyPrice" placeholder="Supply Price">
+                <input type="number" id="supplyStock" placeholder="Supply Stock">
+                <input type="text" id="supplyImageUrl" placeholder="Supply Image URL">
+                <button id="addSupplyButton">Add Supply</button>
+            </form>
+        </section>
 
-    <!-- Section to send supplies to a merchant -->
-    <section id="send-supplies-section">
-        <h2>Send Supplies</h2>
-        <input type="text" id="merchantId" placeholder="Merchant ID" />
-        <input type="text" id="productIdToSend" placeholder="Product ID" />
-        <input type="number" id="quantityToSend" placeholder="Quantity" />
-        <button id="sendSuppliesButton">Send Supplies</button>
-    </section>
-
-    <!-- Section to display notifications -->
-    <section id="notifications-section">
-        <h2>Notifications</h2>
-        <ul id="notificationsList"></ul>
-    </section>
-
+        <section id="notifications-section">
+            <h2>Notifications</h2>
+            <ul id="notificationsList"></ul>
+        </section>
+    </main>
+    <footer>
+        <nav>
+            <a href="#">Home</a>
+            <a href="#">Contact</a>
+        </nav>
+    </footer>
     <script src="supplier.js"></script>
 </body>
 </html>
