@@ -1,3 +1,4 @@
+// Required libraries and modules
 const express = require('express');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
@@ -11,9 +12,11 @@ const session = require('express-session');
 const RedisStore = require('connect-redis').default; // Correct way to require connect-redis
 const Redis = require('ioredis');
 
+// Determine the number of CPUs available
 const numCPUs = os.cpus().length;
 const port = 3000;
 
+// PostgreSQL database connection configuration
 const pool = new Pool({
     user: 'postgres',
     host: 'localhost',
@@ -21,6 +24,7 @@ const pool = new Pool({
     port: 5432,
 });
 
+// Redis client configuration
 const redisClient = new Redis({
     host: '127.0.0.1',
     port: 6379,
@@ -30,10 +34,11 @@ redisClient.on('error', (err) => {
     console.error('Redis connection error:', err);
 });
 
+// Clustering to utilize all available CPU cores
 if (cluster.isMaster) {
     console.log(`Master ${process.pid} is running`);
 
-    // Fork workers.
+    // Fork workers
     for (let i = 0; i < numCPUs; i++) {
         cluster.fork();
     }
@@ -44,14 +49,14 @@ if (cluster.isMaster) {
 } else {
     const app = express();
 
-    app.use(bodyParser.json());
+    app.use(bodyParser.json()); // Middleware to parse JSON requests
 
-    // Configure CORS to allow requests from your frontend's origin
+    // CORS configuration to allow requests from your frontend's origin
     app.use(cors({
         origin: 'http://127.0.0.1:5500'
     }));
 
-    // Configure session management with Redis
+    // Session management configuration with Redis
     app.use(session({
         store: new RedisStore({ client: redisClient }),
         secret: 'your_secret_key',
@@ -120,7 +125,7 @@ if (cluster.isMaster) {
         }
     });
 
-    // Fetch shopping cart items
+    // Fetch shopping cart items endpoint
     app.get('/api/cart', async (req, res) => {
         try {
             const result = await pool.query('SELECT * FROM shopping_cart');
@@ -156,6 +161,14 @@ if (cluster.isMaster) {
 
             for (const item of cartItems) {
                 await pool.query('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)', [orderId, item.productId, item.quantity, item.price]);
+
+                // Update the balance of the merchant/supplier who sold the product
+                const sellerResult = await pool.query('SELECT seller_id FROM products WHERE id = $1', [item.productId]);
+                const sellerId = sellerResult.rows[0].seller_id;
+                await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [item.price * item.quantity, sellerId]);
+
+                // Insert the purchase into purchase history
+                await pool.query('INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())', [userId, item.productId, item.quantity, item.price]);
             }
 
             res.json({ success: true, message: 'Order placed successfully.' });
@@ -206,9 +219,34 @@ if (cluster.isMaster) {
         const { productId, quantity } = req.body;
 
         try {
-            // Update inventory for the merchant
-            const result = await pool.query('UPDATE products SET stock = stock + $1 WHERE id = $2 RETURNING *', [quantity, productId]);
-            res.json({ success: true, message: 'Supplies received successfully', product: result.rows[0] });
+            // Fetch the product details to calculate the total cost
+            const productResult = await pool.query('SELECT * FROM products WHERE id = $1', [productId]);
+            const product = productResult.rows[0];
+
+            if (!product) {
+                return res.status(400).json({ success: false, message: 'Product not found.' });
+            }
+
+            const totalCost = product.price * quantity;
+
+            // Deduct the total cost from the merchant's balance
+            const userId = req.user.id; // Assuming you have middleware to set req.user
+            await pool.query('UPDATE users SET balance = balance - $1 WHERE id = $2', [totalCost, userId]);
+
+            // Update the product stock
+            await pool.query('UPDATE products SET stock = stock + $1 WHERE id = $2', [quantity, productId]);
+
+            // Check if the product already exists in received_supplies
+            const receivedSupplyResult = await pool.query('SELECT * FROM received_supplies WHERE name = $1', [product.name]);
+            if (receivedSupplyResult.rows.length > 0) {
+                // Update the existing received supply
+                await pool.query('UPDATE received_supplies SET stock = stock + $1 WHERE name = $2', [quantity, product.name]);
+            } else {
+                // Insert into received_supplies table
+                await pool.query('INSERT INTO received_supplies (name, description, price, stock, image_url) VALUES ($1, $2, $3, $4, $5)', [product.name, product.description, product.price, quantity, product.image_url]);
+            }
+
+            res.json({ success: true, message: 'Supplies received successfully.' });
         } catch (error) {
             console.error('Error receiving supplies:', error);
             res.status(500).json({ success: false, message: 'Internal server error' });
@@ -240,7 +278,7 @@ if (cluster.isMaster) {
         }
     });
 
-    // Update item quantity
+    // Update item quantity in the shopping cart
     app.put('/api/cart/:id', async (req, res) => {
         const itemId = req.params.id;
         const { quantity } = req.body;
@@ -254,7 +292,7 @@ if (cluster.isMaster) {
         }
     });
 
-    // Remove item from cart
+    // Remove item from the shopping cart
     app.delete('/api/cart/:id', async (req, res) => {
         const itemId = req.params.id;
 
@@ -280,6 +318,17 @@ if (cluster.isMaster) {
             res.json({ success: true, message: 'Funds added successfully' });
         } catch (error) {
             console.error('Error adding funds:', error);
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+    });
+
+    // Add this endpoint for fetching received supplies
+    app.get('/api/received-supplies', async (req, res) => {
+        try {
+            const result = await pool.query('SELECT * FROM received_supplies');
+            res.json({ success: true, supplies: result.rows });
+        } catch (error) {
+            console.error('Error fetching received supplies:', error);
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });

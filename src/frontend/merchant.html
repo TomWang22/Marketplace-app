@@ -16,15 +16,17 @@
         <input type="text" id="productDescription" placeholder="Product Description" />
         <input type="number" id="productPrice" placeholder="Product Price" />
         <input type="number" id="productStock" placeholder="Product Stock" />
+        <input type="text" id="productImageUrl" placeholder="Product Image URL" />
         <button id="addProductButton">Add Product</button>
     </section>
 
-    <!-- Section to receive supplies -->
-    <section id="receive-supplies-section">
-        <h2>Receive Supplies</h2>
-        <input type="text" id="productId" placeholder="Product ID" />
-        <input type="number" id="quantity" placeholder="Quantity" />
-        <button id="receiveSuppliesButton">Receive Supplies</button>
+    <!-- Section to view received supplies -->
+    <section id="received-supplies-section">
+        <h2>Received Supplies</h2>
+        <button id="viewReceivedSuppliesButton">View Received Supplies</button>
+        <ul id="receivedSuppliesList">
+            <!-- Received supplies will be appended here dynamically -->
+        </ul>
     </section>
 
     <!-- Section to send merchandise -->

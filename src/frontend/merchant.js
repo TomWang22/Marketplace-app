@@ -1,24 +1,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const addProductButton = document.getElementById('addProductButton');
-    const receiveSuppliesButton = document.getElementById('receiveSuppliesButton');
+    const viewReceivedSuppliesButton = document.getElementById('viewReceivedSuppliesButton');
     const sendMerchandiseButton = document.getElementById('sendMerchandiseButton');
     const notificationsList = document.getElementById('notificationsList');
-
-    // Function to fetch the current user information
-    async function getCurrentUser() {
-        try {
-            const response = await fetch('http://localhost:3000/api/current-user', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching current user:', error);
-            return null;
-        }
-    }
+    const receivedSuppliesList = document.getElementById('receivedSuppliesList');
 
     // Function to display notifications
     function displayNotification(message) {
@@ -27,10 +12,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         notificationsList.appendChild(listItem);
     }
 
-    // Retrieve the userId from local storage
+    // Retrieve the userId and token from local storage
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('token');
 
+    // Temporarily remove login requirement for testing purposes
+    /*
     if (!userId || !token) {
         alert('User not logged in!');
         window.location.href = '/login.html';
@@ -44,9 +31,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '/login.html';
         return;
     }
+    */
 
     // Function to add a new product
-    async function addProduct(name, description, price, stock) {
+    async function addProduct(name, description, price, stock, image_url) {
         try {
             const response = await fetch('http://localhost:3000/api/products', {
                 method: 'POST',
@@ -54,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ name, description, price, stock })
+                body: JSON.stringify({ name, description, price, stock, image_url })
             });
             const data = await response.json();
             if (data.success) {
@@ -67,26 +55,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Function to receive supplies
-    async function receiveSupplies(productId, quantity) {
+    // Function to fetch received supplies from the database
+    async function fetchReceivedSupplies() {
         try {
-            const response = await fetch('http://localhost:3000/api/receive-supplies', {
-                method: 'POST',
+            const response = await fetch('http://localhost:3000/api/received-supplies', {
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ productId, quantity })
+                }
             });
             const data = await response.json();
-            if (data.success) {
-                displayNotification(`Received ${quantity} units of product ID ${productId}`);
-            } else {
-                displayNotification(`Failed to receive supplies: ${data.message}`);
-            }
+            return data.supplies;
         } catch (error) {
-            console.error('Error receiving supplies:', error);
+            console.error('Error fetching received supplies:', error);
+            return [];
         }
+    }
+
+    // Function to display received supplies
+    async function displayReceivedSupplies() {
+        const supplies = await fetchReceivedSupplies();
+        receivedSuppliesList.innerHTML = ''; // Clear existing items
+
+        supplies.forEach(supply => {
+            const listItem = document.createElement('li');
+            listItem.className = 'supply-item';
+            listItem.innerHTML = `
+                <div>
+                    <img src="${supply.image_url}" alt="${supply.name}" width="50" height="50">
+                    <span>${supply.name} - ${supply.description} - $${supply.price.toFixed(2)} - Stock: ${supply.stock}</span>
+                </div>
+                <div class="supply-details" style="display: none;">
+                    <p>${supply.description}</p>
+                    <p>Price: $${supply.price.toFixed(2)}</p>
+                    <p>Stock: ${supply.stock}</p>
+                </div>
+            `;
+            receivedSuppliesList.appendChild(listItem);
+
+            listItem.addEventListener('click', () => {
+                const details = listItem.querySelector('.supply-details');
+                details.style.display = details.style.display === 'none' ? 'block' : 'none';
+            });
+        });
     }
 
     // Function to send merchandise
@@ -117,14 +128,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const description = document.getElementById('productDescription').value;
         const price = document.getElementById('productPrice').value;
         const stock = document.getElementById('productStock').value;
-        addProduct(name, description, price, stock);
+        const image_url = document.getElementById('productImageUrl').value;
+        addProduct(name, description, price, stock, image_url);
     });
 
-    receiveSuppliesButton.addEventListener('click', () => {
-        const productId = document.getElementById('productId').value;
-        const quantity = document.getElementById('quantity').value;
-        receiveSupplies(productId, quantity);
-    });
+    viewReceivedSuppliesButton.addEventListener('click', displayReceivedSupplies);
 
     sendMerchandiseButton.addEventListener('click', () => {
         const customerId = document.getElementById('customerId').value;
