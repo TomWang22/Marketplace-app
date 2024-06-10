@@ -44,12 +44,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Redirect the user based on their role
                 if (data.role === 'merchant') {
+                    console.log('Redirecting to merchant.html');
                     window.location.href = '/merchant.html';
                 } else if (data.role === 'supplier') {
+                    console.log('Redirecting to supplier.html');
                     window.location.href = '/supplier.html';
                 } else if (data.role === 'shopper') {
+                    console.log('Redirecting to shopper.html');
                     window.location.href = '/shopper.html';
                 } else {
+                    console.log('Redirecting to dashboard.html');
                     window.location.href = '/dashboard.html'; // default redirection
                 }
             } else {

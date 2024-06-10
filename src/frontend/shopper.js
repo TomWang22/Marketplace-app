@@ -7,16 +7,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const returnMerchandiseButton = document.getElementById('returnMerchandiseButton');
     const productIdInput = document.getElementById('productId');
     const returnQuantityInput = document.getElementById('returnQuantity');
+    const shopButton = document.getElementById('shopButton');
+    const cartItemCount = document.getElementById('cartItemCount');
 
     // Retrieve the userId from local storage
     const userId = localStorage.getItem('userId');
-
+    /*
     if (!userId) {
         alert('User not logged in!');
         window.location.href = '/login.html';
         return;
     }
-
+    */
     // Function to fetch cart items from the server
     const fetchCartItems = async () => {
         try {
@@ -32,6 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to display cart items
     const displayCartItems = async () => {
         const cartItems = await fetchCartItems();
+
+        // Update cart item count
+        cartItemCount.textContent = cartItems.length;
 
         // Clear the current list
         cartItemsList.innerHTML = '';
@@ -183,4 +188,11 @@ document.addEventListener('DOMContentLoaded', () => {
     shoppingCartButton.addEventListener('click', () => {
         displayCartItems();
     });
+
+    shopButton.addEventListener('click', () => {
+        window.location.href = 'marketplace.html';
+    });
+
+    // Update cart item count on page load
+    displayCartItems();
 });
