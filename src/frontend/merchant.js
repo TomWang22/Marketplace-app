@@ -12,35 +12,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         notificationsList.appendChild(listItem);
     }
 
-    // Retrieve the userId and token from local storage
-    const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('token');
-
-    // Temporarily remove login requirement for testing purposes
-    /*
-    if (!userId || !token) {
-        alert('User not logged in!');
-        window.location.href = '/login.html';
-        return;
-    }
-
-    // Fetch current user and check if they are a merchant
-    const user = await getCurrentUser();
-    if (!user || user.role !== 'merchant') {
-        alert('Access denied. Only merchants can access this functionality.');
-        window.location.href = '/login.html';
-        return;
-    }
-    */
-
     // Function to add a new product
     async function addProduct(name, description, price, stock, image_url) {
         try {
             const response = await fetch('http://localhost:3000/api/products', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ name, description, price, stock, image_url })
             });
@@ -61,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await fetch('http://localhost:3000/api/received-supplies', {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 }
             });
             const data = await response.json();
@@ -106,8 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await fetch('http://localhost:3000/api/send-merchandise', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ customerId, productId, quantity })
             });

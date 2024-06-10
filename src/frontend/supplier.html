@@ -8,7 +8,34 @@
 </head>
 <body>
     <h1>Supplier Dashboard</h1>
-    <!-- Supplier-specific content -->
+
+    <!-- Section to add a new supply -->
+    <section id="add-supply-section">
+        <h2>Add New Supply</h2>
+        <input type="text" id="supplyName" placeholder="Supply Name" />
+        <input type="text" id="supplyDescription" placeholder="Supply Description" />
+        <input type="number" id="supplyPrice" placeholder="Supply Price" />
+        <input type="number" id="supplyCost" placeholder="Supply Cost" />
+        <input type="number" id="supplyStock" placeholder="Supply Stock" />
+        <input type="text" id="supplyImageURL" placeholder="Supply Image URL" />
+        <button id="addSupplyButton">Add Supply</button>
+    </section>
+
+    <!-- Section to send supplies to a merchant -->
+    <section id="send-supplies-section">
+        <h2>Send Supplies</h2>
+        <input type="text" id="merchantId" placeholder="Merchant ID" />
+        <input type="text" id="productIdToSend" placeholder="Product ID" />
+        <input type="number" id="quantityToSend" placeholder="Quantity" />
+        <button id="sendSuppliesButton">Send Supplies</button>
+    </section>
+
+    <!-- Section to display notifications -->
+    <section id="notifications-section">
+        <h2>Notifications</h2>
+        <ul id="notificationsList"></ul>
+    </section>
+
     <script src="supplier.js"></script>
 </body>
 </html>

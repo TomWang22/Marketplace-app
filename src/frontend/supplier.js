@@ -1,74 +1,72 @@
-// Import necessary modules for HTTP requests
-const fetch = require('node-fetch');
-const { Pool } = require('pg');
+document.addEventListener('DOMContentLoaded', async () => {
+    const sendSuppliesButton = document.getElementById('sendSuppliesButton');
+    const addSupplyButton = document.getElementById('addSupplyButton');
+    const notificationsList = document.getElementById('notificationsList');
 
-// Create a PostgreSQL pool
-const pool = new Pool({
-    user: 'your_username',
-    host: 'localhost',
-    database: 'your_database',
-    password: 'your_password',
-    port: 5432,
+    // Function to display notifications
+    function displayNotification(message) {
+        const listItem = document.createElement('li');
+        listItem.textContent = message;
+        notificationsList.appendChild(listItem);
+    }
+
+    // Function to add a new supply
+    async function addSupply(name, description, price, cost, stock, image_url) {
+        try {
+            const response = await fetch('http://localhost:3000/api/add-supply', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, description, price, cost, stock, image_url })
+            });
+            const data = await response.json();
+            if (data.success) {
+                displayNotification(`Supply "${name}" added successfully.`);
+            } else {
+                displayNotification(`Failed to add supply: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Error adding supply:', error);
+        }
+    }
+
+    // Function to send supplies to a merchant
+    async function sendSupplies(merchantId, productId, quantity) {
+        try {
+            const response = await fetch('http://localhost:3000/api/send-supplies', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ merchantId, productId, quantity })
+            });
+            const data = await response.json();
+            if (data.success) {
+                displayNotification(`Sent ${quantity} units of product ID ${productId} to merchant ID ${merchantId}`);
+            } else {
+                displayNotification(`Failed to send supplies: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Error sending supplies:', error);
+        }
+    }
+
+    // Add event listeners for buttons
+    addSupplyButton.addEventListener('click', () => {
+        const name = document.getElementById('supplyName').value;
+        const description = document.getElementById('supplyDescription').value;
+        const price = document.getElementById('supplyPrice').value;
+        const cost = document.getElementById('supplyCost').value;
+        const stock = document.getElementById('supplyStock').value;
+        const image_url = document.getElementById('supplyImageURL').value;
+        addSupply(name, description, price, cost, stock, image_url);
+    });
+
+    sendSuppliesButton.addEventListener('click', () => {
+        const merchantId = document.getElementById('merchantId').value;
+        const productId = document.getElementById('productIdToSend').value;
+        const quantity = document.getElementById('quantityToSend').value;
+        sendSupplies(merchantId, productId, quantity);
+    });
 });
-
-// Function to add a product to the products table and deduct the cost from the supplier's balance
-async function addProduct(name, description, price, cost, stock) {
-    try {
-        const client = await pool.connect();
-        try {
-            // Add the product to the products table
-            const productQuery = 'INSERT INTO products (name, description, price, cost, stock) VALUES ($1, $2, $3, $4, $5) RETURNING *';
-            const productValues = [name, description, price, cost, stock];
-            const productResult = await client.query(productQuery, productValues);
-            const product = productResult.rows[0];
-
-            console.log('Product added:', product);
-        } catch (error) {
-            console.error('Error adding product:', error);
-            throw error;
-        } finally {
-            client.release();
-        }
-    } catch (error) {
-        console.error('Error connecting to database:', error);
-    }
-}
-
-// Function to handle request from the merchant and supply products
-async function handleRequestFromMerchant(request) {
-    try {
-        // Process the request and supply products accordingly
-        // Update inventory or stock levels, handle transactions, etc.
-        console.log('Received request from merchant:', request);
-
-        // Example: Deduct cost from the supplier's balance
-        const supplierId = request.supplierId; // Assuming you have a way to identify the supplier
-        const cost = calculateCost(request.productId, request.quantity); // Implement your logic to calculate cost
-        await deductFromSupplierBalance(cost, supplierId);
-
-        console.log('Transaction completed.');
-    } catch (error) {
-        console.error('Error handling request from merchant:', error);
-    }
-}
-
-// Function to deduct cost from the supplier's balance
-async function deductFromSupplierBalance(cost, supplierId) {
-    try {
-        const client = await pool.connect();
-        try {
-            const balanceQuery = 'UPDATE suppliers SET balance = balance - $1 WHERE id = $2';
-            const balanceValues = [cost, supplierId];
-            await client.query(balanceQuery, balanceValues);
-        } catch (error) {
-            console.error('Error deducting from supplier balance:', error);
-            throw error;
-        } finally {
-            client.release();
-        }
-    } catch (error) {
-        console.error('Error connecting to database:', error);
-    }
-}
-
-handleRequestFromMerchant(requestFromMerchant);
