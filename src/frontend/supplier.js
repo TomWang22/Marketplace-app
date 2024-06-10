@@ -2,6 +2,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sendSuppliesButton = document.getElementById('sendSuppliesButton');
     const addSupplyButton = document.getElementById('addSupplyButton');
     const notificationsList = document.getElementById('notificationsList');
+    const usernameSpan = document.getElementById('username');
+
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('token');
+
+    // Function to fetch the current user information
+    async function getCurrentUser() {
+        try {
+            const response = await fetch('http://localhost:3000/api/current-user', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching current user:', error);
+            return null;
+        }
+    }
 
     // Function to display notifications
     function displayNotification(message) {
@@ -11,14 +31,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Function to add a new supply
-    async function addSupply(name, description, price, cost, stock, image_url) {
+    async function addSupply(name, description, price, stock, image_url) {
         try {
             const response = await fetch('http://localhost:3000/api/add-supply', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ name, description, price, cost, stock, image_url })
+                body: JSON.stringify({ name, description, price, stock, image_url })
             });
             const data = await response.json();
             if (data.success) {
@@ -37,7 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const response = await fetch('http://localhost:3000/api/send-supplies', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ merchantId, productId, quantity })
             });
@@ -52,21 +74,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Fetch current user and display username
+    const user = await getCurrentUser();
+    if (user) {
+        usernameSpan.textContent = user.username;
+    }
+
     // Add event listeners for buttons
     addSupplyButton.addEventListener('click', () => {
         const name = document.getElementById('supplyName').value;
         const description = document.getElementById('supplyDescription').value;
         const price = document.getElementById('supplyPrice').value;
-        const cost = document.getElementById('supplyCost').value;
         const stock = document.getElementById('supplyStock').value;
-        const image_url = document.getElementById('supplyImageURL').value;
-        addSupply(name, description, price, cost, stock, image_url);
+        const image_url = document.getElementById('supplyImageUrl').value;
+        addSupply(name, description, price, stock, image_url);
     });
 
     sendSuppliesButton.addEventListener('click', () => {
         const merchantId = document.getElementById('merchantId').value;
-        const productId = document.getElementById('productIdToSend').value;
-        const quantity = document.getElementById('quantityToSend').value;
+        const productId = document.getElementById('productIdToSupply').value;
+        const quantity = document.getElementById('quantityToSupply').value;
         sendSupplies(merchantId, productId, quantity);
     });
 });
