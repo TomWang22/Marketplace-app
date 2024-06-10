@@ -1,19 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Removed login requirement for testing
-    // const userId = localStorage.getItem('userId');
-    // const token = localStorage.getItem('token');
-
-     /*
-    if (!userId || !token) {
-        alert('User not logged in!');
-        window.location.href = '/login.html';
-        return;
-    }
-    */
-
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role'); // Assuming you store the user's role in localStorage
 
     const productGrid = document.querySelector('.product-listings .product-grid');
     const cartItemCount = document.getElementById('cartItemCount');
+    const homeButton = document.getElementById('homeButton'); // Home button
+
+    homeButton.addEventListener('click', () => {
+        if (role === 'merchant') {
+            window.location.href = 'merchant.html';
+        } else if (role === 'supplier') {
+            window.location.href = 'supplier.html';
+        } else if (role === 'shopper') {
+            window.location.href = 'shopper.html';
+        } else {
+            alert('Unknown role. Cannot redirect.');
+        }
+    });
 
     // Function to fetch products from the database
     async function fetchProducts() {
