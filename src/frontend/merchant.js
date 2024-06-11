@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const addProductButton = document.getElementById('addProductButton');
-    const viewReceivedSuppliesButton = document.getElementById('viewReceivedSuppliesButton');
+    const showReceivedSuppliesButton = document.getElementById('showReceivedSuppliesButton');
     const sendMerchandiseButton = document.getElementById('sendMerchandiseButton');
     const notificationsList = document.getElementById('notificationsList');
     const receivedSuppliesList = document.getElementById('receivedSuppliesList');
@@ -13,14 +13,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Function to add a new product
-    async function addProduct(name, description, price, stock, image_url) {
+    async function addProduct(name, description, price, stock, imageUrl) {
         try {
             const response = await fetch('http://localhost:3000/api/products', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ name, description, price, stock, image_url })
+                body: JSON.stringify({ name, description, price, stock, image_url: imageUrl })
             });
             const data = await response.json();
             if (data.success) {
@@ -56,26 +56,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         receivedSuppliesList.innerHTML = ''; // Clear existing items
 
         supplies.forEach(supply => {
-            const listItem = document.createElement('li');
+            const listItem = document.createElement('div');
             listItem.className = 'supply-item';
             listItem.innerHTML = `
                 <div>
                     <img src="${supply.image_url}" alt="${supply.name}" width="50" height="50">
                     <span>${supply.name} - ${supply.description} - $${supply.price.toFixed(2)} - Stock: ${supply.stock}</span>
                 </div>
-                <div class="supply-details" style="display: none;">
-                    <p>${supply.description}</p>
-                    <p>Price: $${supply.price.toFixed(2)}</p>
-                    <p>Stock: ${supply.stock}</p>
-                </div>
             `;
             receivedSuppliesList.appendChild(listItem);
-
-            listItem.addEventListener('click', () => {
-                const details = listItem.querySelector('.supply-details');
-                details.style.display = details.style.display === 'none' ? 'block' : 'none';
-            });
         });
+
+        receivedSuppliesList.style.display = 'block';
     }
 
     // Function to send merchandise
@@ -100,21 +92,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Add event listeners for buttons
-    addProductButton.addEventListener('click', () => {
+    addProductButton.addEventListener('click', (event) => {
+        event.preventDefault();
         const name = document.getElementById('productName').value;
         const description = document.getElementById('productDescription').value;
-        const price = document.getElementById('productPrice').value;
-        const stock = document.getElementById('productStock').value;
-        const image_url = document.getElementById('productImageUrl').value;
-        addProduct(name, description, price, stock, image_url);
+        const price = parseFloat(document.getElementById('productPrice').value);
+        const stock = parseInt(document.getElementById('productStock').value);
+        const imageUrl = document.getElementById('productImageUrl').value;
+        addProduct(name, description, price, stock, imageUrl);
     });
 
-    viewReceivedSuppliesButton.addEventListener('click', displayReceivedSupplies);
+    showReceivedSuppliesButton.addEventListener('click', displayReceivedSupplies);
 
-    sendMerchandiseButton.addEventListener('click', () => {
+    sendMerchandiseButton.addEventListener('click', (event) => {
+        event.preventDefault();
         const customerId = document.getElementById('customerId').value;
         const productId = document.getElementById('productIdToSend').value;
-        const quantity = document.getElementById('quantityToSend').value;
+        const quantity = parseInt(document.getElementById('quantityToSend').value);
         sendMerchandise(customerId, productId, quantity);
     });
 });
