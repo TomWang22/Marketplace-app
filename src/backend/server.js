@@ -254,6 +254,17 @@ if (cluster.isMaster) {
         }
     });
 
+        // Fetch products endpoint
+        app.get('/api/products', async (req, res) => {
+            try {
+                const result = await pool.query('SELECT * FROM products;');
+                res.json({ success: true, products: result.rows });
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                res.status(500).json({ success: false, message: 'Internal server error' });
+            }
+        });
+
     // Endpoint to add a new product
     app.post('/api/products', async (req, res) => {
         const { name, description, price, stock, image_url } = req.body;
@@ -264,17 +275,6 @@ if (cluster.isMaster) {
             );
             res.json({ success: true, product: result.rows[0] });
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Internal server error' });
-        }
-    });
-
-    // Fetch products endpoint
-    app.get('/api/products', async (req, res) => {
-        try {
-            const result = await pool.query('SELECT * FROM products');
-            res.json({ success: true, products: result.rows });
-        } catch (error) {
-            console.error('Error fetching products:', error);
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });
@@ -334,23 +334,27 @@ if (cluster.isMaster) {
         }
     });
 
-    // Serve static HTML files
-    app.use(express.static(path.join(__dirname, '../frontend')));
+ // Serve static HTML files
+app.use(express.static(path.join(__dirname, '../frontend')));
 
-    // Serve login.html as the default page
-    app.get('/', (req, res) => {
-        res.sendFile(path.join(__dirname, '../frontend/login.html'));
-    });
+// Serve login.html as the default page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/login.html'));
+});
 
-    app.get('/:page', (req, res) => {
-        const page = req.params.page;
-        const allowedPages = ['login.html', 'merchant.html', 'supplier.html', 'shopper.html', 'dashboard.html'];
-        if (allowedPages.includes(page)) {
-            res.sendFile(path.join(__dirname, `../frontend/${page}`));
-        } else {
-            res.status(404).send('Page not found');
-        }
-    });
+// Serve specific pages
+app.get('/:page', (req, res) => {
+    const page = req.params.page;
+    const allowedPages = [
+        'login.html', 'merchant.html', 'supplier.html', 'shopper.html', 'dashboard.html',
+        'marketplace.html', 'about.html', 'contact.html', 'privacy.html', 'terms.html'
+    ];
+    if (allowedPages.includes(page)) {
+        res.sendFile(path.join(__dirname, `../frontend/${page}`));
+    } else {
+        res.status(404).send('Page not found');
+    }
+});
 
     // Start the server
     app.listen(port, () => {

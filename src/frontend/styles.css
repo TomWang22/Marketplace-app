@@ -10,11 +10,19 @@ h1, h2 {
     margin-top: 20px;
 }
 
-main, section {
+main {
     padding: 20px;
     display: flex;
-    justify-content: center;
-    text-align: center;
+    flex-direction: column; /* Ensures vertical layout */
+    align-items: center;
+    text-align: left; /* Align text to the left */
+}
+
+section {
+    padding: 20px;
+    text-align: left;
+    width: 100%;
+    max-width: 800px; /* Optional: constrain the width for better readability */
 }
 
 form {
@@ -230,4 +238,3 @@ footer nav a {
 footer nav a:hover {
     background-color: #0056b3;
 }
-
