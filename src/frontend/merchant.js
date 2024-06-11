@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    // Get references to the DOM elements
     const addProductButton = document.getElementById('addProductButton');
     const showReceivedSuppliesButton = document.getElementById('showReceivedSuppliesButton');
     const listAllProductsButton = document.getElementById('listAllProductsButton');
@@ -14,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         notificationsList.appendChild(listItem);
     }
 
-    // Function to clear input fields
+    // Function to clear input fields after adding a product
     function clearInputFields() {
         document.getElementById('productName').value = '';
         document.getElementById('productDescription').value = '';
@@ -36,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             if (data.success) {
                 displayNotification(`Product "${name}" added successfully.`);
-                clearInputFields();
+                clearInputFields(); // Clear input fields after successful addition
             } else {
                 displayNotification(`Failed to add product: ${data.message}`);
             }

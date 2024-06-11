@@ -9,7 +9,7 @@ const jwt = require('jsonwebtoken');
 const cluster = require('cluster');
 const os = require('os');
 const session = require('express-session');
-const RedisStore = require('connect-redis').default; // Correct way to require connect-redis
+const RedisStore = require('connect-redis').default;
 const Redis = require('ioredis');
 
 // Determine the number of CPUs available
