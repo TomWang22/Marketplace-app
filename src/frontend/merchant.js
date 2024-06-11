@@ -1,15 +1,26 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const addProductButton = document.getElementById('addProductButton');
     const showReceivedSuppliesButton = document.getElementById('showReceivedSuppliesButton');
+    const listAllProductsButton = document.getElementById('listAllProductsButton');
     const sendMerchandiseButton = document.getElementById('sendMerchandiseButton');
     const notificationsList = document.getElementById('notificationsList');
     const receivedSuppliesList = document.getElementById('receivedSuppliesList');
+    const productList = document.getElementById('productList');
 
     // Function to display notifications
     function displayNotification(message) {
         const listItem = document.createElement('li');
         listItem.textContent = message;
         notificationsList.appendChild(listItem);
+    }
+
+    // Function to clear input fields
+    function clearInputFields() {
+        document.getElementById('productName').value = '';
+        document.getElementById('productDescription').value = '';
+        document.getElementById('productPrice').value = '';
+        document.getElementById('productStock').value = '';
+        document.getElementById('productImageUrl').value = '';
     }
 
     // Function to add a new product
@@ -25,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             if (data.success) {
                 displayNotification(`Product "${name}" added successfully.`);
+                clearInputFields();
             } else {
                 displayNotification(`Failed to add product: ${data.message}`);
             }
@@ -70,6 +82,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         receivedSuppliesList.style.display = 'block';
     }
 
+    // Function to fetch all products from the database
+    async function fetchAllProducts() {
+        try {
+            const response = await fetch('http://localhost:3000/api/products', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            return data.products;
+        } catch (error) {
+            console.error('Error fetching products:', error);
+            return [];
+        }
+    }
+
+    // Function to display all products
+    async function displayAllProducts() {
+        const products = await fetchAllProducts();
+        productList.innerHTML = ''; // Clear existing items
+
+        products.forEach(product => {
+            const productItem = document.createElement('div');
+            productItem.className = 'product-item';
+            productItem.innerHTML = `
+                <div>
+                    <img src="${product.image_url}" alt="${product.name}" width="50" height="50">
+                    <span>${product.name} - ${product.description} - $${product.price.toFixed(2)} - Stock: ${product.stock}</span>
+                </div>
+            `;
+            productList.appendChild(productItem);
+        });
+
+        productList.style.display = 'block';
+    }
+
     // Function to send merchandise
     async function sendMerchandise(customerId, productId, quantity) {
         try {
@@ -103,6 +152,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     showReceivedSuppliesButton.addEventListener('click', displayReceivedSupplies);
+
+    listAllProductsButton.addEventListener('click', displayAllProducts);
 
     sendMerchandiseButton.addEventListener('click', (event) => {
         event.preventDefault();
