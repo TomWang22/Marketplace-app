@@ -257,7 +257,9 @@ if (cluster.isMaster) {
     // Fetch products endpoint
     app.get('/api/products', async (req, res) => {
         try {
+            console.log('Fetching products from the database...');
             const result = await pool.query('SELECT * FROM products;');
+            console.log('Fetched products:', result.rows); // Add this log
             res.json({ success: true, products: result.rows });
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -275,6 +277,59 @@ if (cluster.isMaster) {
             );
             res.json({ success: true, product: result.rows[0] });
         } catch (error) {
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+    });
+    
+    app.get('/api/supplies', async (req, res) => {
+        try {
+            console.log('Fetching supplies from the database...');
+            const result = await pool.query('SELECT * FROM supplies;');
+            console.log('Fetched supplies:', result.rows);
+            res.json({ success: true, supplies: result.rows });
+        } catch (error) {
+            console.error('Error fetching supplies:', error);
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+    });
+    
+    
+    // Endpoint to add a new supplies
+    app.post('/api/supplies', async (req, res) => {
+        const { name, description, price, cost, stock, image_url } = req.body;
+        try {
+            const result = await pool.query(
+                'INSERT INTO supplies (name, description, price, cost, stock, image_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+                [name, description, price, cost, stock, image_url]
+            );
+            res.json({ success: true, supply: result.rows[0] });
+        } catch (error) {
+            console.error('Error adding supply:', error); // Add this log
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+    });
+      
+
+    // Fetch account information endpoint
+    app.get('/api/account-info', async (req, res) => {
+        const userId = req.query.userId;
+        try {
+            const result = await pool.query('SELECT username, balance FROM users WHERE id = $1', [userId]);
+            res.json({ success: true, account: result.rows[0] });
+        } catch (error) {
+            console.error('Error fetching account info:', error);
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+    });
+
+    // Fetch purchase history endpoint
+    app.get('/api/purchase-history', async (req, res) => {
+        const userId = req.query.userId;
+        try {
+            const result = await pool.query('SELECT * FROM purchase_history WHERE user_id = $1', [userId]);
+            res.json({ success: true, history: result.rows });
+        } catch (error) {
+            console.error('Error fetching purchase history:', error);
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });
@@ -347,7 +402,7 @@ if (cluster.isMaster) {
         const page = req.params.page;
         const allowedPages = [
             'login.html', 'merchant.html', 'supplier.html', 'shopper.html', 'dashboard.html',
-            'marketplace.html', 'about.html', 'contact.html', 'privacy.html', 'terms.html'
+            'marketplace.html', 'about.html', 'contact.html', 'privacy.html', 'terms.html','shopping-cart.html'
         ];
         if (allowedPages.includes(page)) {
             res.sendFile(path.join(__dirname, `../frontend/${page}`));

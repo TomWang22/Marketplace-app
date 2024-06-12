@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const productGrid = document.querySelector('.product-listings .product-grid');
     const cartItemCount = document.getElementById('cartItemCount');
-    const homeButton = document.getElementById('homeButton'); // Home button
+    const homeButton = document.getElementById('homeButton');
 
     homeButton.addEventListener('click', () => {
         if (role === 'merchant') {
@@ -22,15 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to fetch products from the database
     async function fetchProducts() {
         try {
+            console.log('Fetching products...');
             const response = await fetch('http://localhost:3000/api/products', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
-                    // 'Authorization': `Bearer ${token}` // Removed for testing
                 }
             });
             const data = await response.json();
-            console.log('Fetched products:', data);  // Add this log
+            console.log('Fetched products:', data);
             return data.products;
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to display products
     async function displayProducts() {
         const products = await fetchProducts();
-        console.log('Products to display:', products);  // Add this log
+        console.log('Products to display:', products);
         if (!products.length) {
             productGrid.innerHTML = '<p>No products available.</p>';
             return;
@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button>Add to Cart</button>
                 <button>View Details</button>
             `;
+            console.log('Appending product element:', productElement);
             productGrid.appendChild(productElement);
         });
     }

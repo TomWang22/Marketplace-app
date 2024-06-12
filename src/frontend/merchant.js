@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Function to fetch all products from the database
     async function fetchAllProducts() {
         try {
+            console.log('Fetching all products...'); // Add this log
             const response = await fetch('http://localhost:3000/api/products', {
                 method: 'GET',
                 headers: {
@@ -93,6 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
             const data = await response.json();
+            console.log('Fetched products:', data.products); // Add this log
             return data.products;
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -102,20 +104,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Function to display all products
     async function displayAllProducts() {
+        console.log('Displaying all products...'); // Add this log
         const products = await fetchAllProducts();
         productList.innerHTML = ''; // Clear existing items
 
-        products.forEach(product => {
-            const productItem = document.createElement('div');
-            productItem.className = 'product-item';
-            productItem.innerHTML = `
-                <div>
-                    <img src="${product.image_url}" alt="${product.name}" width="50" height="50">
-                    <span>${product.name} - ${product.description} - $${product.price.toFixed(2)} - Stock: ${product.stock}</span>
-                </div>
-            `;
-            productList.appendChild(productItem);
-        });
+        if (products && products.length > 0) {
+            products.forEach(product => {
+                const productItem = document.createElement('div');
+                productItem.className = 'product-item';
+                productItem.innerHTML = `
+                    <div>
+                        <img src="${product.image_url}" alt="${product.name}" width="50" height="50">
+                        <span>${product.name} - ${product.description} - $${product.price.toFixed(2)} - Stock: ${product.stock}</span>
+                    </div>
+                `;
+                productList.appendChild(productItem);
+            });
+        } else {
+            productList.innerHTML = '<p>No products found.</p>';
+        }
 
         productList.style.display = 'block';
     }

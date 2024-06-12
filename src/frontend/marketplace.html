@@ -10,7 +10,7 @@
     <header>
         <div class="logo">Marketplace</div>
         <nav>
-            <a href="#" id="homeButton">Home</a> <!-- Home button added here -->
+            <a href="#" id="homeButton">Home</a>
             <a href="#">Products</a>
             <a href="#">Account</a>
             <a href="#">Cart (<span id="cartItemCount">0</span>)</a>
@@ -18,8 +18,17 @@
         </nav>
     </header>
     <main>
-        <section class="product-listings">
+        <section id="product-listings" class="product-listings">
             <div class="product-grid"></div>
+        </section>
+        <section id="account-info" class="account-info" style="display: none;">
+            <!-- Account info content will be dynamically inserted here -->
+        </section>
+        <section id="purchase-history" class="purchase-history" style="display: none;">
+            <!-- Purchase history content will be dynamically inserted here -->
+        </section>
+        <section id="cart-items" class="cart-items" style="display: none;">
+            <!-- Cart items content will be dynamically inserted here -->
         </section>
     </main>
     <footer>

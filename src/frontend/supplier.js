@@ -31,15 +31,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Function to add a new supply
-    async function addSupply(name, description, price, stock, image_url) {
+    async function addSupply(name, description, price, cost, stock, image_url) {
         try {
-            const response = await fetch('http://localhost:3000/api/add-supply', {
+            const response = await fetch('http://localhost:3000/api/supplies', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ name, description, price, stock, image_url })
+                body: JSON.stringify({ name, description, price, cost, stock, image_url })
             });
             const data = await response.json();
             if (data.success) {
@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (error) {
             console.error('Error adding supply:', error);
+            displayNotification('An error occurred while adding supply.');
         }
     }
 
@@ -71,6 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (error) {
             console.error('Error sending supplies:', error);
+            displayNotification('An error occurred while sending supplies.');
         }
     }
 
@@ -85,9 +87,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const name = document.getElementById('supplyName').value;
         const description = document.getElementById('supplyDescription').value;
         const price = document.getElementById('supplyPrice').value;
+        const cost = document.getElementById('supplyCost').value;
         const stock = document.getElementById('supplyStock').value;
         const image_url = document.getElementById('supplyImageUrl').value;
-        addSupply(name, description, price, stock, image_url);
+        addSupply(name, description, price, cost, stock, image_url);
     });
 
     sendSuppliesButton.addEventListener('click', () => {
