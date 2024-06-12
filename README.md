@@ -1,4 +1,6 @@
 Marketplace Application
+
+
 Table of Contents
 Project Overview
 Features
@@ -13,13 +15,13 @@ CSS and Visual Design
 Contributing
 License
 Project Overview
-This project is a web-based marketplace application designed to manage and facilitate transactions between merchants, suppliers, and shoppers. It provides distinct dashboards and functionalities for different user roles, ensuring a seamless and user-friendly experience.
+This project is a web-based marketplace application designed to manage and facilitate transactions between merchants, suppliers, and shoppers. It provides distinct dashboards and functionalities for different user roles, ensuring a seamless and user-friendly experience. The primary goal is to offer a platform where various users can interact with the marketplace according to their roles, making the buying and selling process efficient and streamlined.
 
 Features
 Multi-View User Interface: Separate dashboards for merchants, suppliers, and shoppers.
-Merchants can manage products, view received supplies, and send merchandise.
-Suppliers can add supplies and send supplies to merchants.
-Shoppers can manage their shopping cart, add funds, and return merchandise.
+Merchants: Can manage products, view received supplies, and send merchandise.
+Suppliers: Can add supplies and send supplies to merchants.
+Shoppers: Can manage their shopping cart, add funds, and return merchandise.
 Local Storage Implementation: Persistent user sessions and data storage.
 Dynamic DOM and UI Updates: Real-time updates to the UI based on user interactions.
 Event Handling: Responsive handling of user actions like clicks and inputs.
@@ -96,8 +98,11 @@ Fetch Products: GET /api/products
 Funds Endpoints
 Add Funds: POST /api/add-funds
 File Structure
- 
+css
+Copy code
 marketplace/
+├── db/
+│   └── scripts.sql
 ├── src/
 │   ├── backend/
 │   │   ├── server.js
@@ -123,7 +128,6 @@ marketplace/
 │   │   ├── contact.html
 │   │   ├── about.js
 │   │   ├── about.html
-
 Local Storage Usage
 The application uses local storage to manage user sessions and persist data across sessions. Key usage includes:
 
