@@ -34,58 +34,67 @@ document.addEventListener('DOMContentLoaded', () => {
     function addSampleItemsToLocalStorage() {
         const sampleItems = [
             {
-                name: "Sample Product 1",
-                description: "Description for product 1",
+                id: 1,
+                name: "Mens SS Shirt-Linen Blue Floral Print Cotton Linen Short Sleeve Shirt S / Blue Floral Linen",
+                description: "Short sleeve dress shirt",
                 price: 10.00,
-                image_url: "https://media.istockphoto.com/id/488160041/photo/mens-shirt.jpg?s=612x612&w=0&k=20&c=xVZjKAUJecIpYc_fKRz_EB8HuRmXCOOPOtZ-ST6eFvQ="
+                image_url: "https://www.jachsny.com/cdn/shop/products/K026-255-HT6_4.jpg?v=1651786465"
             },
             {
+                id: 2,
                 name: "Sample Product 2",
                 description: "Description for product 2",
                 price: 20.00,
-                image_url: "sample2.jpg"
+                image_url: "https://via.placeholder.com/150"
             },
             {
+                id: 3,
                 name: "Sample Product 3",
                 description: "Description for product 3",
                 price: 30.00,
-                image_url: "sample3.jpg"
+                image_url: "https://via.placeholder.com/150"
             },
             {
+                id: 4,
                 name: "Sample Product 4",
                 description: "Description for product 4",
                 price: 40.00,
-                image_url: "sample4.jpg"
+                image_url: "https://via.placeholder.com/150"
             },
             {
+                id: 5,
                 name: "Sample Product 5",
                 description: "Description for product 5",
                 price: 50.00,
-                image_url: "sample5.jpg"
+                image_url: "https://via.placeholder.com/150"
             },
             {
+                id: 6,
                 name: "Sample Product 6",
                 description: "Description for product 6",
                 price: 60.00,
-                image_url: "sample6.jpg"
+                image_url: "https://via.placeholder.com/150"
             },
             {
+                id: 7,
                 name: "Sample Product 7",
                 description: "Description for product 7",
                 price: 70.00,
-                image_url: "sample7.jpg"
+                image_url: "https://via.placeholder.com/150"
             },
             {
+                id: 8,
                 name: "Sample Product 8",
                 description: "Description for product 8",
                 price: 80.00,
-                image_url: "sample8.jpg"
+                image_url: "https://via.placeholder.com/150"
             },
             {
+                id: 9,
                 name: "Sample Product 9",
                 description: "Description for product 9",
                 price: 90.00,
-                image_url: "sample9.jpg"
+                image_url: "https://via.placeholder.com/150"
             }
         ];
         saveItemsToLocalStorage(sampleItems);
@@ -113,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to fetch cart items from the server
     const fetchCartItems = async () => {
         try {
-            const response = await fetch('http://localhost:3000/api/cart'); // Simplified for testing
+            const response = await fetch(`http://localhost:3000/api/cart?userId=${userId}`); // Simplified for testing
             const data = await response.json();
             return data.items;
         } catch (error) {
@@ -121,6 +130,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return [];
         }
     };
+
+    // Function to add an item to the cart
+    async function addToCart(productId) {
+        try {
+            const response = await fetch('http://localhost:3000/api/cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, productId, quantity: 1 })
+            });
+            const data = await response.json();
+            if (data.success) {
+                updateCartItemCount();
+                alert('Item added to cart!');
+            } else {
+                alert('Failed to add item to cart.');
+            }
+        } catch (error) {
+            console.error('Error adding item to cart:', error);
+            alert('Error adding item to cart.');
+        }
+    }
 
     // Function to display products
     async function displayProducts() {
@@ -138,6 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
             productGrid.innerHTML = '<p>No products available.</p>';
             return;
         }
+
         productGrid.innerHTML = ''; // Clear previous content
         products.forEach(product => {
             const productElement = document.createElement('div');
@@ -147,11 +180,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3>${product.name}</h3>
                 <p>${product.description}</p>
                 <p>$${product.price.toFixed(2)}</p>
-                <button>Add to Cart</button>
-                <button>View Details</button>
+                <button class="add-to-cart" data-id="${product.id}">Add to Cart</button>
+                <button class="view-details" data-id="${product.id}">View Details</button>
             `;
             productGrid.appendChild(productElement);
         });
+
+        // Add event listeners to "Add to Cart" buttons
+        document.querySelectorAll('.add-to-cart').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const productId = event.target.getAttribute('data-id');
+                addToCart(productId);
+            });
+        });
+
+        // Add event listeners to "View Details" buttons
+        document.querySelectorAll('.view-details').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const productId = event.target.getAttribute('data-id');
+                window.location.href = `product-details.html?id=${productId}`;
+            });
+        });
+
+        // Log the length of products array to ensure all items are processed
+        console.log('Total products displayed:', products.length);
     }
 
     // Function to update cart item count
@@ -160,14 +212,17 @@ document.addEventListener('DOMContentLoaded', () => {
         cartItemCount.textContent = cartItems.length;
     }
 
-    // Check if there are sample items in localStorage
-    if (getItemsFromLocalStorage().length === 0) {
-        addSampleItemsToLocalStorage();
-    }
+    // Clear localStorage and add sample items
+    localStorage.removeItem('products');
+    addSampleItemsToLocalStorage();
+
+    // Log the contents of localStorage to debug
+    console.log('localStorage after adding sample items:', getItemsFromLocalStorage());
 
     displayProducts();
     updateCartItemCount();
 });
+
 
 
 

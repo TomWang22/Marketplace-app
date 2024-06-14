@@ -402,7 +402,8 @@ if (cluster.isMaster) {
         const page = req.params.page;
         const allowedPages = [
             'login.html', 'merchant.html', 'supplier.html', 'shopper.html', 'dashboard.html',
-            'marketplace.html', 'about.html', 'contact.html', 'privacy.html', 'terms.html','shopping-cart.html'
+            'marketplace.html', 'about.html', 'contact.html', 'privacy.html', 'terms.html','shopping-cart.html',
+            'product-details.html'
         ];
         if (allowedPages.includes(page)) {
             res.sendFile(path.join(__dirname, `../frontend/${page}`));
