@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 name: "Sample Product 1",
                 description: "Description for product 1",
                 price: 10.00,
-                image_url: "sample1.jpg"
+                image_url: "https://media.istockphoto.com/id/488160041/photo/mens-shirt.jpg?s=612x612&w=0&k=20&c=xVZjKAUJecIpYc_fKRz_EB8HuRmXCOOPOtZ-ST6eFvQ="
             },
             {
                 name: "Sample Product 2",
@@ -50,6 +50,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 description: "Description for product 3",
                 price: 30.00,
                 image_url: "sample3.jpg"
+            },
+            {
+                name: "Sample Product 4",
+                description: "Description for product 4",
+                price: 40.00,
+                image_url: "sample4.jpg"
+            },
+            {
+                name: "Sample Product 5",
+                description: "Description for product 5",
+                price: 50.00,
+                image_url: "sample5.jpg"
+            },
+            {
+                name: "Sample Product 6",
+                description: "Description for product 6",
+                price: 60.00,
+                image_url: "sample6.jpg"
+            },
+            {
+                name: "Sample Product 7",
+                description: "Description for product 7",
+                price: 70.00,
+                image_url: "sample7.jpg"
+            },
+            {
+                name: "Sample Product 8",
+                description: "Description for product 8",
+                price: 80.00,
+                image_url: "sample8.jpg"
+            },
+            {
+                name: "Sample Product 9",
+                description: "Description for product 9",
+                price: 90.00,
+                image_url: "sample9.jpg"
             }
         ];
         saveItemsToLocalStorage(sampleItems);
@@ -132,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     displayProducts();
     updateCartItemCount();
 });
+
 
 
 
