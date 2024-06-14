@@ -411,6 +411,21 @@ if (cluster.isMaster) {
             res.status(404).send('Page not found');
         }
     });
+    
+    // Endpoint to store search history
+    app.post('/api/search-history', async (req, res) => {
+        const { userId, searchQuery } = req.body;
+        try {
+            await pool.query(
+                'INSERT INTO search_history (user_id, search_query, search_date) VALUES ($1, $2, NOW())',
+                [userId, searchQuery]
+            );
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Error saving search history:', error);
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+    });
 
     // Start the server
     app.listen(port, () => {

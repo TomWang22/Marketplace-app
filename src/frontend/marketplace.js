@@ -29,6 +29,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    async function saveSearchHistory(userId, searchQuery) {
+        try {
+            const response = await fetch('http://localhost:3000/api/search-history', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId, searchQuery })
+            });
+            const data = await response.json();
+            if (!data.success) {
+                console.error('Failed to save search history');
+            }
+        } catch (error) {
+            console.error('Error saving search history:', error);
+        }
+    }
+
     // Function to save items to localStorage
     function saveItemsToLocalStorage(items) {
         localStorage.setItem('products', JSON.stringify(items));
