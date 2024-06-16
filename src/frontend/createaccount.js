@@ -9,18 +9,20 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Submitting registration:', { username, password, role });
 
         try {
-            const response = await axios.post('http://localhost:3000/api/register', {
-                username,
-                password,
-                role
+            const response = await fetch('http://localhost:3000/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password, role })
             });
 
             console.log('Response status:', response.status);
 
-            const data = response.data;
+            const data = await response.json();
             console.log('Response data:', data);
 
-            if (response.status === 200 && data.success) {
+            if (response.ok && data.success) {
                 alert('Account created successfully!');
                 window.location.href = 'login.html'; // Ensure correct path
             } else {

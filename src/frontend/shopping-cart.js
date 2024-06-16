@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cartTotal = document.getElementById('cartTotal');
     const placeOrderButton = document.getElementById('placeOrderButton');
 
-    const userId = 1; // This should be dynamically set based on the logged-in user
+    const userId = localStorage.getItem('userId'); // Get user ID from local storage
 
     async function fetchCartItems() {
         try {
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             cartItem.className = 'cart-item';
             cartItem.innerHTML = `
                 <div>
-                    <span>Product ID: ${item.product_id} - Quantity: ${item.quantity} - Price: $${item.price.toFixed(2)}</span>
+                    <span>Product: ${item.product_name} - Size: ${item.size} - Quantity: ${item.quantity} - Price: $${item.price.toFixed(2)}</span>
                     <button class="removeButton" data-id="${item.id}">Remove</button>
                 </div>
             `;

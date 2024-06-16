@@ -334,6 +334,41 @@ if (cluster.isMaster) {
         }
     });
 
+ // Add item quantity in the shopping cart
+ app.post('/api/cart', async (req, res) => {
+    const { userId, productId, quantity } = req.body;
+
+    console.log('Add to cart request received:', { userId, productId, quantity });
+
+    if (!userId || !productId || !quantity) {
+        console.log('Missing fields in request:', { userId, productId, quantity });
+        return res.status(400).json({ success: false, message: 'Missing fields' });
+    }
+
+    try {
+        // Fetch product details to get the price and name
+        const productResult = await pool.query('SELECT name, price FROM products WHERE id = $1', [productId]);
+        if (productResult.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Product not found' });
+        }
+
+        const product = productResult.rows[0];
+
+        // Insert into shopping cart with product name and price
+        const result = await pool.query(
+            'INSERT INTO shopping_cart (user_id, product, quantity, price) VALUES ($1, $2, $3, $4) RETURNING *',
+            [userId, product.name, quantity, product.price]
+        );
+        console.log('Item added to cart:', result.rows[0]);
+        res.json({ success: true, item: result.rows[0] });
+    } catch (error) {
+        console.error('Error adding item to cart:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+
+
     // Update item quantity in the shopping cart
     app.put('/api/cart/:id', async (req, res) => {
         const itemId = req.params.id;

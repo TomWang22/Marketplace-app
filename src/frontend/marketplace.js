@@ -63,10 +63,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const sampleItems = [
             {
                 id: 1,
-                name: "Mens SS Shirt-Linen Blue Floral Print Cotton Linen Short Sleeve Shirt S / Blue Floral Linen",
-                description: "Short sleeve dress shirt",
-                price: 10.00,
-                image_url: "https://www.jachsny.com/cdn/shop/products/K026-255-HT6_4.jpg?v=1651786465"
+                name: "Black Tux",
+                description: "A sleek and stylish black tuxedo, perfect for any formal event.",
+                price: 299.99,
+                image_url: "https://cdn.suitsupply.com/image/upload/b_rgb:efefef,bo_300px_solid_rgb:efefef,c_pad,w_2600/b_rgb:efefef,c_pad,dpr_1,w_850,h_1530,f_auto,q_auto,fl_progressive/products/Waistcoats/default/Winter/W1199_1.jpg"
             },
             {
                 id: 2,
@@ -161,13 +161,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to add an item to the cart
     async function addToCart(productId) {
+        const userId = localStorage.getItem('userId'); // Ensure this is defined
+        const quantity = 1; // Or get this value dynamically as needed
+    
+        console.log('Adding to cart:', { userId, productId, quantity });
+    
         try {
             const response = await fetch('http://localhost:3000/api/cart', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ userId, productId, quantity: 1 })
+                body: JSON.stringify({ userId, productId, quantity })
             });
             const data = await response.json();
             if (data.success) {
