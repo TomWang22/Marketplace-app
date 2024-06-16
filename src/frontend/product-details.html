@@ -11,18 +11,30 @@
         <div class="logo">Marketplace</div>
         <nav>
             <a href="marketplace.html">Home</a>
-            <a href="shopping-cart.html">Cart (<span id="cartItemCount">0</span>)</a>
+            <a href="cart.html">Cart (<span id="cartItemCount">0</span>)</a>
         </nav>
     </header>
     <main>
         <section id="product-details" class="product-details">
-            <!-- Product details content will be dynamically inserted here -->
+            <div class="product-image">
+                <img id="productImage" src="" alt="Product Image">
+            </div>
+            <div class="product-info">
+                <h1 id="productName"></h1>
+                <p id="productDescription"></p>
+                <p id="productPrice"></p>
+                <form id="add-to-cart-form">
+                    <label for="size">Size:</label>
+                    <select id="size" name="size"></select>
+                    <label for="quantity">Quantity:</label>
+                    <input type="number" id="quantity" name="quantity" min="1" value="1">
+                    <button type="submit">Add to Cart</button>
+                </form>
+            </div>
         </section>
         <section id="product-specifications" class="product-specifications">
             <h2>Specifications</h2>
-            <ul id="specifications-list" class="no-bullets">
-                <!-- Specifications content will be dynamically inserted here -->
-            </ul>
+            <ul id="specifications-list" class="no-bullets"></ul>
         </section>
         <section id="product-reviews" class="product-reviews">
             <h2>Reviews</h2>
@@ -30,15 +42,11 @@
                 <p id="average-rating">Average Rating: N/A</p>
                 <p id="total-reviews">Total Reviews: 0</p>
             </div>
-            <div id="reviews-list">
-                <!-- Reviews content will be dynamically inserted here -->
-            </div>
+            <div id="reviews-list"></div>
         </section>
         <section id="related-products" class="related-products">
             <h2>Related Products</h2>
-            <div id="related-products-list">
-                <!-- Related products content will be dynamically inserted here -->
-            </div>
+            <div id="related-products-list"></div>
         </section>
     </main>
     <footer>
