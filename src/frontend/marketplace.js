@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
@@ -160,8 +160,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Function to add an item to the cart
-    async function addToCart(productId, quantity) {
+    async function addToCart(productId) {
         const userId = localStorage.getItem('userId'); // Ensure this is defined
+        const quantity = 1; // Or get this value dynamically as needed
     
         console.log('Adding to cart:', { userId, productId, quantity });
     
@@ -210,7 +211,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <h3>${product.name}</h3>
                 <p>${product.description}</p>
                 <p>$${product.price.toFixed(2)}</p>
-                <input type="number" class="quantity-input" data-id="${product.id}" min="1" value="1">
                 <button class="add-to-cart" data-id="${product.id}">Add to Cart</button>
                 <button class="view-details" data-id="${product.id}">View Details</button>
             `;
@@ -220,9 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.add-to-cart').forEach(button => {
             button.addEventListener('click', (event) => {
                 const productId = event.target.getAttribute('data-id');
-                const quantityInput = document.querySelector(`.quantity-input[data-id='${productId}']`);
-                const quantity = parseInt(quantityInput.value, 10);
-                addToCart(productId, quantity);
+                addToCart(productId);
             });
         });
 
