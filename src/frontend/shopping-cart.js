@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cartTotal = document.getElementById('cartTotal');
     const placeOrderButton = document.getElementById('placeOrderButton');
 
-    const userId = localStorage.getItem('userId'); // Get user ID from local storage
+    const userId = localStorage.getItem('userId');
 
     async function fetchCartItems() {
         try {
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cartItems = await fetchCartItems();
         cartList.innerHTML = '';
         let total = 0;
-    
+
         cartItems.forEach(item => {
             const cartItem = document.createElement('div');
             cartItem.className = 'cart-item';
@@ -34,9 +34,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             cartList.appendChild(cartItem);
             total += parseFloat(item.price) * item.quantity;
         });
-    
+
         cartTotal.innerHTML = `Total: $${total.toFixed(2)}`;
-    
+
         // Add event listeners for remove buttons
         document.querySelectorAll('.removeButton').forEach(button => {
             button.addEventListener('click', async (event) => {
@@ -46,22 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
     }
-    
 
-    async function updateCartItemQuantity(itemId, quantity) {
-        try {
-            await fetch(`http://localhost:3000/api/cart/${itemId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ quantity })
-            });
-        } catch (error) {
-            console.error('Error updating item quantity:', error);
-        }
-    }
-    
     async function removeCartItem(itemId) {
         try {
             await fetch(`http://localhost:3000/api/cart/${itemId}`, {
@@ -71,10 +56,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         } catch (error) {
-            console.error('Error removing item from cart:', error);
+            console.error('Error removing cart item:', error);
         }
     }
-    
+
     async function placeOrder() {
         const cartItems = await fetchCartItems();
         if (cartItems.length === 0) {
