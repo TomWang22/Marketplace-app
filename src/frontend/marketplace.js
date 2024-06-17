@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextPageButton = document.getElementById('nextPage');
     const pageIndicator = document.getElementById('pageIndicator');
     const productList = document.getElementById('product-listings');
-    const accountInfo = document.getElementById('account-info');
+    const marketplaceSection = document.getElementById('marketplace-section');
+    const accountSection = document.getElementById('account-section');
     const userBalance = document.getElementById('userBalance');
     const shoppingHistory = document.getElementById('shoppingHistory');
     const searchHistory = document.getElementById('searchHistory');
@@ -25,13 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let itemsPerPage = parseInt(itemsPerPageSelect.value, 10);
 
     homeButton.addEventListener('click', () => {
-        productList.style.display = 'block';
-        accountInfo.style.display = 'none';
+        marketplaceSection.style.display = 'block';
+        accountSection.style.display = 'none';
+        showMarketplaceControls();
     });
 
     accountButton.addEventListener('click', async () => {
-        productList.style.display = 'none';
-        accountInfo.style.display = 'block';
+        marketplaceSection.style.display = 'none';
+        accountSection.style.display = 'block';
+        hideMarketplaceControls();
         await displayAccountInfo();
     });
 
@@ -89,9 +92,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function displayAccountInfo() {
         const userData = await fetchUserData(userId);
         if (userData) {
-            userBalance.textContent = userData.balance.toFixed(2);
-            shoppingHistory.innerHTML = userData.shoppingHistory.map(item => `<li>Order #${item.orderId} - $${item.amount.toFixed(2)} - ${item.date}</li>`).join('');
-            searchHistory.innerHTML = userData.searchHistory.map(item => `<li>${item}</li>`).join('');
+            const balance = parseFloat(userData.balance);
+            userBalance.textContent = isNaN(balance) ? '0.00' : balance.toFixed(2);
+            shoppingHistory.innerHTML = userData.shoppingHistory.map(item => `<li>Order #${item.id} - Product ID: ${item.product_id} - Quantity: ${item.quantity} - Date: ${item.purchase_date}</li>`).join('');
+            searchHistory.innerHTML = userData.searchHistory.map(item => `<li>Search Query: ${item.search_query} - Date: ${item.search_date}</li>`).join('');
         } else {
             userBalance.textContent = '0.00';
             shoppingHistory.innerHTML = '<li>No shopping history found.</li>';
@@ -250,7 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Error adding item to cart.');
         }
     }
-    
 
     function filterAndDisplayProducts() {
         const priceRange = priceFilter.value;
@@ -299,6 +302,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
         pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+
+    function hideMarketplaceControls() {
+        priceFilter.style.display = 'none';
+        itemsPerPageSelect.style.display = 'none';
+        prevPageButton.style.display = 'none';
+        nextPageButton.style.display = 'none';
+        pageIndicator.style.display = 'none';
+    }
+
+    function showMarketplaceControls() {
+        priceFilter.style.display = 'block';
+        itemsPerPageSelect.style.display = 'block';
+        prevPageButton.style.display = 'block';
+        nextPageButton.style.display = 'block';
+        pageIndicator.style.display = 'block';
     }
 
     async function init() {

@@ -447,30 +447,23 @@ if (cluster.isMaster) {
         }
     });
     app.get('/api/users/:userId', async (req, res) => {
-        const userId = req.params.userId; // Corrected to match the route parameter
+        const userId = req.params.userId;
     
         try {
-            // Fetch user balance
             const userResult = await pool.query('SELECT username, balance FROM users WHERE id = $1', [userId]);
             if (userResult.rows.length === 0) {
                 return res.status(404).json({ success: false, message: 'User not found' });
             }
             const user = userResult.rows[0];
     
-            // Fetch shopping history
-            const shoppingHistoryResult = await pool.query('SELECT product_id AS "product_id", quantity, purchase_date AS "date" FROM purchase_history WHERE user_id = $1', [userId]);
-            const shoppingHistory = shoppingHistoryResult.rows;
+            const shoppingHistoryResult = await pool.query('SELECT id, product_id, quantity, purchase_date FROM purchase_history WHERE user_id = $1', [userId]);
+            const searchHistoryResult = await pool.query('SELECT id, search_query, search_date FROM search_history WHERE user_id = $1', [userId]);
     
-            // Fetch search history
-            const searchHistoryResult = await pool.query('SELECT search_query AS "searchQuery" FROM search_history WHERE user_id = $1', [userId]);
-            const searchHistory = searchHistoryResult.rows.map(row => row.searchQuery);
-    
-            // Construct the user data object
             const userData = {
                 username: user.username,
                 balance: user.balance,
-                shoppingHistory,
-                searchHistory
+                shoppingHistory: shoppingHistoryResult.rows,
+                searchHistory: searchHistoryResult.rows
             };
     
             res.json({ success: true, user: userData });
@@ -479,6 +472,7 @@ if (cluster.isMaster) {
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });
+    
     
     
 

@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('id');
+    const cartItemCount = document.getElementById('cartItemCount');
 
     // Fetch product details from local storage
     async function fetchProductDetails(productId) {
@@ -12,6 +13,31 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchProductReviews(productId) {
         const reviews = JSON.parse(localStorage.getItem('reviews'));
         return reviews.filter(review => review.productId == productId);
+    }
+
+    // Fetch cart items count
+    async function fetchCartItems() {
+        const userId = localStorage.getItem('userId');
+        try {
+            const response = await fetch(`http://localhost:3000/api/cart?userId=${userId}`);
+            const data = await response.json();
+            if (data.success) {
+                return data.items;
+            } else {
+                console.error('Failed to fetch cart items:', data.message);
+                return [];
+            }
+        } catch (error) {
+            console.error('Error fetching cart items:', error);
+            return [];
+        }
+    }
+
+    // Update cart item count
+    async function updateCartItemCount() {
+        const cartItems = await fetchCartItems();
+        console.log('Cart Items:', cartItems); // Debugging log
+        cartItemCount.textContent = cartItems.length;
     }
 
     // Display product details on the page
@@ -58,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await response.json();
             if (data.success) {
+                await updateCartItemCount(); // Update cart item count after adding item
                 alert('Item added to cart');
             } else {
                 alert('Failed to add item to cart');
@@ -202,4 +229,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     displayProductDetails();
+    updateCartItemCount(); // Initial cart item count update on page load
 });
