@@ -25,10 +25,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPage = 1;
     let itemsPerPage = parseInt(itemsPerPageSelect.value, 10);
 
+    // Define URLs for different roles
+    const homeUrls = {
+        merchant: 'merchant.html',
+        supplier: 'supplier.html',
+        shopper: 'shopper.html'
+    };
+
     homeButton.addEventListener('click', () => {
-        marketplaceSection.style.display = 'block';
-        accountSection.style.display = 'none';
-        showMarketplaceControls();
+        // Redirect based on the user's role
+        const homeUrl = homeUrls[role] || 'marketplace.html';
+        window.location.href = homeUrl;
     });
 
     accountButton.addEventListener('click', async () => {
