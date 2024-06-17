@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const product = await fetchProductDetails(productId);
             if (!product) throw new Error('Product not found');
             const productDetailsSection = document.querySelector('#product-details');
-            console.log('Product Type:', product.name);  // Debugging log
             productDetailsSection.innerHTML = `
                 <img src="${product.image_url}" alt="${product.name}">
                 <h1>${product.name}</h1>
@@ -148,25 +147,27 @@ document.addEventListener('DOMContentLoaded', () => {
             "sport coat": ["36 Short", "36 Regular", "36 Long", "38 Short", "38 Regular", "38 Long", "40 Short", "40 Regular", "40 Long", "42 Short", "42 Regular", "42 Long", "44 Short", "44 Regular", "44 Long", "46 Short", "46 Regular", "46 Long", "48 Short", "48 Regular", "48 Long", "50 Short", "50 Regular", "50 Long"],
             "dress suit": ["36 Short", "36 Regular", "36 Long", "38 Short", "38 Regular", "38 Long", "40 Short", "40 Regular", "40 Long", "42 Short", "42 Regular", "42 Long", "44 Short", "44 Regular", "44 Long", "46 Short", "46 Regular", "46 Long", "48 Short", "48 Regular", "48 Long", "50 Short", "50 Regular", "50 Long"],
             "blazer": ["36 Short", "36 Regular", "36 Long", "38 Short", "38 Regular", "38 Long", "40 Short", "40 Regular", "40 Long", "42 Short", "42 Regular", "42 Long", "44 Short", "44 Regular", "44 Long", "46 Short", "46 Regular", "46 Long", "48 Short", "48 Regular", "48 Long", "50 Short", "50 Regular", "50 Long"],
+            
             "dress shirt": ["XS", "S", "M", "L", "XL"],
-            "short sleeve shirt": ["XS", "S", "M", "L", "XL"]
+            "short sleeve shirt": ["XS", "S", "M", "L", "XL"],
+            "short sleeve dress shirt": ["XS", "S", "M", "L", "XL"]
         };
     
         // Clean and normalize product type
         const cleanedProductType = productType.toLowerCase().trim();
         console.log('Cleaned Product Type:', cleanedProductType);  // Debugging log
     
-        // Check if cleaned product type is in sizeOptionsMap
-        const sizeOptions = sizeOptionsMap[cleanedProductType];
-        if (sizeOptions) {
-            console.log('Matched Size Options:', sizeOptions);  // Debugging log
-            return sizeOptions;
-        } else {
-            console.log('No match found for Product Type:', cleanedProductType);  // Debugging log
-            return ["One Size"];
+        // Iterate over the keys in sizeOptionsMap to find a matching keyword
+        for (const keyword in sizeOptionsMap) {
+            if (cleanedProductType.includes(keyword)) {
+                console.log('Matched Size Options:', sizeOptionsMap[keyword]);  // Debugging log
+                return sizeOptionsMap[keyword];
+            }
         }
-    }
     
+        console.log('No match found for Product Type:', cleanedProductType);  // Debugging log
+        return ["One Size"];
+    }
 
     // Add sample reviews to local storage
     function addSampleReviewsToLocalStorage() {

@@ -446,7 +446,43 @@ if (cluster.isMaster) {
             res.status(404).send('Page not found');
         }
     });
+    app.get('/api/users/:userId', async (req, res) => {
+        const userId = req.params.userId; // Corrected to match the route parameter
     
+        try {
+            // Fetch user balance
+            const userResult = await pool.query('SELECT username, balance FROM users WHERE id = $1', [userId]);
+            if (userResult.rows.length === 0) {
+                return res.status(404).json({ success: false, message: 'User not found' });
+            }
+            const user = userResult.rows[0];
+    
+            // Fetch shopping history
+            const shoppingHistoryResult = await pool.query('SELECT product_id AS "product_id", quantity, purchase_date AS "date" FROM purchase_history WHERE user_id = $1', [userId]);
+            const shoppingHistory = shoppingHistoryResult.rows;
+    
+            // Fetch search history
+            const searchHistoryResult = await pool.query('SELECT search_query AS "searchQuery" FROM search_history WHERE user_id = $1', [userId]);
+            const searchHistory = searchHistoryResult.rows.map(row => row.searchQuery);
+    
+            // Construct the user data object
+            const userData = {
+                username: user.username,
+                balance: user.balance,
+                shoppingHistory,
+                searchHistory
+            };
+    
+            res.json({ success: true, user: userData });
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+            res.status(500).json({ success: false, message: 'Internal server error' });
+        }
+    });
+    
+    
+
+
     // Endpoint to store search history
     app.post('/api/search-history', async (req, res) => {
         const { userId, searchQuery } = req.body;

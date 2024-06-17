@@ -11,24 +11,36 @@
         <div class="logo">Marketplace</div>
         <nav>
             <a href="#" id="homeButton">Home</a>
-            <a href="#">Products</a>
-            <a href="#">Account</a>
+            <a href="#" id="accountButton">Account</a>
             <a href="shopping-cart.html">Cart (<span id="cartItemCount">0</span>)</a>
             <input type="text" class="search-bar" placeholder="Search...">
         </nav>
     </header>
     <main>
+        <section id="filters">
+            <label for="priceFilter">Filter by price:</label>
+            <select id="priceFilter">
+                <option value="all">All</option>
+                <option value="0-50">$0 - $50</option>
+                <option value="51-100">$51 - $100</option>
+                <option value="101-200">$101 - $200</option>
+                <option value="200+">Above $200</option>
+            </select>
+
+            <label for="itemsPerPage">Items per page:</label>
+            <select id="itemsPerPage">
+                <option value="24">24</option>
+                <option value="48">48</option>
+                <option value="72">72</option>
+            </select>
+        </section>
         <section id="product-listings" class="product-listings">
             <div class="product-grid"></div>
         </section>
-        <section id="account-info" class="account-info" style="display: none;">
-            <!-- Account info content will be dynamically inserted here -->
-        </section>
-        <section id="purchase-history" class="purchase-history" style="display: none;">
-            <!-- Purchase history content will be dynamically inserted here -->
-        </section>
-        <section id="cart-items" class="cart-items" style="display: none;">
-            <!-- Cart items content will be dynamically inserted here -->
+        <section id="pagination">
+            <button id="prevPage">Previous</button>
+            <span id="pageIndicator"></span>
+            <button id="nextPage">Next</button>
         </section>
     </main>
     <footer>
