@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await fetch(`http://localhost:3000/api/cart?userId=${userId}`);
             const data = await response.json();
+            console.log('Fetched cart items:', data.items); // Log the fetched items
             return data.items;
         } catch (error) {
             console.error('Error fetching cart items:', error);

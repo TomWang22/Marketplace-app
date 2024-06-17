@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function updateCartItemCount() {
         const cartItems = await fetchCartItems();
         console.log('Cart Items:', cartItems); // Debugging log
-        cartItemCount.textContent = cartItems.length;
+        cartItemCount.textContent = cartItems.reduce((total, item) => total + item.quantity, 0);
     }
 
     // Display product details on the page
@@ -58,7 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button id="addToCartButton">Add to Cart</button>
             `;
             document.getElementById('addToCartButton').addEventListener('click', async () => {
-                await addToCart(product.id);
+                const quantity = parseInt(document.getElementById('quantityInput').value, 10);
+                await addToCart(product.id, quantity);
             });
 
             displayProductSpecifications(product);
@@ -70,10 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Add product to cart
-    async function addToCart(productId) {
+    async function addToCart(productId, quantity) {
         const userId = localStorage.getItem('userId');
         const size = document.getElementById('sizeSelect').value;
-        const quantity = parseInt(document.getElementById('quantityInput').value, 10);
         try {
             const response = await fetch('http://localhost:3000/api/cart', {
                 method: 'POST',

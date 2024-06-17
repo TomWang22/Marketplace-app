@@ -236,13 +236,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function addToCart(productId) {
+    async function addToCart(productId, quantity) {
         const userId = localStorage.getItem('userId');
+        const allProducts = getItemsFromLocalStorage();
+        const product = allProducts.find(item => item.id === productId);
         const cartItems = await fetchCartItems();
         const existingItem = cartItems.find(item => item.productId === productId);
-    
+
         if (existingItem) {
-            await updateCartItemQuantity(existingItem.id, existingItem.quantity + 1);
+            await updateCartItemQuantity(existingItem.id, existingItem.quantity + quantity);
         } else {
             try {
                 const response = await fetch('http://localhost:3000/api/cart', {
@@ -250,10 +252,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ userId, productId, quantity: 1 })
+                    body: JSON.stringify({
+                        userId,
+                        productId,
+                        quantity,
+                        image_url: product.image_url
+                    })
                 });
                 const data = await response.json();
                 if (data.success) {
+                    updateCartItemCount();
                     alert('Item added to cart!');
                 } else {
                     alert('Failed to add item to cart.');
@@ -263,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Error adding item to cart.');
             }
         }
-    
+
         updateCartItemCount();
     }
     
