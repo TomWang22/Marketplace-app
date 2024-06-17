@@ -224,8 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function fetchCartItems() {
-        const userId = localStorage.getItem('userId');
+    const fetchCartItems = async () => {
         try {
             const response = await fetch(`http://localhost:3000/api/cart?userId=${userId}`);
             const data = await response.json();
@@ -234,17 +233,15 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error fetching cart items:', error);
             return [];
         }
-    }
+    };
 
-    async function addToCart(productId, quantity) {
+    async function addToCart(productId) {
         const userId = localStorage.getItem('userId');
-        const allProducts = getItemsFromLocalStorage();
-        const product = allProducts.find(item => item.id === productId);
         const cartItems = await fetchCartItems();
         const existingItem = cartItems.find(item => item.productId === productId);
-
+    
         if (existingItem) {
-            await updateCartItemQuantity(existingItem.id, existingItem.quantity + quantity);
+            await updateCartItemQuantity(existingItem.id, existingItem.quantity + 1);
         } else {
             try {
                 const response = await fetch('http://localhost:3000/api/cart', {
@@ -252,12 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        userId,
-                        productId,
-                        quantity,
-                        image_url: product.image_url
-                    })
+                    body: JSON.stringify({ userId, productId, quantity: 1 })
                 });
                 const data = await response.json();
                 if (data.success) {
@@ -271,7 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Error adding item to cart.');
             }
         }
-
+    
         updateCartItemCount();
     }
     
@@ -368,10 +360,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function updateCartItemCount() {
         const cartItems = await fetchCartItems();
-        const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-        document.getElementById('cartItemCount').textContent = parseInt(itemCount, 10); // Ensure it's an integer
+        cartItemCount.textContent = cartItems.length;
     }
-    
 
     localStorage.removeItem('products');
     addSampleItemsToLocalStorage();
