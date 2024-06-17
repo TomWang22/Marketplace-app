@@ -250,6 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Error adding item to cart.');
         }
     }
+    
 
     function filterAndDisplayProducts() {
         const priceRange = priceFilter.value;
