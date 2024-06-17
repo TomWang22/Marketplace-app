@@ -20,12 +20,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cartItems = await fetchCartItems();
         cartList.innerHTML = '';
         let total = 0;
-
+    
         cartItems.forEach(item => {
             const cartItem = document.createElement('div');
             cartItem.className = 'cart-item';
             cartItem.innerHTML = `
                 <div>
+                    <img src="${item.image_url}" alt="${item.product}" width="50">
                     <span>Product: ${item.product} - Quantity: ${item.quantity} - Price: $${parseFloat(item.price).toFixed(2)}</span>
                     <button class="removeButton" data-id="${item.id}">Remove</button>
                 </div>
@@ -33,9 +34,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             cartList.appendChild(cartItem);
             total += parseFloat(item.price) * item.quantity;
         });
-
+    
         cartTotal.innerHTML = `Total: $${total.toFixed(2)}`;
-
+    
         // Add event listeners for remove buttons
         document.querySelectorAll('.removeButton').forEach(button => {
             button.addEventListener('click', async (event) => {
@@ -45,7 +46,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
     }
+    
 
+    async function updateCartItemQuantity(itemId, quantity) {
+        try {
+            await fetch(`http://localhost:3000/api/cart/${itemId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ quantity })
+            });
+        } catch (error) {
+            console.error('Error updating item quantity:', error);
+        }
+    }
+    
     async function removeCartItem(itemId) {
         try {
             await fetch(`http://localhost:3000/api/cart/${itemId}`, {
@@ -55,10 +71,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         } catch (error) {
-            console.error('Error removing cart item:', error);
+            console.error('Error removing item from cart:', error);
         }
     }
-
+    
     async function placeOrder() {
         const cartItems = await fetchCartItems();
         if (cartItems.length === 0) {

@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     homeButton.addEventListener('click', () => {
         // Redirect based on the user's role
-        const homeUrl = homeUrls[role] || 'marketplace.html';
+        const homeUrl = homeUrls[role] || 'marktplace.html';
         window.location.href = homeUrl;
     });
 
@@ -197,10 +197,10 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             {
                 id: 9,
-                name: "Sample Product 9",
-                description: "Description for product 9",
-                price: 90.00,
-                image_url: "https://via.placeholder.com/150"
+                name: "SLIM CASTELLO LINEN SHIRT",
+                description: "Cut from 100% linen, we love this shirt for its beautiful, natural texture and ability to stay cool and crisp, even in heat and humidity. Slim fit. Spread collar with button-front closure. Shirttail hem. #804341",
+                price: 85.00,
+                image_url: "https://bananarepublic.gap.com/webcontent/0053/637/959/cn53637959.jpg?q=h&w=480"
             }
         ];
         saveItemsToLocalStorage(sampleItems);
@@ -237,30 +237,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function addToCart(productId) {
         const userId = localStorage.getItem('userId');
-        const quantity = 1;
+        const cartItems = await fetchCartItems();
+        const existingItem = cartItems.find(item => item.productId === productId);
     
-        console.log('Adding to cart:', { userId, productId, quantity });
+        if (existingItem) {
+            await updateCartItemQuantity(existingItem.id, existingItem.quantity + 1);
+        } else {
+            try {
+                const response = await fetch('http://localhost:3000/api/cart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ userId, productId, quantity: 1 })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    updateCartItemCount();
+                    alert('Item added to cart!');
+                } else {
+                    alert('Failed to add item to cart.');
+                }
+            } catch (error) {
+                console.error('Error adding item to cart:', error);
+                alert('Error adding item to cart.');
+            }
+        }
     
+        updateCartItemCount();
+    }
+    
+    async function updateCartItemQuantity(itemId, quantity) {
         try {
-            const response = await fetch('http://localhost:3000/api/cart', {
-                method: 'POST',
+            await fetch(`http://localhost:3000/api/cart/${itemId}`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ userId, productId, quantity })
+                body: JSON.stringify({ quantity })
             });
-            const data = await response.json();
-            if (data.success) {
-                updateCartItemCount();
-                alert('Item added to cart!');
-            } else {
-                alert('Failed to add item to cart.');
-            }
         } catch (error) {
-            console.error('Error adding item to cart:', error);
-            alert('Error adding item to cart.');
+            console.error('Error updating item quantity:', error);
         }
     }
+    
 
     function filterAndDisplayProducts() {
         const priceRange = priceFilter.value;

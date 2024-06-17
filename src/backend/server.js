@@ -129,13 +129,14 @@ if (cluster.isMaster) {
     app.get('/api/cart', async (req, res) => {
         const userId = req.query.userId;
         try {
-            const result = await pool.query('SELECT * FROM shopping_cart WHERE user_id = $1', [userId]);
+            const result = await pool.query('SELECT product, SUM(quantity) as quantity, price, MIN(id) as id FROM shopping_cart WHERE user_id = $1 GROUP BY product, price', [userId]);
             res.json({ success: true, items: result.rows });
         } catch (error) {
             console.error('Error fetching cart items:', error);
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });
+    
 
     // Place order endpoint
     app.post('/api/place-order', async (req, res) => {

@@ -48,6 +48,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function saveSearchHistory(userId, searchQuery) {
+        fetch('http://localhost:3000/api/search-history', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId, searchQuery })
+        });
+    }
+
     // Function to display search results
     function displaySearchResults(searchQuery) {
         const products = getItemsFromLocalStorage();

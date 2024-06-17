@@ -12,7 +12,7 @@
         <nav>
             <a href="marketplace.html">Home</a>
             <a href="#">Products</a>
-            <a href="#">Account</a>
+            <a href="#" id="accountButton">Account</a>
             <a href="#">Cart (<span id="cartItemCount">0</span>)</a>
             <input type="text" class="search-bar" id="searchInput" placeholder="Search...">
         </nav>
@@ -21,6 +21,16 @@
         <section id="search-results" class="search-results">
             <h2>Search Results</h2>
             <div class="product-grid"></div>
+        </section>
+        <section id="account-section" style="display: none;">
+            <h1>Account Information</h1>
+            <div>
+                <p><strong>Balance:</strong> $<span id="userBalance">0.00</span></p>
+                <h2>Shopping History</h2>
+                <ul id="shoppingHistory"></ul>
+                <h2>Search History</h2>
+                <ul id="searchHistory"></ul>
+            </div>
         </section>
     </main>
     <footer>

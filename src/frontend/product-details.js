@@ -177,7 +177,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             "dress shirt": ["XS", "S", "M", "L", "XL"],
             "short sleeve shirt": ["XS", "S", "M", "L", "XL"],
-            "short sleeve dress shirt": ["XS", "S", "M", "L", "XL"]
+            "short sleeve dress shirt": ["XS", "S", "M", "L", "XL"],
+            "shirt": ["XS", "S", "M", "L", "XL"],
         };
     
         // Clean and normalize product type
