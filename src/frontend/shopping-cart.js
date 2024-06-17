@@ -26,12 +26,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             cartItem.className = 'cart-item';
             cartItem.innerHTML = `
                 <div>
-                    <span>Product: ${item.product_name} - Size: ${item.size} - Quantity: ${item.quantity} - Price: $${item.price.toFixed(2)}</span>
+                    <span>Product: ${item.product} - Quantity: ${item.quantity} - Price: $${parseFloat(item.price).toFixed(2)}</span>
                     <button class="removeButton" data-id="${item.id}">Remove</button>
                 </div>
             `;
             cartList.appendChild(cartItem);
-            total += item.price * item.quantity;
+            total += parseFloat(item.price) * item.quantity;
         });
 
         cartTotal.innerHTML = `Total: $${total.toFixed(2)}`;

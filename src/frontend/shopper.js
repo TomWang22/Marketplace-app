@@ -11,16 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartItemCount = document.getElementById('cartItemCount');
     const totalCostElement = document.getElementById('totalCost');
 
-    // Retrieve the userId from local storage
     const userId = localStorage.getItem('userId');
-    /*
-    if (!userId) {
-        alert('User not logged in!');
-        window.location.href = '/login.html';
-        return;
-    }
-    */
-    // Function to fetch cart items from the server
+
     const fetchCartItems = async () => {
         try {
             const response = await fetch(`http://localhost:3000/api/cart?userId=${userId}`);
@@ -32,25 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Function to display cart items
     const displayCartItems = async () => {
         const cartItems = await fetchCartItems();
-
-        // Update cart item count
         cartItemCount.textContent = cartItems.length;
-
-        // Clear the current list
         cartItemsList.innerHTML = '';
 
         let totalCost = 0;
-
-        // Populate the list with cart items
         cartItems.forEach(item => {
             const listItem = document.createElement('li');
-            
             const itemDetails = document.createElement('div');
             itemDetails.className = 'cart-item-details';
-            itemDetails.innerHTML = `<span>${item.product} - $${item.price.toFixed(2)}</span>`;
+            itemDetails.innerHTML = `<span>${item.product} - $${parseFloat(item.price).toFixed(2)}</span>`;
 
             const itemQuantity = document.createElement('div');
             itemQuantity.className = 'cart-item-quantity';
@@ -69,9 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
             listItem.appendChild(removeButton);
             cartItemsList.appendChild(listItem);
 
-            totalCost += item.price * item.quantity;
+            totalCost += parseFloat(item.price) * item.quantity;
 
-            // Event listener for quantity decrease
             itemQuantity.querySelector('.quantity-decrease').addEventListener('click', async () => {
                 if (item.quantity > 1) {
                     await updateCartItemQuantity(item.id, item.quantity - 1, userId);
@@ -79,13 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // Event listener for quantity increase
             itemQuantity.querySelector('.quantity-increase').addEventListener('click', async () => {
                 await updateCartItemQuantity(item.id, item.quantity + 1, userId);
                 displayCartItems();
             });
 
-            // Event listener for remove button
             removeButton.addEventListener('click', async () => {
                 await removeCartItem(item.id, userId);
                 displayCartItems();
@@ -93,12 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         totalCostElement.textContent = `Total: $${totalCost.toFixed(2)}`;
-
-        // Show the cart items container
         cartItemsContainer.style.display = 'block';
     };
 
-    // Function to update item quantity in the cart
     const updateCartItemQuantity = async (itemId, quantity, userId) => {
         try {
             await fetch(`http://localhost:3000/api/cart/${itemId}`, {
@@ -113,7 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Function to remove item from the cart
     const removeCartItem = async (itemId, userId) => {
         try {
             await fetch(`http://localhost:3000/api/cart/${itemId}`, {
@@ -128,7 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Function to add funds
     const addFunds = async () => {
         const amount = parseFloat(fundsAmountInput.value);
 
@@ -158,7 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Function to return merchandise
     const returnMerchandise = async () => {
         const productId = parseInt(productIdInput.value);
         const quantity = parseInt(returnQuantityInput.value);
@@ -189,18 +164,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Event listeners for buttons
     addFundsButton.addEventListener('click', addFunds);
     returnMerchandiseButton.addEventListener('click', returnMerchandise);
     shoppingCartButton.addEventListener('click', () => {
         displayCartItems();
     });
 
-    // Event listener for Shop button
     shopButton.addEventListener('click', () => {
         window.location.href = 'marketplace.html';
     });
 
-    // Update cart item count on page load
     displayCartItems();
 });
