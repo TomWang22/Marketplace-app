@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cartItems = await fetchCartItems();
         cartList.innerHTML = '';
         let total = 0;
-    
+
         cartItems.forEach(item => {
             const cartItem = document.createElement('div');
             cartItem.className = 'cart-item';
@@ -32,16 +32,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             `;
             cartList.appendChild(cartItem);
-            total += parseFloat(item.price) * item.quantity;
+            total += parseFloat(item.price) * parseInt(item.quantity, 10);
         });
-    
+
         cartTotal.innerHTML = `Total: $${total.toFixed(2)}`;
-    
+
         // Add event listeners for remove buttons
         document.querySelectorAll('.removeButton').forEach(button => {
             button.addEventListener('click', async (event) => {
                 const itemId = event.target.getAttribute('data-id');
-                const currentQuantity = parseInt(event.target.getAttribute('data-quantity'));
+                const currentQuantity = parseInt(event.target.getAttribute('data-quantity'), 10);
                 await removeCartItem(itemId, currentQuantity);
                 displayCartItems();
             });
@@ -80,12 +80,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function placeOrder() {
+        const userId = localStorage.getItem('userId'); // Ensure userId is set
         const cartItems = await fetchCartItems();
         if (cartItems.length === 0) {
             alert('Your cart is empty.');
             return;
         }
-
+    
         try {
             const response = await fetch('http://localhost:3000/api/place-order', {
                 method: 'POST',
@@ -105,7 +106,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error placing order:', error);
         }
     }
-
     placeOrderButton.addEventListener('click', placeOrder);
 
     displayCartItems();

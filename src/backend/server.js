@@ -108,41 +108,56 @@ if (cluster.isMaster) {
 
     app.post('/api/place-order', async (req, res) => {
         const { userId, cartItems } = req.body;
-
+    
+        const client = await pool.connect();  // Get a client from the pool
+    
         try {
+            await client.query('BEGIN');  // Start a transaction
+    
             const totalCost = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-            const balanceResult = await pool.query('SELECT balance FROM users WHERE id = $1', [userId]);
+            const balanceResult = await client.query('SELECT balance FROM users WHERE id = $1', [userId]);
             const userBalance = balanceResult.rows[0].balance;
-
+    
             if (userBalance < totalCost) {
+                await client.query('ROLLBACK');  // Rollback the transaction
                 return res.status(400).json({ success: false, message: 'Insufficient balance to complete the purchase.' });
             }
-
-            await pool.query('UPDATE users SET balance = balance - $1 WHERE id = $2', [totalCost, userId]);
-            const orderResult = await pool.query('INSERT INTO orders (user_id, total_cost, order_date) VALUES ($1, $2, NOW()) RETURNING id', [userId, totalCost]);
+    
+            await client.query('UPDATE users SET balance = balance - $1 WHERE id = $2', [totalCost, userId]);
+            const orderResult = await client.query('INSERT INTO orders (user_id, total_cost, order_date) VALUES ($1, $2, NOW()) RETURNING id', [userId, totalCost]);
             const orderId = orderResult.rows[0].id;
-
+    
             for (const item of cartItems) {
                 const { productId, quantity, price } = item;
-
+    
                 if (!productId) {
                     throw new Error(`Product ID is missing for one of the items.`);
                 }
-
-                await pool.query('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)', [orderId, productId, quantity, price]);
-
-                const sellerResult = await pool.query('SELECT seller_id FROM products WHERE id = $1', [productId]);
+    
+                await client.query('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)', [orderId, productId, quantity, price]);
+    
+                const sellerResult = await client.query('SELECT seller_id FROM products WHERE id = $1', [productId]);
                 const sellerId = sellerResult.rows[0].seller_id;
-                await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [price * quantity, sellerId]);
-
-                await pool.query('INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())', [userId, productId, quantity, price]);
+                await client.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [price * quantity, sellerId]);
+    
+                await client.query('INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())', [userId, productId, quantity, price]);
             }
-
+    
+            // Clear the shopping cart for the user
+            await client.query('DELETE FROM shopping_cart WHERE user_id = $1', [userId]);
+    
+            await client.query('COMMIT');  // Commit the transaction
+    
             res.json({ success: true, message: 'Order placed successfully.' });
         } catch (error) {
+            await client.query('ROLLBACK');  // Rollback the transaction on error
+            console.error('Error placing order:', error);
             res.status(500).json({ success: false, message: 'Internal server error.' });
+        } finally {
+            client.release();  // Release the client back to the pool
         }
     });
+    
 
     app.post('/api/return-merchandise', async (req, res) => {
         const { userId, productId, quantity } = req.body;

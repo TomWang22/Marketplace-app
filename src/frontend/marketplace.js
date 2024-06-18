@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function updateCartItemCount() {
         const cartItems = await fetchCartItems();
         const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-        document.getElementById('cartItemCount').textContent = parseInt(itemCount, 10); // Ensure it's an integer
+        document.getElementById('cartItemCount').textContent = parseInt(itemCount, 0); // Ensure it's an integer
     }
     
 
