@@ -1,7 +1,8 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('id');
     const cartItemCount = document.getElementById('cartItemCount');
+    const userId = localStorage.getItem('userId');
 
     // Fetch product details from local storage
     async function fetchProductDetails(productId) {
@@ -15,18 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return reviews.filter(review => review.productId == productId);
     }
 
-    // Fetch cart items count
+    // Fetch cart items from server
     async function fetchCartItems() {
-        const userId = localStorage.getItem('userId');
         try {
             const response = await fetch(`http://localhost:3000/api/cart?userId=${userId}`);
             const data = await response.json();
-            if (data.success) {
-                return data.items;
-            } else {
-                console.error('Failed to fetch cart items:', data.message);
-                return [];
-            }
+            return data.items;
         } catch (error) {
             console.error('Error fetching cart items:', error);
             return [];
@@ -36,8 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update cart item count
     async function updateCartItemCount() {
         const cartItems = await fetchCartItems();
-        console.log('Cart Items:', cartItems); // Debugging log
-        cartItemCount.textContent = cartItems.length;
+        const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+        cartItemCount.textContent = itemCount;
     }
 
     // Display product details on the page
@@ -71,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add product to cart
     async function addToCart(productId) {
-        const userId = localStorage.getItem('userId');
         const size = document.getElementById('sizeSelect').value;
         const quantity = parseInt(document.getElementById('quantityInput').value, 10);
         try {
@@ -180,20 +174,13 @@ document.addEventListener('DOMContentLoaded', () => {
             "short sleeve dress shirt": ["XS", "S", "M", "L", "XL"],
             "shirt": ["XS", "S", "M", "L", "XL"],
         };
-    
-        // Clean and normalize product type
+
         const cleanedProductType = productType.toLowerCase().trim();
-        console.log('Cleaned Product Type:', cleanedProductType);  // Debugging log
-    
-        // Iterate over the keys in sizeOptionsMap to find a matching keyword
         for (const keyword in sizeOptionsMap) {
             if (cleanedProductType.includes(keyword)) {
-                console.log('Matched Size Options:', sizeOptionsMap[keyword]);  // Debugging log
                 return sizeOptionsMap[keyword];
             }
         }
-    
-        console.log('No match found for Product Type:', cleanedProductType);  // Debugging log
         return ["One Size"];
     }
 

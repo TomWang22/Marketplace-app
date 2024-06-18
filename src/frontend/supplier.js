@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('token');
 
-    // Function to fetch the current user information
     async function getCurrentUser() {
         try {
             const response = await fetch('http://localhost:3000/api/current-user', {
@@ -23,14 +22,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Function to display notifications
     function displayNotification(message) {
         const listItem = document.createElement('li');
         listItem.textContent = message;
         notificationsList.appendChild(listItem);
     }
 
-    // Function to add a new supply
     async function addSupply(name, description, price, cost, stock, image_url) {
         try {
             const response = await fetch('http://localhost:3000/api/supplies', {
@@ -53,10 +50,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Function to send supplies to a merchant
     async function sendSupplies(merchantId, productId, quantity) {
         try {
-            const response = await fetch('http://localhost:3000/api/send-supplies', {
+            const response = await fetch('http://localhost:3000/api/receive-supplies', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -76,13 +72,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Fetch current user and display username
     const user = await getCurrentUser();
     if (user) {
         usernameSpan.textContent = user.username;
     }
 
-    // Add event listeners for buttons
     addSupplyButton.addEventListener('click', () => {
         const name = document.getElementById('supplyName').value;
         const description = document.getElementById('supplyDescription').value;
