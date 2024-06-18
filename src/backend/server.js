@@ -99,64 +99,67 @@ if (cluster.isMaster) {
     app.get('/api/cart', async (req, res) => {
         const userId = req.query.userId;
         try {
-            const result = await pool.query('SELECT product, SUM(quantity) as quantity, price, MIN(id) as id FROM shopping_cart WHERE user_id = $1 GROUP BY product, price', [userId]);
+            const result = await pool.query('SELECT id, user_id, product_id, product, SUM(quantity) as quantity, price FROM shopping_cart WHERE user_id = $1 GROUP BY id, user_id, product_id, product, price', [userId]);
             res.json({ success: true, items: result.rows });
         } catch (error) {
+            console.error('Error fetching cart items:', error);
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });
+    
 
     app.post('/api/place-order', async (req, res) => {
         const { userId, cartItems } = req.body;
     
-        const client = await pool.connect();  // Get a client from the pool
+        // Log the received cart items for debugging
+        console.log('Received cart items:', cartItems);
     
         try {
-            await client.query('BEGIN');  // Start a transaction
-    
             const totalCost = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-            const balanceResult = await client.query('SELECT balance FROM users WHERE id = $1', [userId]);
+            const balanceResult = await pool.query('SELECT balance FROM users WHERE id = $1', [userId]);
             const userBalance = balanceResult.rows[0].balance;
     
             if (userBalance < totalCost) {
-                await client.query('ROLLBACK');  // Rollback the transaction
                 return res.status(400).json({ success: false, message: 'Insufficient balance to complete the purchase.' });
             }
     
-            await client.query('UPDATE users SET balance = balance - $1 WHERE id = $2', [totalCost, userId]);
-            const orderResult = await client.query('INSERT INTO orders (user_id, total_cost, order_date) VALUES ($1, $2, NOW()) RETURNING id', [userId, totalCost]);
+            await pool.query('UPDATE users SET balance = balance - $1 WHERE id = $2', [totalCost, userId]);
+            const orderResult = await pool.query('INSERT INTO orders (user_id, total_cost, order_date) VALUES ($1, $2, NOW()) RETURNING id', [userId, totalCost]);
             const orderId = orderResult.rows[0].id;
     
             for (const item of cartItems) {
-                const { productId, quantity, price } = item;
+                const { product_id, quantity, price } = item;
     
-                if (!productId) {
+                // Log the current item for debugging
+                console.log('Processing item:', item);
+    
+                if (!product_id) {
                     throw new Error(`Product ID is missing for one of the items.`);
                 }
     
-                await client.query('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)', [orderId, productId, quantity, price]);
+                await pool.query('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)', [orderId, product_id, quantity, price]);
     
-                const sellerResult = await client.query('SELECT seller_id FROM products WHERE id = $1', [productId]);
+                // Commenting out the seller_id logic for now
+                /*
+                const sellerResult = await pool.query('SELECT seller_id FROM products WHERE id = $1', [product_id]);
                 const sellerId = sellerResult.rows[0].seller_id;
-                await client.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [price * quantity, sellerId]);
+                await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [price * quantity, sellerId]);
+                */
     
-                await client.query('INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())', [userId, productId, quantity, price]);
+                await pool.query('INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())', [userId, product_id, quantity, price]);
             }
-    
-            // Clear the shopping cart for the user
-            await client.query('DELETE FROM shopping_cart WHERE user_id = $1', [userId]);
-    
-            await client.query('COMMIT');  // Commit the transaction
     
             res.json({ success: true, message: 'Order placed successfully.' });
         } catch (error) {
-            await client.query('ROLLBACK');  // Rollback the transaction on error
             console.error('Error placing order:', error);
             res.status(500).json({ success: false, message: 'Internal server error.' });
-        } finally {
-            client.release();  // Release the client back to the pool
         }
     });
+    
+    
+    
+    
+    
     
 
     app.post('/api/return-merchandise', async (req, res) => {
@@ -283,27 +286,29 @@ if (cluster.isMaster) {
 
     app.post('/api/cart', async (req, res) => {
         const { userId, productId, quantity } = req.body;
-
+    
         if (!userId || !productId || !quantity) {
             return res.status(400).json({ success: false, message: 'Missing fields' });
         }
-
+    
         try {
             const productResult = await pool.query('SELECT name, price FROM products WHERE id = $1', [productId]);
             if (productResult.rows.length === 0) {
                 return res.status(404).json({ success: false, message: 'Product not found' });
             }
-
+    
             const product = productResult.rows[0];
             const result = await pool.query(
-                'INSERT INTO shopping_cart (user_id, product, quantity, price) VALUES ($1, $2, $3, $4) RETURNING *',
-                [userId, product.name, quantity, product.price]
+                'INSERT INTO shopping_cart (user_id, product_id, product, quantity, price) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                [userId, productId, product.name, quantity, product.price]
             );
             res.json({ success: true, item: result.rows[0] });
         } catch (error) {
+            console.error('Error adding item to cart:', error);
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });
+    
 
     app.put('/api/cart/:id', async (req, res) => {
         const itemId = req.params.id;

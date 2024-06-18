@@ -239,7 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function addToCart(productId) {
         const userId = localStorage.getItem('userId');
         const cartItems = await fetchCartItems();
-        const existingItem = cartItems.find(item => item.productId === productId);
+        const existingItem = cartItems.find(item => item.product_id === productId);
     
         if (existingItem) {
             await updateCartItemQuantity(existingItem.id, existingItem.quantity + 1);
@@ -266,6 +266,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
         updateCartItemCount();
     }
+    
+    
     
     async function updateCartItemQuantity(itemId, quantity) {
         try {
@@ -361,7 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function updateCartItemCount() {
         const cartItems = await fetchCartItems();
         const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-        document.getElementById('cartItemCount').textContent = parseInt(itemCount, 0); // Ensure it's an integer
+        document.getElementById('cartItemCount').textContent = parseInt(itemCount, 10); // Ensure it's an integer
     }
     
 
