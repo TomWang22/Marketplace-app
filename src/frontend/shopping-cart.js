@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div>
                     <img src="${item.image_url}" alt="${item.product}" width="50">
                     <span>Product: ${item.product} - Quantity: ${item.quantity} - Price: $${parseFloat(item.price).toFixed(2)}</span>
-                    <button class="removeButton" data-id="${item.id}">Remove</button>
+                    <button class="removeButton" data-id="${item.id}" data-quantity="${item.quantity}">Remove</button>
                 </div>
             `;
             cartList.appendChild(cartItem);
@@ -41,12 +41,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.removeButton').forEach(button => {
             button.addEventListener('click', async (event) => {
                 const itemId = event.target.getAttribute('data-id');
-                await removeCartItem(itemId);
+                const currentQuantity = parseInt(event.target.getAttribute('data-quantity'));
+                await removeCartItem(itemId, currentQuantity);
                 displayCartItems();
             });
         });
     }
-    
 
     async function updateCartItemQuantity(itemId, quantity) {
         try {
@@ -61,20 +61,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error updating item quantity:', error);
         }
     }
-    
-    async function removeCartItem(itemId) {
-        try {
-            await fetch(`http://localhost:3000/api/cart/${itemId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-        } catch (error) {
-            console.error('Error removing item from cart:', error);
+
+    async function removeCartItem(itemId, currentQuantity) {
+        if (currentQuantity > 1) {
+            await updateCartItemQuantity(itemId, currentQuantity - 1);
+        } else {
+            try {
+                await fetch(`http://localhost:3000/api/cart/${itemId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } catch (error) {
+                console.error('Error removing item from cart:', error);
+            }
         }
     }
-    
+
     async function placeOrder() {
         const cartItems = await fetchCartItems();
         if (cartItems.length === 0) {

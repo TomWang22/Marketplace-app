@@ -141,44 +141,51 @@ if (cluster.isMaster) {
     // Place order endpoint
     app.post('/api/place-order', async (req, res) => {
         const { userId, cartItems } = req.body;
-
+    
         try {
             // Calculate total cost of the items in the cart
             const totalCost = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-
+    
             // Get the user's current balance
             const balanceResult = await pool.query('SELECT balance FROM users WHERE id = $1', [userId]);
             const userBalance = balanceResult.rows[0].balance;
-
+    
             if (userBalance < totalCost) {
                 return res.status(400).json({ success: false, message: 'Insufficient balance to complete the purchase.' });
             }
-
+    
             // Deduct the total cost from the user's balance
             await pool.query('UPDATE users SET balance = balance - $1 WHERE id = $2', [totalCost, userId]);
-
-            // Insert an order record (you may need an orders table)
+    
+            // Insert an order record
             const orderResult = await pool.query('INSERT INTO orders (user_id, total_cost, order_date) VALUES ($1, $2, NOW()) RETURNING id', [userId, totalCost]);
             const orderId = orderResult.rows[0].id;
-
+    
             for (const item of cartItems) {
-                await pool.query('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)', [orderId, item.productId, item.quantity, item.price]);
-
+                const { productId, quantity, price } = item;
+    
+                if (!productId) {
+                    throw new Error(`Product ID is missing for one of the items.`);
+                }
+    
+                await pool.query('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)', [orderId, productId, quantity, price]);
+    
                 // Update the balance of the merchant/supplier who sold the product
-                const sellerResult = await pool.query('SELECT seller_id FROM products WHERE id = $1', [item.productId]);
+                const sellerResult = await pool.query('SELECT seller_id FROM products WHERE id = $1', [productId]);
                 const sellerId = sellerResult.rows[0].seller_id;
-                await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [item.price * item.quantity, sellerId]);
-
+                await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [price * quantity, sellerId]);
+    
                 // Insert the purchase into purchase history
-                await pool.query('INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())', [userId, item.productId, item.quantity, item.price]);
+                await pool.query('INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())', [userId, productId, quantity, price]);
             }
-
+    
             res.json({ success: true, message: 'Order placed successfully.' });
         } catch (error) {
-            console.error('Error placing order:', error);
+            console.error('Error placing order:', error.message);
             res.status(500).json({ success: false, message: 'Internal server error.' });
         }
     });
+    
 
     // Return merchandise endpoint with 30-day limit
     app.post('/api/return-merchandise', async (req, res) => {
@@ -374,7 +381,7 @@ if (cluster.isMaster) {
     app.put('/api/cart/:id', async (req, res) => {
         const itemId = req.params.id;
         const { quantity } = req.body;
-
+    
         try {
             await pool.query('UPDATE shopping_cart SET quantity = $1 WHERE id = $2', [quantity, itemId]);
             res.json({ success: true });

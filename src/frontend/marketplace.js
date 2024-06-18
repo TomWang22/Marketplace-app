@@ -224,7 +224,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    const fetchCartItems = async () => {
+    async function fetchCartItems() {
+        const userId = localStorage.getItem('userId');
         try {
             const response = await fetch(`http://localhost:3000/api/cart?userId=${userId}`);
             const data = await response.json();
@@ -233,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error fetching cart items:', error);
             return [];
         }
-    };
+    }
 
     async function addToCart(productId) {
         const userId = localStorage.getItem('userId');
@@ -253,7 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await response.json();
                 if (data.success) {
-                    updateCartItemCount();
                     alert('Item added to cart!');
                 } else {
                     alert('Failed to add item to cart.');
@@ -360,8 +360,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function updateCartItemCount() {
         const cartItems = await fetchCartItems();
-        cartItemCount.textContent = cartItems.length;
+        const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+        document.getElementById('cartItemCount').textContent = parseInt(itemCount, 10); // Ensure it's an integer
     }
+    
 
     localStorage.removeItem('products');
     addSampleItemsToLocalStorage();
