@@ -28,10 +28,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         query: { userId: merchantId }
     });
 
-
-
     let suppliesVisible = false;
-    
+
     socket.on('previousChats', (chats) => {
         chatList.innerHTML = '';
         chats.forEach(chat => {
@@ -54,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             chatInput.value = '';
         }
     });
-});
+
     function displayNotification(message) {
         const listItem = document.createElement('li');
         listItem.textContent = message;
@@ -88,7 +86,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error fetching supply requests:', error);
         }
     }
-
 
     async function requestSupply(productId, quantity) {
         const merchantId = localStorage.getItem('userId');
@@ -217,12 +214,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         productList.innerHTML = '';
         if (products && products.length > 0) {
             products.forEach(product => {
+                const price = parseFloat(product.price);
                 const productItem = document.createElement('div');
                 productItem.className = 'product-item';
                 productItem.innerHTML = `
                     <div>
                         <img src="${product.image_url}" alt="${product.name}" width="50" height="50">
-                        <span>${product.name} - ${product.description} - $${product.price.toFixed(2)} - Stock: ${product.stock}</span>
+                        <span>${product.name} - ${product.description} - $${!isNaN(price) ? price.toFixed(2) : 'N/A'} - Stock: ${product.stock}</span>
                     </div>
                 `;
                 productList.appendChild(productItem);
@@ -282,4 +280,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         const quantity = parseInt(document.getElementById('quantityToSend').value);
         sendMerchandise(customerId, productId, quantity);
     });
-
+});
