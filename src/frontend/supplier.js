@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const viewRequestsButton = document.getElementById('viewRequestsButton');
     const supplyRequestsList = document.getElementById('supplyRequestsList');
 
-
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('token');
     const logoutButton = document.getElementById('logoutButton');
@@ -20,12 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function fetchSupplyRequests() {
         try {
-            const response = await fetch('http://localhost:3000/api/supply-requests', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await fetch('http://localhost:3000/api/supply-requests');
             const data = await response.json();
             return data.requests;
         } catch (error) {
@@ -33,33 +27,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             return [];
         }
     }
-   // Function to display supply requests
-   async function displaySupplyRequests() {
-    const requests = await fetchSupplyRequests();
-    supplyRequestsList.innerHTML = '';
 
-    requests.forEach(request => {
-        const listItem = document.createElement('div');
-        listItem.className = 'request-item';
-        listItem.innerHTML = `
-            <div>
-                <img src="${request.image_url}" alt="${request.name}" width="50" height="50">
-                <span>${request.name} - ${request.description} - Quantity: ${request.quantity} - Requested by Merchant ID: ${request.merchant_id}</span>
-                <button class="fulfillRequestButton" data-merchant-id="${request.merchant_id}" data-product-id="${request.product_id}" data-quantity="${request.quantity}">Fulfill</button>
-            </div>
-        `;
-        supplyRequestsList.appendChild(listItem);
-    });
+    async function displaySupplyRequests() {
+        const requests = await fetchSupplyRequests();
+        supplyRequestsList.innerHTML = '';
 
-    document.querySelectorAll('.fulfillRequestButton').forEach(button => {
-        button.addEventListener('click', (event) => {
-            const merchantId = button.getAttribute('data-merchant-id');
-            const productId = button.getAttribute('data-product-id');
-            const quantity = button.getAttribute('data-quantity');
-            sendSupplies(merchantId, productId, quantity);
+        requests.forEach(request => {
+            const listItem = document.createElement('div');
+            listItem.className = 'request-item';
+            listItem.innerHTML = `
+                <div>
+                    <img src="${request.image_url}" alt="${request.name}" width="50" height="50">
+                    <span>${request.name} - ${request.description} - Quantity: ${request.quantity} - Requested by Merchant ID: ${request.merchant_id}</span>
+                    <button class="fulfillRequestButton" data-merchant-id="${request.merchant_id}" data-product-id="${request.product_id}" data-quantity="${request.quantity}">Fulfill</button>
+                </div>
+            `;
+            supplyRequestsList.appendChild(listItem);
         });
-    });
-}
+
+        document.querySelectorAll('.fulfillRequestButton').forEach(button => {
+            button.addEventListener('click', (event) => {
+                const merchantId = button.getAttribute('data-merchant-id');
+                const productId = button.getAttribute('data-product-id');
+                const quantity = button.getAttribute('data-quantity');
+                sendSupplies(merchantId, productId, quantity);
+            });
+        });
+    }
 
     // Add event listener for the view requests button
     viewRequestsButton.addEventListener('click', async (event) => {
@@ -71,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             supplyRequestsList.style.display = 'none';
         }
     });
-    
+
     async function getCurrentUser() {
         try {
             const response = await fetch('http://localhost:3000/api/current-user', {

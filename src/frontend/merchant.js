@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const chatInput = document.getElementById('chatInput');
     const chatSendButton = document.getElementById('chatSendButton');
     const chatList = document.getElementById('chatList');
+    const toggleSupplyRequestsButton = document.getElementById('toggleSupplyRequestsButton');
+    const supplyRequestsContainer = document.getElementById('supplyRequestsContainer');
+    const supplyRequestsList = document.getElementById('supplyRequestsList');
     const merchantId = localStorage.getItem('userId');
     if (!merchantId) {
         console.error('Merchant ID is not set in local storage');
@@ -56,6 +59,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         const listItem = document.createElement('li');
         listItem.textContent = message;
         notificationsList.appendChild(listItem);
+    }
+
+    toggleSupplyRequestsButton.addEventListener('click', async () => {
+        if (supplyRequestsContainer.style.display === 'none') {
+            supplyRequestsContainer.style.display = 'block';
+            toggleSupplyRequestsButton.textContent = 'Hide Supply Requests';
+            await fetchSupplyRequests();
+        } else {
+            supplyRequestsContainer.style.display = 'none';
+            toggleSupplyRequestsButton.textContent = 'Show Supply Requests';
+        }
+    });
+
+    async function fetchSupplyRequests() {
+        try {
+            const response = await fetch('http://localhost:3000/api/supply-requests');
+            const data = await response.json();
+
+            supplyRequestsList.innerHTML = '';
+
+            data.requests.forEach(request => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${request.name} - Quantity: ${request.quantity} - Requested by Merchant ID: ${request.merchant_id}`;
+                supplyRequestsList.appendChild(listItem);
+            });
+        } catch (error) {
+            console.error('Error fetching supply requests:', error);
+        }
     }
 
 
