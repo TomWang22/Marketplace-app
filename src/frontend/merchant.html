@@ -7,59 +7,49 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header>
-        <div class="logo">Merchant Dashboard</div>
-        <button id="logoutButton">Logout</button>
-    </header>
-    <main>
-        <section id="add-product-section">
-            <form>
-                <input type="text" id="productName" placeholder="Product Name">
-                <input type="text" id="productDescription" placeholder="Product Description">
-                <input type="number" id="productPrice" placeholder="Product Price">
-                <input type="number" id="productStock" placeholder="Product Stock">
-                <input type="text" id="productImageUrl" placeholder="Product Image URL">
-                <button id="addProductButton">Add Product</button>
-            </form>
-        </section>
+    <h1>Merchant Dashboard</h1>
 
-        <section id="receive-supplies-section">
-            <button id="showReceivedSuppliesButton">Show Received Supplies</button>
-            <div id="receivedSuppliesList" style="display: none;"></div>
-        </section>
+    <!-- Add Product Section -->
+    <div id="addProductContainer">
+        <h2>Add Product</h2>
+        <input type="text" id="productName" placeholder="Product Name" required>
+        <input type="text" id="productDescription" placeholder="Product Description" required>
+        <input type="number" id="productPrice" placeholder="Product Price" required>
+        <input type="number" id="productStock" placeholder="Stock" required>
+        <input type="text" id="productImageUrl" placeholder="Image URL" required>
+        <button id="addProductButton">Add Product</button>
+    </div>
 
-        <section id="send-merchandise-section">
-            <form>
-                <input type="text" id="customerId" placeholder="Customer ID">
-                <input type="text" id="productIdToSend" placeholder="Product ID">
-                <input type="number" id="quantityToSend" placeholder="Quantity">
-                <button id="sendMerchandiseButton">Send Merchandise</button>
-            </form>
-        </section>
+    <!-- Request Supply Section -->
+    <div id="requestSupplyContainer">
+        <h2>Request Supply</h2>
+        <input type="number" id="productIdToRequest" placeholder="Product ID" required>
+        <input type="number" id="quantityToRequest" placeholder="Quantity" required>
+        <button id="requestSupplyButton">Request Supply</button>
+    </div>
 
-        <section id="list-products-section">
-            <button id="listAllProductsButton">List All Products</button>
-            <div id="productList" style="display: none;"></div>
-        </section>
+    <!-- Received Supplies Section -->
+    <button id="showReceivedSuppliesButton">Show Received Supplies</button>
+    <div id="receivedSuppliesList" style="display:none;"></div>
 
-        <section id="request-supply-section">
-            <h2>Request Supply</h2>
-            <input type="number" id="productIdToRequest" placeholder="Product ID" required>
-            <input type="number" id="quantityToRequest" placeholder="Quantity" required>
-            <button id="requestSupplyButton">Request Supply</button>
-        </section>
+    <!-- List All Products Section -->
+    <button id="listAllProductsButton">List All Products</button>
+    <div id="productList" style="display:none;"></div>
 
-        <section id="notifications-section">
-            <h2>Notifications</h2>
-            <ul id="notificationsList"></ul>
-        </section>
-    </main>
-    <footer>
-        <nav>
-            <a href="marketplace.html">Home</a>
-            <a href="#">Contact</a>
-        </nav>
-    </footer>
+    <!-- Send Merchandise Section -->
+    <div id="sendMerchandiseContainer">
+        <h2>Send Merchandise</h2>
+        <input type="number" id="customerId" placeholder="Customer ID" required>
+        <input type="number" id="productIdToSend" placeholder="Product ID" required>
+        <input type="number" id="quantityToSend" placeholder="Quantity" required>
+        <button id="sendMerchandiseButton">Send Merchandise</button>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <button id="homeButton">Home</button>
+    <button id="accountButton">Account</button>
+    <button id="logoutButton">Logout</button>
+
     <script src="merchant.js"></script>
 </body>
 </html>

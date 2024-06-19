@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // Get references to the DOM elements
     const addProductButton = document.getElementById('addProductButton');
     const showReceivedSuppliesButton = document.getElementById('showReceivedSuppliesButton');
     const listAllProductsButton = document.getElementById('listAllProductsButton');
@@ -8,12 +7,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const receivedSuppliesList = document.getElementById('receivedSuppliesList');
     const productList = document.getElementById('productList');
     const logoutButton = document.getElementById('logoutButton');
+    const homeButton = document.getElementById('homeButton');
+    const accountButton = document.getElementById('accountButton');
     const requestSupplyButton = document.getElementById('requestSupplyButton');
-    const supplyRequestsList = document.getElementById('supplyRequestsList');
+    let suppliesVisible = false;
 
-    let suppliesVisible = false; // Toggle state for received supplies
-
-    // Function to display notifications
     function displayNotification(message) {
         const listItem = document.createElement('li');
         listItem.textContent = message;
@@ -41,7 +39,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Add event listener for the request supply button
     requestSupplyButton.addEventListener('click', (event) => {
         event.preventDefault();
         const productId = document.getElementById('productIdToRequest').value;
@@ -49,7 +46,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         requestSupply(productId, quantity);
     });
 
-    // Function to clear input fields after adding a product
     function clearInputFields() {
         document.getElementById('productName').value = '';
         document.getElementById('productDescription').value = '';
@@ -65,7 +61,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'login.html';
     });
 
-    // Function to add a new product
+    homeButton.addEventListener('click', () => {
+        window.location.href = 'marketplace.html';
+    });
+
+    accountButton.addEventListener('click', () => {
+        window.location.href = 'account.html';
+    });
+
     async function addProduct(name, description, price, stock, imageUrl) {
         try {
             const response = await fetch('http://localhost:3000/api/products', {
@@ -78,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             if (data.success) {
                 displayNotification(`Product "${name}" added successfully.`);
-                clearInputFields(); // Clear input fields after successful addition
+                clearInputFields();
             } else {
                 displayNotification(`Failed to add product: ${data.message}`);
             }
@@ -87,10 +90,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Function to fetch received supplies from the database
     async function fetchReceivedSupplies() {
         try {
-            console.log('Fetching received supplies...'); // Debug log
             const response = await fetch('http://localhost:3000/api/received-supplies', {
                 method: 'GET',
                 headers: {
@@ -98,7 +99,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
             const data = await response.json();
-            console.log('Received supplies:', data.supplies); // Debug log
             return data.supplies;
         } catch (error) {
             console.error('Error fetching received supplies:', error);
@@ -106,14 +106,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Function to display received supplies
     async function displayReceivedSupplies() {
-        console.log('Displaying received supplies...'); // Debug log
         const supplies = await fetchReceivedSupplies();
-        receivedSuppliesList.innerHTML = ''; // Clear existing items
-
+        receivedSuppliesList.innerHTML = '';
         supplies.forEach(supply => {
-            const price = parseFloat(supply.price); // Ensure price is a number
+            const price = parseFloat(supply.price);
             const listItem = document.createElement('div');
             listItem.className = 'supply-item';
             listItem.innerHTML = `
@@ -124,14 +121,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
             receivedSuppliesList.appendChild(listItem);
         });
-
         receivedSuppliesList.style.display = 'block';
     }
 
-    // Function to fetch all products from the database
     async function fetchAllProducts() {
         try {
-            console.log('Fetching all products...'); // Debug log
             const response = await fetch('http://localhost:3000/api/products', {
                 method: 'GET',
                 headers: {
@@ -139,7 +133,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
             const data = await response.json();
-            console.log('Fetched products:', data.products); // Add this log
             return data.products;
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -147,12 +140,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Function to display all products
     async function displayAllProducts() {
-        console.log('Displaying all products...'); // Add this log
         const products = await fetchAllProducts();
-        productList.innerHTML = ''; // Clear existing items
-
+        productList.innerHTML = '';
         if (products && products.length > 0) {
             products.forEach(product => {
                 const productItem = document.createElement('div');
@@ -168,11 +158,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             productList.innerHTML = '<p>No products found.</p>';
         }
-
         productList.style.display = 'block';
     }
 
-    // Function to send merchandise
     async function sendMerchandise(customerId, productId, quantity) {
         try {
             const response = await fetch('http://localhost:3000/api/send-merchandise', {
@@ -193,7 +181,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Add event listeners for buttons
     addProductButton.addEventListener('click', (event) => {
         event.preventDefault();
         const name = document.getElementById('productName').value;
