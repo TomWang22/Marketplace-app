@@ -85,7 +85,6 @@ if (cluster.isMaster) {
                 socket.emit('previousChats', results.rows);
             }
         });
-    
         socket.on('sendMessage', async (data) => {
             const { message, userId, role } = data; // role can be 'shopper' or 'merchant'
             const timestamp = new Date();
@@ -99,6 +98,8 @@ if (cluster.isMaster) {
                     [userId, role, message, timestamp]);
                 const chatMessage = result.rows[0];
                 chatMessage.username = username; // Add username to the chat message
+                chatMessage.role = role;
+                chatMessage.user_id = userId;
     
                 // Broadcast the new message to all connected clients
                 io.emit('receiveMessage', chatMessage);
