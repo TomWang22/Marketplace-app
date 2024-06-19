@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const receivedSuppliesList = document.getElementById('receivedSuppliesList');
     const productList = document.getElementById('productList');
     const logoutButton = document.getElementById('logoutButton');
+    const requestSupplyButton = document.getElementById('requestSupplyButton');
+    const supplyRequestsList = document.getElementById('supplyRequestsList');
 
     let suppliesVisible = false; // Toggle state for received supplies
 
@@ -17,6 +19,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         listItem.textContent = message;
         notificationsList.appendChild(listItem);
     }
+
+    async function requestSupply(productId, quantity) {
+        const merchantId = localStorage.getItem('userId');
+        try {
+            const response = await fetch('http://localhost:3000/api/request-supply', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ merchantId, productId, quantity })
+            });
+            const data = await response.json();
+            if (data.success) {
+                displayNotification(`Requested ${quantity} units of product ID ${productId}`);
+            } else {
+                displayNotification(`Failed to request supply: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Error requesting supply:', error);
+        }
+    }
+
+    // Add event listener for the request supply button
+    requestSupplyButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        const productId = document.getElementById('productIdToRequest').value;
+        const quantity = parseInt(document.getElementById('quantityToRequest').value);
+        requestSupply(productId, quantity);
+    });
 
     // Function to clear input fields after adding a product
     function clearInputFields() {

@@ -412,6 +412,53 @@ if (cluster.isMaster) {
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });
+    // Endpoint for merchants to request supplies
+app.post('/api/request-supply', async (req, res) => {
+    const { merchantId, productId, quantity } = req.body;
+    try {
+        const result = await pool.query(
+            'INSERT INTO supply_requests (merchant_id, product_id, quantity, request_date) VALUES ($1, $2, $3, NOW()) RETURNING *',
+            [merchantId, productId, quantity]
+        );
+        res.json({ success: true, request: result.rows[0] });
+    } catch (error) {
+        console.error('Error requesting supply:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+// Endpoint for suppliers to get supply requests
+app.get('/api/supply-requests', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT sr.id, sr.merchant_id, sr.product_id, sr.quantity, sr.request_date, p.name, p.description, p.image_url FROM supply_requests sr JOIN products p ON sr.product_id = p.id'
+        );
+        res.json({ success: true, requests: result.rows });
+    } catch (error) {
+        console.error('Error fetching supply requests:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+// Endpoint for suppliers to send supplies
+app.post('/api/send-supplies', async (req, res) => {
+    const { merchantId, productId, quantity } = req.body;
+    try {
+        await pool.query(
+            'UPDATE supply_requests SET status = $1 WHERE merchant_id = $2 AND product_id = $3 AND status = $4',
+            ['fulfilled', merchantId, productId, 'pending']
+        );
+        await pool.query(
+            'INSERT INTO received_supplies (merchant_id, product_id, quantity, supply_date) VALUES ($1, $2, $3, NOW())',
+            [merchantId, productId, quantity]
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error sending supplies:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
 
     app.listen(port, () => {
         console.log(`Worker ${process.pid} is running on http://localhost:${port}`);

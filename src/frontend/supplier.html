@@ -10,7 +10,6 @@
     <header>
         <div class="logo">Supplier Dashboard</div>
         <button id="logoutButton">Logout</button>
-        <div id="user-info">Welcome, <span id="username"></span></div>
     </header>
     <main>
         <section id="send-supplies-section">
@@ -32,6 +31,11 @@
                 <input type="text" id="supplyImageUrl" placeholder="Supply Image URL">
                 <button id="addSupplyButton" type="button">Add Supply</button>
             </form>
+        </section>
+
+        <section id="view-requests-section">
+            <button id="viewRequestsButton">View Supply Requests</button>
+            <div id="supplyRequestsList" style="display:none;"></div>
         </section>
 
         <section id="notifications-section">
