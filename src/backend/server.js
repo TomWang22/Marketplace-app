@@ -487,20 +487,42 @@ app.get('/api/supply-requests', async (req, res) => {
 
 // Endpoint for suppliers to send supplies
 app.post('/api/send-supplies', async (req, res) => {
-    const { merchantId, productId, quantity } = req.body;
+    const { supplierId, merchantId, productId, quantity } = req.body;
+
     try {
-        await pool.query(
-            'UPDATE supply_requests SET status = $1 WHERE merchant_id = $2 AND product_id = $3 AND status = $4',
-            ['fulfilled', merchantId, productId, 'pending']
-        );
-        await pool.query(
-            'INSERT INTO received_supplies (merchant_id, product_id, quantity, supply_date) VALUES ($1, $2, $3, NOW())',
-            [merchantId, productId, quantity]
-        );
-        res.json({ success: true });
+        // Retrieve the supply details
+        const supplyResult = await pool.query('SELECT * FROM supplies WHERE id = $1', [productId]);
+        const supply = supplyResult.rows[0];
+
+        if (!supply) {
+            return res.status(400).json({ success: false, message: 'Supply not found.' });
+        }
+
+        // Check if enough stock is available
+        if (supply.stock < quantity) {
+            return res.status(400).json({ success: false, message: 'Insufficient stock.' });
+        }
+
+        // Calculate the total cost and profit
+        const totalCost = supply.cost * quantity;
+        const totalProfit = (supply.price - supply.cost) * quantity;
+
+        // Reduce the supplier's stock
+        await pool.query('UPDATE supplies SET stock = stock - $1, profit = profit + $2 WHERE id = $3', [quantity, totalProfit, productId]);
+
+        // Update the merchant's balance
+        await pool.query('UPDATE users SET balance = balance - $1 WHERE id = $2', [totalCost, merchantId]);
+
+        // Record the received supplies
+        await pool.query('INSERT INTO received_supplies (merchant_id, product_id, quantity, supply_date) VALUES ($1, $2, $3, NOW())', [merchantId, productId, quantity]);
+
+        // Update the supply request status to fulfilled
+        await pool.query('UPDATE supply_requests SET status = $1 WHERE merchant_id = $2 AND product_id = $3 AND status = $4', ['fulfilled', merchantId, productId, 'pending']);
+
+        res.json({ success: true, message: 'Supplies sent and stock updated successfully.' });
     } catch (error) {
         console.error('Error sending supplies:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        res.status(500).json({ success: false, message: 'Internal server error.' });
     }
 });
 
