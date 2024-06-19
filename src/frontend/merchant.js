@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const receivedSuppliesList = document.getElementById('receivedSuppliesList');
     const productList = document.getElementById('productList');
 
+    let suppliesVisible = false; // Toggle state for received supplies
+
     // Function to display notifications
     function displayNotification(message) {
         const listItem = document.createElement('li');
@@ -165,7 +167,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     showReceivedSuppliesButton.addEventListener('click', (event) => {
         event.preventDefault();
-        displayReceivedSupplies();
+        suppliesVisible = !suppliesVisible;
+        if (suppliesVisible) {
+            displayReceivedSupplies();
+        } else {
+            receivedSuppliesList.style.display = 'none';
+        }
     });
 
     listAllProductsButton.addEventListener('click', displayAllProducts);
