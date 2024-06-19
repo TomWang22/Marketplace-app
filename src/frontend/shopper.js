@@ -10,10 +10,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const shopButton = document.getElementById('shopButton');
     const cartItemCount = document.getElementById('cartItemCount');
     const totalCostElement = document.getElementById('totalCost');
-
+    
     // Retrieve the userId from local storage
     const userId = localStorage.getItem('userId');
+    const logoutButton = document.getElementById('logoutButton');
 
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        window.location.href = 'login.html';
+    });
+    
     if (!userId) {
         alert('User not logged in!');
         window.location.href = '/login.html';

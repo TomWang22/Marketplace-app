@@ -7,7 +7,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartItemCount = document.getElementById('cartItemCount');
     const searchInput = document.getElementById('searchInput');
     const userId = localStorage.getItem('userId');
+    const logoutButton = document.getElementById('logoutButton');
 
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        window.location.href = 'login.html';
+    });
     // Function to get items from localStorage
     function getItemsFromLocalStorage() {
         const products = localStorage.getItem('products');

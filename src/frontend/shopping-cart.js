@@ -4,7 +4,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const placeOrderButton = document.getElementById('placeOrderButton');
 
     const userId = localStorage.getItem('userId'); // Get user ID from local storage
+    const logoutButton = document.getElementById('logoutButton');
 
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        window.location.href = 'login.html';
+    });
+    
     async function fetchCartItems() {
         const userId = localStorage.getItem('userId');
         try {

@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const userBalance = document.getElementById('userBalance');
     const shoppingHistory = document.getElementById('shoppingHistory');
     const searchHistory = document.getElementById('searchHistory');
+    const logoutButton = document.getElementById('logoutButton');
 
     let allProducts = [];
     let filteredProducts = [];
@@ -43,6 +44,13 @@ document.addEventListener('DOMContentLoaded', () => {
         accountSection.style.display = 'block';
         hideMarketplaceControls();
         await displayAccountInfo();
+    });
+
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        window.location.href = 'login.html';
     });
 
     searchInput.addEventListener('keypress', async (event) => {

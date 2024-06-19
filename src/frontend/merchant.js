@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const notificationsList = document.getElementById('notificationsList');
     const receivedSuppliesList = document.getElementById('receivedSuppliesList');
     const productList = document.getElementById('productList');
+    const logoutButton = document.getElementById('logoutButton');
 
     let suppliesVisible = false; // Toggle state for received supplies
 
@@ -25,6 +26,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('productStock').value = '';
         document.getElementById('productImageUrl').value = '';
     }
+
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        window.location.href = 'login.html';
+    });
 
     // Function to add a new product
     async function addProduct(name, description, price, stock, imageUrl) {

@@ -3,7 +3,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const productId = params.get('id');
     const cartItemCount = document.getElementById('cartItemCount');
     const userId = localStorage.getItem('userId');
+    const logoutButton = document.getElementById('logoutButton');
 
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        window.location.href = 'login.html';
+    });
+    
     // Fetch product details from local storage
     async function fetchProductDetails(productId) {
         const products = JSON.parse(localStorage.getItem('products'));

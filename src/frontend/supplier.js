@@ -6,7 +6,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('token');
+    const logoutButton = document.getElementById('logoutButton');
 
+    logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('userId');
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        window.location.href = 'login.html';
+    });
+    
     async function getCurrentUser() {
         try {
             const response = await fetch('http://localhost:3000/api/current-user', {
