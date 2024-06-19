@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     homeButton.addEventListener('click', () => {
         // Redirect based on the user's role
-        const homeUrl = homeUrls[role] || 'marktplace.html';
+        const homeUrl = homeUrls[role] || 'marketplace.html';
         window.location.href = homeUrl;
     });
 
@@ -45,10 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
         await displayAccountInfo();
     });
 
-    searchInput.addEventListener('keypress', (event) => {
+    searchInput.addEventListener('keypress', async (event) => {
         if (event.key === 'Enter') {
             const searchQuery = searchInput.value.trim().toLowerCase();
             if (searchQuery) {
+                await saveSearchHistory(userId, searchQuery);
                 window.location.href = `search-results.html?query=${encodeURIComponent(searchQuery)}`;
             }
         }
@@ -149,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
             {
                 id: 2,
                 name: "Short sleeve dress shirt",
-                description:  "This stylish red and blue multi check short sleeve shirt is perfect for relaxed summer days. The relaxed slim fit is our most regular and flattering fit. It is gently tapered across the waist and chest, creating a relaxed yet defined silhouette. Made from the finest 2 ply 100s cotton, this shirt has been perfected with Hawes & Curtis' silk touch finish that makes it easier to iron. The result is a smooth, lavish texture that makes it feel even more opulent and exceptionally comfortable to wear. ⚫100% Cotton ⚫Short sleeve ⚫Semi-Cutaway Collar Slim Fit (Relaxed) The model is wearing a size Medium. Model is 6'1\"/185cm tall, with a 37\" / 94cm chest and a 31\" / 79cm waist.",
+                description: "This stylish red and blue multi check short sleeve shirt is perfect for relaxed summer days. The relaxed slim fit is our most regular and flattering fit. It is gently tapered across the waist and chest, creating a relaxed yet defined silhouette. Made from the finest 2 ply 100s cotton, this shirt has been perfected with Hawes & Curtis' silk touch finish that makes it easier to iron. The result is a smooth, lavish texture that makes it feel even more opulent and exceptionally comfortable to wear. ⚫100% Cotton ⚫Short sleeve ⚫Semi-Cutaway Collar Slim Fit (Relaxed) The model is wearing a size Medium. Model is 6'1\"/185cm tall, with a 37\" / 94cm chest and a 31\" / 79cm waist.",
                 price: 40.00,
                 image_url: "https://handcmediastorage.blob.core.windows.net/productimages/CG/CGCFC003-L03-161755-800px-1040px.jpg"
             },
@@ -229,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`http://localhost:3000/api/cart?userId=${userId}`);
             const data = await response.json();
-            return data.items;
+            return data.items.map(item => ({ ...item, productId: item.product_id }));
         } catch (error) {
             console.error('Error fetching cart items:', error);
             return [];
@@ -239,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function addToCart(productId) {
         const userId = localStorage.getItem('userId');
         const cartItems = await fetchCartItems();
-        const existingItem = cartItems.find(item => item.product_id === productId);
+        const existingItem = cartItems.find(item => item.productId === productId);
     
         if (existingItem) {
             await updateCartItemQuantity(existingItem.id, existingItem.quantity + 1);

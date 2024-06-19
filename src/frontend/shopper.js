@@ -13,26 +13,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Retrieve the userId from local storage
     const userId = localStorage.getItem('userId');
-    /*
+
     if (!userId) {
         alert('User not logged in!');
         window.location.href = '/login.html';
         return;
     }
-    */
+
     // Function to fetch cart items from the server
-    async function fetchCartItems() {
+    const fetchCartItems = async () => {
         try {
             const response = await fetch(`http://localhost:3000/api/cart?userId=${userId}`);
             const data = await response.json();
-            // Ensure productId is included
-            return data.items.map(item => ({ ...item, productId: item.product_id }));
+            return data.items;
         } catch (error) {
             console.error('Error fetching cart items:', error);
             return [];
         }
-    }
-    
+    };
 
     // Function to display cart items
     const displayCartItems = async () => {
@@ -101,6 +99,19 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Function to update item quantity in the cart
+    const updateCartItemQuantity = async (itemId, quantity, userId) => {
+        try {
+            await fetch(`http://localhost:3000/api/cart/${itemId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ quantity, userId })
+            });
+        } catch (error) {
+            console.error('Error updating item quantity:', error);
+        }
+    };
 
     // Function to remove item from the cart
     const removeCartItem = async (itemId, userId) => {
@@ -182,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addFundsButton.addEventListener('click', addFunds);
     returnMerchandiseButton.addEventListener('click', returnMerchandise);
     shoppingCartButton.addEventListener('click', () => {
-        displayCartItems();
+        window.location.href = 'shopping-cart.html';
     });
 
     // Event listener for Shop button
