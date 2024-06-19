@@ -139,15 +139,11 @@ if (cluster.isMaster) {
     
                 await pool.query('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)', [orderId, product_id, quantity, price]);
     
-                // Commenting out the seller_id logic for now
-                /*
-                const sellerResult = await pool.query('SELECT seller_id FROM products WHERE id = $1', [product_id]);
-                const sellerId = sellerResult.rows[0].seller_id;
-                await pool.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [price * quantity, sellerId]);
-                */
-    
                 await pool.query('INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())', [userId, product_id, quantity, price]);
             }
+    
+            // Delete items from the shopping cart after order is placed
+            await pool.query('DELETE FROM shopping_cart WHERE user_id = $1', [userId]);
     
             res.json({ success: true, message: 'Order placed successfully.' });
         } catch (error) {
@@ -155,6 +151,7 @@ if (cluster.isMaster) {
             res.status(500).json({ success: false, message: 'Internal server error.' });
         }
     });
+    
     
     
     

@@ -96,9 +96,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
     
-        // Ensure each cart item has a product_id
+        // Ensure each cart item has a productId
         for (const item of cartItems) {
-            if (!item.product_id) {
+            if (!item.productId) {
                 alert('One of the items in your cart is missing a product ID.');
                 return;
             }
@@ -123,6 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error placing order:', error);
         }
     }
+    
     
 
     placeOrderButton.addEventListener('click', placeOrder);
