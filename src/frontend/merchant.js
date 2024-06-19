@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Function to fetch received supplies from the database
     async function fetchReceivedSupplies() {
         try {
+            console.log('Fetching received supplies...'); // Debug log
             const response = await fetch('http://localhost:3000/api/received-supplies', {
                 method: 'GET',
                 headers: {
@@ -56,6 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
             const data = await response.json();
+            console.log('Received supplies:', data.supplies); // Debug log
             return data.supplies;
         } catch (error) {
             console.error('Error fetching received supplies:', error);
@@ -65,16 +67,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Function to display received supplies
     async function displayReceivedSupplies() {
+        console.log('Displaying received supplies...'); // Debug log
         const supplies = await fetchReceivedSupplies();
         receivedSuppliesList.innerHTML = ''; // Clear existing items
 
         supplies.forEach(supply => {
+            const price = parseFloat(supply.price); // Ensure price is a number
             const listItem = document.createElement('div');
             listItem.className = 'supply-item';
             listItem.innerHTML = `
                 <div>
                     <img src="${supply.image_url}" alt="${supply.name}" width="50" height="50">
-                    <span>${supply.name} - ${supply.description} - $${supply.price.toFixed(2)} - Stock: ${supply.stock}</span>
+                    <span>${supply.name} - ${supply.description} - $${!isNaN(price) ? price.toFixed(2) : 'N/A'} - Stock: ${supply.stock}</span>
                 </div>
             `;
             receivedSuppliesList.appendChild(listItem);
@@ -86,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Function to fetch all products from the database
     async function fetchAllProducts() {
         try {
-            console.log('Fetching all products...'); // Add this log
+            console.log('Fetching all products...'); // Debug log
             const response = await fetch('http://localhost:3000/api/products', {
                 method: 'GET',
                 headers: {
@@ -159,7 +163,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         addProduct(name, description, price, stock, imageUrl);
     });
 
-    showReceivedSuppliesButton.addEventListener('click', displayReceivedSupplies);
+    showReceivedSuppliesButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        displayReceivedSupplies();
+    });
 
     listAllProductsButton.addEventListener('click', displayAllProducts);
 
