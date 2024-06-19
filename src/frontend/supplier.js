@@ -33,41 +33,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             return [];
         }
     }
+   // Function to display supply requests
+   async function displaySupplyRequests() {
+    const requests = await fetchSupplyRequests();
+    supplyRequestsList.innerHTML = '';
 
-    // Function to display supply requests
-    async function displaySupplyRequests() {
-        const requests = await fetchSupplyRequests();
-        supplyRequestsList.innerHTML = '';
+    requests.forEach(request => {
+        const listItem = document.createElement('div');
+        listItem.className = 'request-item';
+        listItem.innerHTML = `
+            <div>
+                <img src="${request.image_url}" alt="${request.name}" width="50" height="50">
+                <span>${request.name} - ${request.description} - Quantity: ${request.quantity} - Requested by Merchant ID: ${request.merchant_id}</span>
+                <button class="fulfillRequestButton" data-merchant-id="${request.merchant_id}" data-product-id="${request.product_id}" data-quantity="${request.quantity}">Fulfill</button>
+            </div>
+        `;
+        supplyRequestsList.appendChild(listItem);
+    });
 
-        requests.forEach(request => {
-            const listItem = document.createElement('div');
-            listItem.className = 'request-item';
-            listItem.innerHTML = `
-                <div>
-                    <img src="${request.image_url}" alt="${request.name}" width="50" height="50">
-                    <span>${request.name} - ${request.description} - Quantity: ${request.quantity} - Requested by Merchant ID: ${request.merchant_id}</span>
-                    <button class="fulfillRequestButton" data-merchant-id="${request.merchant_id}" data-product-id="${request.product_id}" data-quantity="${request.quantity}">Fulfill</button>
-                </div>
-            `;
-            supplyRequestsList.appendChild(listItem);
+    document.querySelectorAll('.fulfillRequestButton').forEach(button => {
+        button.addEventListener('click', (event) => {
+            const merchantId = button.getAttribute('data-merchant-id');
+            const productId = button.getAttribute('data-product-id');
+            const quantity = button.getAttribute('data-quantity');
+            sendSupplies(merchantId, productId, quantity);
         });
-
-        document.querySelectorAll('.fulfillRequestButton').forEach(button => {
-            button.addEventListener('click', (event) => {
-                const merchantId = button.getAttribute('data-merchant-id');
-                const productId = button.getAttribute('data-product-id');
-                const quantity = button.getAttribute('data-quantity');
-                sendSupplies(merchantId, productId, quantity);
-            });
-        });
-
-        supplyRequestsList.style.display = 'block';
-    }
+    });
+}
 
     // Add event listener for the view requests button
-    viewRequestsButton.addEventListener('click', (event) => {
+    viewRequestsButton.addEventListener('click', async (event) => {
         event.preventDefault();
-        displaySupplyRequests();
+        if (supplyRequestsList.style.display === 'none' || supplyRequestsList.style.display === '') {
+            await displaySupplyRequests();
+            supplyRequestsList.style.display = 'block';
+        } else {
+            supplyRequestsList.style.display = 'none';
+        }
     });
     
     async function getCurrentUser() {
