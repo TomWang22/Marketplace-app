@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     let suppliesVisible = false;
+    let productsVisible = false;
 
     socket.on('previousChats', (chats) => {
         chatList.innerHTML = '';
@@ -271,7 +272,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    listAllProductsButton.addEventListener('click', displayAllProducts);
+    listAllProductsButton.addEventListener('click', async (event) => {
+        event.preventDefault();
+        productsVisible = !productsVisible;
+        if (productsVisible) {
+            await displayAllProducts();
+            listAllProductsButton.textContent = 'Hide All Products';
+        } else {
+            productList.style.display = 'none';
+            listAllProductsButton.textContent = 'List All Products';
+        }
+    });
 
     sendMerchandiseButton.addEventListener('click', (event) => {
         event.preventDefault();
