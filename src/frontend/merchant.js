@@ -33,14 +33,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatList.innerHTML = '';
         chats.forEach(chat => {
             const chatItem = document.createElement('li');
-            chatItem.textContent = `${chat.username} (${chat.role}): ${chat.message} (${chat.timestamp})`;
+            chatItem.textContent = `${chat.username} (${chat.role}, ID: ${chat.user_id}): ${chat.message} (${chat.timestamp})`;
             chatList.appendChild(chatItem);
         });
     });
 
     socket.on('receiveMessage', (chat) => {
         const chatItem = document.createElement('li');
-        chatItem.textContent = `${chat.username} (${chat.role}): ${chat.message} (${chat.timestamp})`;
+        chatItem.textContent = `${chat.username} (${chat.role}, ID: ${chat.user_id}): ${chat.message} (${chat.timestamp})`;
         chatList.appendChild(chatItem);
     });
 

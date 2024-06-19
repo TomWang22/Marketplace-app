@@ -85,6 +85,7 @@ if (cluster.isMaster) {
                 socket.emit('previousChats', results.rows);
             }
         });
+    
         socket.on('sendMessage', async (data) => {
             const { message, userId, role } = data; // role can be 'shopper' or 'merchant'
             const timestamp = new Date();
@@ -94,12 +95,9 @@ if (cluster.isMaster) {
                 const username = userResult.rows[0]?.username || 'Unknown User';
     
                 // Insert the chat message into the database
-                const result = await pool.query('INSERT INTO chat (user_id, role, message, timestamp) VALUES ($1, $2, $3, $4) RETURNING *',
-                    [userId, role, message, timestamp]);
+                const result = await pool.query('INSERT INTO chat (user_id, role, message, timestamp, username) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                    [userId, role,message, timestamp, username]);
                 const chatMessage = result.rows[0];
-                chatMessage.username = username; // Add username to the chat message
-                chatMessage.role = role;
-                chatMessage.user_id = userId;
     
                 // Broadcast the new message to all connected clients
                 io.emit('receiveMessage', chatMessage);
