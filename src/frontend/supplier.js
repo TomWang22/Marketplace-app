@@ -5,27 +5,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const usernameSpan = document.getElementById('username');
     const viewRequestsButton = document.getElementById('viewRequestsButton');
     const supplyRequestsList = document.getElementById('supplyRequestsList');
-    const logoutButton = document.getElementById('logoutButton');
-    const homeButton = document.getElementById('homeButton');
-    const accountButton = document.getElementById('accountButton');
+
 
     const userId = localStorage.getItem('userId');
     const token = localStorage.getItem('token');
-    let supplyRequestsVisible = false;
+    const logoutButton = document.getElementById('logoutButton');
 
     logoutButton.addEventListener('click', () => {
         localStorage.removeItem('userId');
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         window.location.href = 'login.html';
-    });
-
-    homeButton.addEventListener('click', () => {
-        window.location.href = 'marketplace.html';
-    });
-
-    accountButton.addEventListener('click', () => {
-        window.location.href = 'account.html';  // Update this to the actual account page
     });
 
     async function fetchSupplyRequests() {
@@ -43,44 +33,45 @@ document.addEventListener('DOMContentLoaded', async () => {
             return [];
         }
     }
+   // Function to display supply requests
+   async function displaySupplyRequests() {
+    const requests = await fetchSupplyRequests();
+    supplyRequestsList.innerHTML = '';
 
-    async function displaySupplyRequests() {
-        const requests = await fetchSupplyRequests();
-        supplyRequestsList.innerHTML = '';
+    requests.forEach(request => {
+        const listItem = document.createElement('div');
+        listItem.className = 'request-item';
+        listItem.innerHTML = `
+            <div>
+                <img src="${request.image_url}" alt="${request.name}" width="50" height="50">
+                <span>${request.name} - ${request.description} - Quantity: ${request.quantity} - Requested by Merchant ID: ${request.merchant_id}</span>
+                <button class="fulfillRequestButton" data-merchant-id="${request.merchant_id}" data-product-id="${request.product_id}" data-quantity="${request.quantity}">Fulfill</button>
+            </div>
+        `;
+        supplyRequestsList.appendChild(listItem);
+    });
 
-        requests.forEach(request => {
-            const listItem = document.createElement('div');
-            listItem.className = 'request-item';
-            listItem.innerHTML = `
-                <div>
-                    <span>Merchant ID: ${request.merchant_id} - Product ID: ${request.product_id} - Quantity: ${request.quantity}</span>
-                    <button class="fulfillRequestButton" data-merchant-id="${request.merchant_id}" data-product-id="${request.product_id}" data-quantity="${request.quantity}">Fulfill</button>
-                </div>
-            `;
-            supplyRequestsList.appendChild(listItem);
+    document.querySelectorAll('.fulfillRequestButton').forEach(button => {
+        button.addEventListener('click', (event) => {
+            const merchantId = button.getAttribute('data-merchant-id');
+            const productId = button.getAttribute('data-product-id');
+            const quantity = button.getAttribute('data-quantity');
+            sendSupplies(merchantId, productId, quantity);
         });
+    });
+}
 
-        document.querySelectorAll('.fulfillRequestButton').forEach(button => {
-            button.addEventListener('click', (event) => {
-                const merchantId = button.getAttribute('data-merchant-id');
-                const productId = button.getAttribute('data-product-id');
-                const quantity = button.getAttribute('data-quantity');
-                sendSupplies(merchantId, productId, quantity);
-            });
-        });
-    }
-
+    // Add event listener for the view requests button
     viewRequestsButton.addEventListener('click', async (event) => {
         event.preventDefault();
-        supplyRequestsVisible = !supplyRequestsVisible;
-        if (supplyRequestsVisible) {
+        if (supplyRequestsList.style.display === 'none' || supplyRequestsList.style.display === '') {
             await displaySupplyRequests();
             supplyRequestsList.style.display = 'block';
         } else {
             supplyRequestsList.style.display = 'none';
         }
     });
-
+    
     async function getCurrentUser() {
         try {
             const response = await fetch('http://localhost:3000/api/current-user', {

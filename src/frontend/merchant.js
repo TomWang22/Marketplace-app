@@ -10,13 +10,54 @@ document.addEventListener('DOMContentLoaded', async () => {
     const homeButton = document.getElementById('homeButton');
     const accountButton = document.getElementById('accountButton');
     const requestSupplyButton = document.getElementById('requestSupplyButton');
-    let suppliesVisible = false;
+    const chatContainer = document.getElementById('chatContainer');
+    const chatInput = document.getElementById('chatInput');
+    const chatSendButton = document.getElementById('chatSendButton');
+    const chatList = document.getElementById('chatList');
+    const merchantId = localStorage.getItem('userId');
+    if (!merchantId) {
+        console.error('Merchant ID is not set in local storage');
+        return;
+    }
 
+    const socket = io('http://localhost:3000', {
+        transports: ['websocket'],
+        query: { userId: merchantId }
+    });
+
+
+
+    let suppliesVisible = false;
+    
+    socket.on('previousChats', (chats) => {
+        chatList.innerHTML = '';
+        chats.forEach(chat => {
+            const chatItem = document.createElement('li');
+            chatItem.textContent = `${chat.username} (${chat.role}): ${chat.message} (${chat.timestamp})`;
+            chatList.appendChild(chatItem);
+        });
+    });
+
+    socket.on('receiveMessage', (chat) => {
+        const chatItem = document.createElement('li');
+        chatItem.textContent = `${chat.username} (${chat.role}): ${chat.message} (${chat.timestamp})`;
+        chatList.appendChild(chatItem);
+    });
+
+    chatSendButton.addEventListener('click', () => {
+        const message = chatInput.value;
+        if (message) {
+            socket.emit('sendMessage', { message, userId: merchantId, role: 'merchant' });
+            chatInput.value = '';
+        }
+    });
+});
     function displayNotification(message) {
         const listItem = document.createElement('li');
         listItem.textContent = message;
         notificationsList.appendChild(listItem);
     }
+
 
     async function requestSupply(productId, quantity) {
         const merchantId = localStorage.getItem('userId');
@@ -210,4 +251,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         const quantity = parseInt(document.getElementById('quantityToSend').value);
         sendMerchandise(customerId, productId, quantity);
     });
-});
+

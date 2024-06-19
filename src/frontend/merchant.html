@@ -45,11 +45,20 @@
         <button id="sendMerchandiseButton">Send Merchandise</button>
     </div>
 
+    <!-- Chat Section -->
+    <div id="chatContainer">
+        <h2>Chat with Shoppers</h2>
+        <ul id="chatList"></ul>
+        <input type="text" id="chatInput" placeholder="Type your message here">
+        <button id="chatSendButton">Send</button>
+    </div>
+
     <!-- Navigation Buttons -->
     <button id="homeButton">Home</button>
     <button id="accountButton">Account</button>
     <button id="logoutButton">Logout</button>
 
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="merchant.js"></script>
 </body>
 </html>

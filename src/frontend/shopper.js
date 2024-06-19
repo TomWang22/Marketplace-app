@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const shopButton = document.getElementById('shopButton');
     const cartItemCount = document.getElementById('cartItemCount');
     const totalCostElement = document.getElementById('totalCost');
+    const chatContainer = document.getElementById('chatContainer');
+    const chatInput = document.getElementById('chatInput');
+    const chatSendButton = document.getElementById('chatSendButton');
+    const chatList = document.getElementById('chatList');
     
     // Retrieve the userId from local storage
     const userId = localStorage.getItem('userId');
@@ -27,6 +31,34 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = '/login.html';
         return;
     }
+    const socket = io('http://localhost:3000', {
+        transports: ['websocket'],
+        query: { userId }
+    });
+
+    socket.on('previousChats', (chats) => {
+        chatList.innerHTML = '';
+        chats.forEach(chat => {
+            const chatItem = document.createElement('li');
+            chatItem.textContent = `${chat.username} (${chat.role}): ${chat.message} (${chat.timestamp})`;
+            chatList.appendChild(chatItem);
+        });
+    });
+
+    socket.on('receiveMessage', (chat) => {
+        const chatItem = document.createElement('li');
+        chatItem.textContent = `${chat.username} (${chat.role}): ${chat.message} (${chat.timestamp})`;
+        chatList.appendChild(chatItem);
+    });
+
+
+    chatSendButton.addEventListener('click', () => {
+        const message = chatInput.value;
+        if (message) {
+            socket.emit('sendMessage', { message, userId, role: 'shopper' });
+            chatInput.value = '';
+        }
+    });
 
     // Function to fetch cart items from the server
     const fetchCartItems = async () => {

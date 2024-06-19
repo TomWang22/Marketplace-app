@@ -10,6 +10,8 @@ const os = require('os');
 const session = require('express-session');
 const RedisStore = require('connect-redis').default;
 const Redis = require('ioredis');
+const http = require('http');
+const socketIo = require('socket.io');
 
 const numCPUs = os.cpus().length;
 const port = 3000;
@@ -42,12 +44,25 @@ if (cluster.isMaster) {
     });
 } else {
     const app = express();
+    const server = http.createServer(app);
+    const io = socketIo(server, {
+        cors: {
+            origin: 'http://127.0.0.1:5500',
+            methods: ['GET', 'POST'],
+            allowedHeaders: ['Content-Type'],
+            credentials: true
+        }
+    });
 
     app.use(bodyParser.json());
-
+ 
     app.use(cors({
-        origin: 'http://127.0.0.1:5500'
+        origin: 'http://127.0.0.1:5500',
+        methods: ['GET', 'POST'],
+        allowedHeaders: ['Content-Type'],
+        credentials: true
     }));
+    
 
     app.use(session({
         store: new RedisStore({ client: redisClient }),
@@ -58,6 +73,44 @@ if (cluster.isMaster) {
     }));
 
     app.use(express.static(path.join(__dirname, '../frontend')));
+
+    io.on('connection', (socket) => {
+        console.log('A user connected');
+    
+        // Retrieve and send previous chats from the database
+        pool.query('SELECT * FROM chat ORDER BY timestamp ASC', (error, results) => {
+            if (error) {
+                console.error('Error retrieving chats from database:', error);
+            } else {
+                socket.emit('previousChats', results.rows);
+            }
+        });
+    
+        socket.on('sendMessage', async (data) => {
+            const { message, userId, role } = data; // role can be 'shopper' or 'merchant'
+            const timestamp = new Date();
+    
+            try {
+                const userResult = await pool.query('SELECT username FROM users WHERE id = $1', [userId]);
+                const username = userResult.rows[0]?.username || 'Unknown User';
+    
+                // Insert the chat message into the database
+                const result = await pool.query('INSERT INTO chat (user_id, role, message, timestamp) VALUES ($1, $2, $3, $4) RETURNING *',
+                    [userId, role, message, timestamp]);
+                const chatMessage = result.rows[0];
+                chatMessage.username = username; // Add username to the chat message
+    
+                // Broadcast the new message to all connected clients
+                io.emit('receiveMessage', chatMessage);
+            } catch (error) {
+                console.error('Error inserting chat message into database:', error);
+            }
+        });
+    
+        socket.on('disconnect', () => {
+            console.log('A user disconnected');
+        });
+    });
 
     app.post('/api/register', async (req, res) => {
         const { username, password, role } = req.body;
@@ -80,11 +133,11 @@ if (cluster.isMaster) {
 
     app.post('/api/login', async (req, res) => {
         const { username, password } = req.body;
-
+    
         try {
             const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
             const user = result.rows[0];
-
+    
             if (user && await bcrypt.compare(password, user.password)) {
                 const token = generateToken(user.id);
                 res.json({ success: true, userId: user.id, role: user.role, token });
@@ -95,6 +148,7 @@ if (cluster.isMaster) {
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
     });
+    
 
     app.get('/api/cart', async (req, res) => {
         const userId = req.query.userId;
@@ -107,7 +161,6 @@ if (cluster.isMaster) {
         }
     });
     
-
     app.post('/api/place-order', async (req, res) => {
         const { userId, cartItems } = req.body;
     
@@ -152,13 +205,6 @@ if (cluster.isMaster) {
         }
     });
     
-    
-    
-    
-    
-    
-    
-
     app.post('/api/return-merchandise', async (req, res) => {
         const { userId, productId, quantity } = req.body;
 
@@ -257,7 +303,7 @@ if (cluster.isMaster) {
             );
             res.json({ success: true, supply: result.rows[0] });
         } catch (error) {
-            res.status(500).json({ success: false, message: 'Internal server error' });
+            res.status (500).json({ success: false, message: 'Internal server error' });
         }
     });
 
@@ -460,7 +506,7 @@ app.post('/api/send-supplies', async (req, res) => {
 });
 
 
-    app.listen(port, () => {
+    server.listen(port, () => {
         console.log(`Worker ${process.pid} is running on http://localhost:${port}`);
     });
 
