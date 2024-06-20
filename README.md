@@ -44,45 +44,45 @@ First, you need to clone the repository from GitHub to your local machine. Open 
 ```bash
 git clone https://github.com/yourusername/marketplace.git
 cd marketplace
-2. Install Dependencies
+### 2. Install Dependencies
 Next, install all the necessary dependencies listed in your package.json file. This can be done using npm:
 
 bash
-Copy code
+
 npm install
 This command reads the package.json file and installs the required packages, which include Express, body-parser, bcryptjs, jsonwebtoken, pg, Redis-related packages, and socket.io among others.
 
-3. Set Up PostgreSQL Database
+### 3. Set Up PostgreSQL Database
 Ensure you have PostgreSQL installed on your machine. Create a new database named marketplace:
 
 bash
-Copy code
+
 psql -U postgres -c "CREATE DATABASE marketplace;"
 Run the SQL scripts provided in the db directory to set up the necessary tables:
 
 bash
-Copy code
+
 psql -U postgres -d marketplace -f db/scripts.sql
-4. Set Up Redis
+### 4. Set Up Redis
 Ensure Redis is installed and running on your machine. Typically, you can start Redis with the following command:
 
 bash
-Copy code
+
 redis-server
 Update the Redis connection settings in server.js if necessary. The default connection settings might look something like this:
 
 javascript
-Copy code
+
 const redis = require('ioredis');
 const redisClient = new redis({
   host: 'localhost',
   port: 6379
 });
-5. Start the Server
+### 5. Start the Server
 Start the backend server by running:
 
 bash
-Copy code
+
 npm start
 This will start the Express server, which will be listening on a port (typically 3000) for incoming requests.
 
@@ -91,7 +91,7 @@ Running the Application
 Start the backend server:
 
 bash
-Copy code
+
 npm start
 Open your browser and navigate to http://localhost:3000.
 
