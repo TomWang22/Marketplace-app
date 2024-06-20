@@ -73,190 +73,639 @@ User Roles and IDs: Persist the role and ID of the logged-in user### README
 - **View and Manage Shopping Cart**: Manage items in their shopping cart.
 - **Purchase Products**: Purchase products from the marketplace.
 
-## API Endpoints
+# API Documentation
 
-### User Endpoints
+## Overview
+This API is built using Express.js and PostgreSQL, providing functionalities for user registration, login, product management, shopping cart management, order placement, and real-time chat. Redis is used for session management, and Socket.io is used for real-time chat functionalities.
 
-#### User Registration
-- **URL**: `/api/register`
-- **Method**: `POST`
-- **Description**: Register a new user.
-- **Request Body**:
-    ```json
-    {
-        "username": "string",
-        "password": "string",
-        "role": "string"
-    }
-    ```
-- **Response**:
-    - `201 Created`: User registered successfully.
-    - `400 Bad Request`: Validation error.
+## Table of Contents
+- [Setup](#setup)
+- [Endpoints](#endpoints)
+  - [User Registration](#user-registration)
+  - [User Login](#user-login)
+  - [Shopping Cart](#shopping-cart)
+  - [Order Management](#order-management)
+  - [Chat Functionality](#chat-functionality)
+  - [Product Management](#product-management)
+  - [Supply Management](#supply-management)
+  - [Account Information](#account-information)
+- [Real-time Chat](#real-time-chat)
+- [Error Handling](#error-handling)
 
-#### User Login
-- **URL**: `/api/login`
-- **Method**: `POST`
-- **Description**: Authenticate a user and return a JWT token.
-- **Request Body**:
-    ```json
-    {
-        "username": "string",
-        "password": "string"
-    }
-    ```
-- **Response**:
-    - `200 OK`: Login successful, returns JWT token.
-    - `401 Unauthorized`: Invalid credentials.
+## Setup
 
-### Shopping Cart Endpoints
+### Install dependencies:
 
-#### Fetch Cart Items
-- **URL**: `/api/cart`
-- **Method**: `GET`
-- **Description**: Fetch items in the user's shopping cart.
-- **Query Parameters**:
-    - `userId`: The ID of the user.
-- **Response**:
-    - `200 OK`: Returns an array of cart items.
-    - `401 Unauthorized`: User not authenticated.
+```bash
+npm install express body-parser pg bcryptjs path cors jsonwebtoken cluster os express-session connect-redis ioredis http socket.io
+```
 
-#### Update Cart Item Quantity
-- **URL**: `/api/cart/:id`
-- **Method**: `PUT`
-- **Description**: Update the quantity of an item in the cart.
-- **Request Body**:
-    ```json
-    {
-        "quantity": "number"
-    }
-    ```
-- **Response**:
-    - `200 OK`: Quantity updated successfully.
-    - `400 Bad Request`: Validation error.
-    - `401 Unauthorized`: User not authenticated.
+### Configure PostgreSQL and Redis connections:
 
-#### Remove Cart Item
-- **URL**: `/api/cart/:id`
-- **Method**: `DELETE`
-- **Description**: Remove an item from the cart.
-- **Response**:
-    - `200 OK`: Item removed successfully.
-    - `401 Unauthorized`: User not authenticated.
+#### PostgreSQL:
 
-### Order Endpoints
+```javascript
+const pool = new Pool({
+  user: "postgres",
+  host: "localhost",
+  database: "marketplace",
+  port: 5432,
+});
+```
+
+#### Redis:
+
+```javascript
+const redisClient = new Redis({
+  host: "127.0.0.1",
+  port: 6379,
+});
+```
+
+### Start the server:
+
+```javascript
+const port = 3000;
+server.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});
+```
+
+## Endpoints
+
+### User Registration
+
+**Endpoint:** `/api/register`
+
+**Method:** `POST`
+
+**Request Body:**
+
+```json
+{
+  "username": "string",
+  "password": "string",
+  "role": "string" // 'shopper', 'merchant', or 'supplier'
+}
+```
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "user": { /* user details */ }
+  }
+  ```
+- Error: `400 Bad Request` or `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+### User Login
+
+**Endpoint:** `/api/login`
+
+**Method:** `POST`
+
+**Request Body:**
+
+```json
+{
+  "username": "string",
+  "password": "string"
+}
+```
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "userId": "number",
+    "role": "string",
+    "token": "string"
+  }
+  ```
+- Error: `401 Unauthorized` or `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Invalid credentials"
+  }
+  ```
+
+### Shopping Cart
+
+#### Get Cart Items
+
+**Endpoint:** `/api/cart`
+
+**Method:** `GET`
+
+**Query Parameters:**
+
+- `userId`: `number`
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "items": [ /* cart items */ ]
+  }
+  ```
+- Error: `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+#### Add Item to Cart
+
+**Endpoint:** `/api/cart`
+
+**Method:** `POST`
+
+**Request Body:**
+
+```json
+{
+  "userId": "number",
+  "productId": "number",
+  "quantity": "number"
+}
+```
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "item": { /* cart item details */ }
+  }
+  ```
+- Error: `400 Bad Request` or `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+#### Update Cart Item
+
+**Endpoint:** `/api/cart/:id`
+
+**Method:** `PUT`
+
+**Request Body:**
+
+```json
+{
+  "quantity": "number"
+}
+```
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true
+  }
+  ```
+- Error: `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+#### Delete Cart Item
+
+**Endpoint:** `/api/cart/:id`
+
+**Method:** `DELETE`
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true
+  }
+  ```
+- Error: `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+### Order Management
 
 #### Place Order
-- **URL**: `/api/place-order`
-- **Method**: `POST`
-- **Description**: Place an order for the items in the cart.
-- **Request Body**:
-    ```json
-    {
-        "userId": "string",
-        "cartItems": [
-            {
-                "productId": "string",
-                "quantity": "number",
-                "price": "number"
-            }
-        ]
-    }
-    ```
-- **Response**:
-    - `201 Created`: Order placed successfully.
-    - `400 Bad Request`: Validation error.
-    - `401 Unauthorized`: User not authenticated.
+
+**Endpoint:** `/api/place-order`
+
+**Method:** `POST`
+
+**Request Body:**
+
+```json
+{
+  "userId": "number",
+  "cartItems": [ /* array of cart items */ ]
+}
+```
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "message": "Order placed successfully"
+  }
+  ```
+- Error: `400 Bad Request` or `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
 
 #### Return Merchandise
-- **URL**: `/api/return-merchandise`
-- **Method**: `POST`
-- **Description**: Return purchased merchandise.
-- **Request Body**:
-    ```json
-    {
-        "userId": "string",
-        "productId": "string",
-        "quantity": "number"
-    }
-    ```
-- **Response**:
-    - `200 OK`: Merchandise returned successfully.
-    - `400 Bad Request`: Validation error.
-    - `401 Unauthorized`: User not authenticated.
 
-### Supply Endpoints
+**Endpoint:** `/api/return-merchandise`
 
-#### Receive Supplies
-- **URL**: `/api/receive-supplies`
-- **Method**: `POST`
-- **Description**: Record receipt of supplies.
-- **Request Body**:
-    ```json
-    {
-        "merchantId": "string",
-        "productId": "string",
-        "quantity": "number"
-    }
-    ```
-- **Response**:
-    - `201 Created`: Supplies received successfully.
-    - `400 Bad Request`: Validation error.
-    - `401 Unauthorized`: User not authenticated.
+**Method:** `POST`
 
-#### Fetch Received Supplies
-- **URL**: `/api/received-supplies`
-- **Method**: `GET`
-- **Description**: Fetch a list of supplies received by merchants.
-- **Response**:
-    - `200 OK`: Returns an array of received supplies.
-    - `401 Unauthorized`: User not authenticated.
+**Request Body:**
 
-### Product Endpoints
+```json
+{
+  "userId": "number",
+  "productId": "number",
+  "quantity": "number"
+}
+```
 
-#### Add New Product
-- **URL**: `/api/products`
-- **Method**: `POST`
-- **Description**: Add a new product to the marketplace.
-- **Request Body**:
-    ```json
-    {
-        "name": "string",
-        "description": "string",
-        "price": "number",
-        "stock": "number",
-        "image_url": "string"
-    }
-    ```
-- **Response**:
-    - `201 Created`: Product added successfully.
-    - `400 Bad Request`: Validation error.
-    - `401 Unauthorized`: User not authenticated.
+**Response:**
 
-#### Fetch Products
-- **URL**: `/api/products`
-- **Method**: `GET`
-- **Description**: Fetch all products in the marketplace.
-- **Response**:
-    - `200 OK`: Returns an array of products.
-    - `401 Unauthorized`: User not authenticated.
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "message": "Merchandise returned and refunded successfully"
+  }
+  ```
+- Error: `400 Bad Request` or `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
 
-### Funds Endpoints
+### Chat Functionality
 
-#### Add Funds
-- **URL**: `/api/add-funds`
-- **Method**: `POST`
-- **Description**: Add funds to a user's account.
-- **Request Body**:
-    ```json
-    {
-        "userId": "string",
-        "amount": "number"
-    }
-    ```
-- **Response**:
-    - `200 OK`: Funds added successfully.
-    - `400 Bad Request`: Validation error.
-    - `401 Unauthorized`: User not authenticated.
+**Using Socket.io for real-time communication**
+
+- Connection established:
+  ```javascript
+  io.on("connection", (socket) => {
+    console.log("A user connected");
+  });
+  ```
+
+- Sending a message:
+  ```javascript
+  socket.on("sendMessage", async (data) => {
+    const { message, userId, role } = data;
+    // Logic to handle message sending
+  });
+  ```
+
+- Receiving previous chats:
+  ```javascript
+  socket.emit("previousChats", results.rows);
+  ```
+
+### Product Management
+
+#### Get Products
+
+**Endpoint:** `/api/products`
+
+**Method:** `GET`
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "products": [ /* array of products */ ]
+  }
+  ```
+- Error: `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+#### Add Product
+
+**Endpoint:** `/api/products`
+
+**Method:** `POST`
+
+**Request Body:**
+
+```json
+{
+  "name": "string",
+  "description": "string",
+  "price": "number",
+  "stock": "number",
+  "image_url": "string"
+}
+```
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "product": { /* product details */ }
+  }
+  ```
+- Error: `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+### Supply Management
+
+#### Request Supply
+
+**Endpoint:** `/api/request-supply`
+
+**Method:** `POST`
+
+**Request Body:**
+
+```json
+{
+  "merchantId": "number",
+  "productId": "number",
+  "quantity": "number"
+}
+```
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "request": { /* request details */ }
+  }
+  ```
+- Error: `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+#### Get Supply Requests
+
+**Endpoint:** `/api/supply-requests`
+
+**Method:** `GET`
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "requests": [ /* array of supply requests */ ]
+  }
+  ```
+- Error: `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+#### Send Supplies
+
+**Endpoint:** `/api/send-supplies`
+
+**Method:** `POST`
+
+**Request Body:**
+
+```json
+{
+  "supplierId": "number",
+  "merchantId": "number",
+  "productId": "number",
+  "quantity": "number"
+}
+```
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "message": "Supplies sent and stock updated successfully"
+  }
+  ```
+- Error: `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+### Account Information
+
+#### Get Account Info
+
+**Endpoint:** `/api/account-info`
+
+**Method:** `GET`
+
+**Query Parameters:**
+
+- `userId`: `number`
+
+**Response
+
+:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "account": { /* account details */ }
+  }
+  ```
+- Error: `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+### Purchase History
+
+**Endpoint:** `/api/purchase-history`
+
+**Method:** `GET`
+
+**Query Parameters:**
+
+- `userId`: `number`
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "history": [ /* array of purchase history */ ]
+  }
+  ```
+- Error: `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+### Add Funds
+
+**Endpoint:** `/api/add-funds`
+
+**Method:** `POST`
+
+**Request Body:**
+
+```json
+{
+  "userId": "number",
+  "amount": "number"
+}
+```
+
+**Response:**
+
+- Success: `200 OK`
+  ```json
+  {
+    "success": true,
+    "message": "Funds added successfully"
+  }
+  ```
+- Error: `400 Bad Request` or `500 Internal Server Error`
+  ```json
+  {
+    "success": false,
+    "message": "Error message"
+  }
+  ```
+
+## Real-time Chat
+
+### Socket.io Events
+
+#### Connection Event
+
+```javascript
+io.on("connection", (socket) => {
+  console.log("A user connected");
+});
+```
+
+#### Send Message Event
+
+```javascript
+socket.on("sendMessage", async (data) => {
+  const { message, userId, role } = data;
+  const timestamp = new Date();
+
+  try {
+    const userResult = await pool.query("SELECT username FROM users WHERE id = $1", [userId]);
+    const username = userResult.rows[0]?.username || "Unknown User";
+
+    const result = await pool.query(
+      "INSERT INTO chat (user_id, role, message, timestamp, username) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [userId, role, message, timestamp, username]
+    );
+    const chatMessage = result.rows[0];
+
+    io.emit("receiveMessage", chatMessage);
+  } catch (error) {
+    console.error("Error inserting chat message into database:", error);
+  }
+});
+```
+
+#### Disconnect Event
+
+```javascript
+socket.on("disconnect", () => {
+  console.log("A user disconnected");
+});
+```
+
+## Error Handling
+
+Errors are handled by sending an appropriate HTTP status code and a JSON response containing the success status and error message.
+
+**Example:**
+
+```json
+{
+  "success": false,
+  "message": "Error message"
+}
+```
+
+- `400 Bad Request`: Client-side error, such as missing or invalid parameters.
+- `500 Internal Server Error`: Server-side error, such as database connection issues.
 
 ## File Structure
 ```plaintext
