@@ -50,13 +50,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatList.appendChild(chatItem);
     });
 
-    chatSendButton.addEventListener('click', () => {
-        const message = chatInput.value;
-        if (message) {
-            socket.emit('sendMessage', { message, userId: merchantId, role: 'merchant' });
-            chatInput.value = '';
-        }
-    });
+    if (chatSendButton) {
+        chatSendButton.addEventListener('click', () => {
+            const message = chatInput.value;
+            if (message) {
+                socket.emit('sendMessage', { message, userId: merchantId, role: 'merchant' });
+                chatInput.value = '';
+            }
+        });
+    }
 
     socket.on('previousSupplierChats', (chats) => {
         chatSupplierList.innerHTML = '';
@@ -73,13 +75,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatSupplierList.appendChild(chatItem);
     });
 
-    chatSupplierSendButton.addEventListener('click', () => {
-        const message = chatSupplierInput.value;
-        if (message) {
-            socket.emit('sendSupplierMessage', { message, userId: merchantId, role: 'merchant' });
-            chatSupplierInput.value = '';
-        }
-    });
+    if (chatSupplierSendButton) {
+        chatSupplierSendButton.addEventListener('click', () => {
+            const message = chatSupplierInput.value;
+            if (message) {
+                socket.emit('sendSupplierMessage', { message, userId: merchantId, role: 'merchant' });
+                chatSupplierInput.value = '';
+            }
+        });
+    }
 
     function displayNotification(message) {
         const listItem = document.createElement('li');
