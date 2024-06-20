@@ -144,37 +144,56 @@ Contributing
 Contributions are welcome! Please fork the repository and create a pull request with your changes. Ensure that your code adheres to the existing style and conventions used in the project.
 
 
-# Marketplace API
+Marketplace API Documentation
+This API allows users to register, login, add items to their cart, place orders, and manage supplies.
 
-This is a marketplace application that allows users to register, login, add items to their cart, place orders, and manage supplies.
-
-## Table of Contents
-
-1. [Authentication](#authentication)
-2. [User Information](#user-information)
-3. [Cart Operations](#cart-operations)
-4. [Order Operations](#order-operations)
-5. [Products](#products)
-6. [Supplies](#supplies)
-7. [Supply Requests](#supply-requests)
-8. [Funds](#funds)
-9. [Received Supplies](#received-supplies)
-10. [Users](#users)
-11. [Static Files and Pages](#static-files-and-pages)
-
-## Authentication
-
-### Register
-- **URL:** `/api/register`
-- **Method:** `POST`
-- **Description:** Register a new user.
-- **Request Body:**
-  ```json
-  {
-    "username": "string",
-    "password": "string",
-    "role": "string"
-  }
+Table of Contents
+Authentication
+Register
+Login
+User Information
+Get Account Info
+Get Purchase History
+Cart Operations
+Get Cart Items
+Add Item to Cart
+Update Cart Item
+Remove Item from Cart
+Order Operations
+Place Order
+Return Merchandise
+Products
+Get All Products
+Add New Product
+Supplies
+Get All Supplies
+Add New Supply
+Supply Requests
+Request Supply
+Get Supply Requests
+Send Supplies
+Funds
+Add Funds
+Received Supplies
+Get Received Supplies
+Users
+Get User Data
+Add Search History
+Static Files and Pages
+Serve Static Files
+Authentication
+Register
+URL: /api/register
+Method: POST
+Description: Register a new user.
+Request Body:
+json
+Copy code
+{
+  "username": "string",
+  "password": "string",
+  "role": "string"
+}
 Responses:
 200 OK:
 json
@@ -191,7 +210,7 @@ Copy code
 400 Bad Request: Missing fields or username already exists.
 500 Internal Server Error: Server error.
 Login
-- **URL:** /api/login
+URL: /api/login
 Method: POST
 Description: Login an existing user.
 Request Body:
@@ -676,6 +695,7 @@ Description: Serve static files and HTML pages.
 Responses:
 200 OK: Serves the requested HTML page.
 404 Not Found: Page not found.
+
 
 License
 This project is licensed under the MIT License. See the LICENSE file for more details.
