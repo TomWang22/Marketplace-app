@@ -160,262 +160,186 @@ marketplace/
 │   │   ├── contact.html
 │   │   ├── about.js
 │   │   ├── about.html
-API Endpoints
-Authentication
-Register
-URL: /api/register
-Method: POST
-Description: Register a new user.
-Request Body:
-json
+javascriptCopy codeconst fs = require('fs');
 
+
+const documentation = `
+# Marketplace API Documentation
+
+
+## Introduction
+This API allows users to interact with a marketplace platform. It includes endpoints for user registration, login, managing shopping carts, placing orders, handling product supplies, and more.
+
+
+## Base URL
+\`http://localhost:3000\`
+
+
+## Authentication
+- The API uses JWT for authentication.
+- Some endpoints require a valid JWT token in the \`Authorization\` header.
+
+
+## Endpoints
+
+
+### User Registration
+
+
+#### \`POST /api/register\`
+Registers a new user (shopper, merchant, or supplier).
+
+
+**Request Body:**
+\`\`\`json
 {
   "username": "string",
   "password": "string",
-  "role": "string"
+  "role": "string" // 'shopper', 'merchant', or 'supplier'
 }
-Responses:
-200 OK:
-json
+\`\`\`
 
-{
-  "success": true,
-  "user": {
-    "id": "integer",
-    "username": "string",
-    "role": "string",
-    "balance": "number"
-  }
-}
-400 Bad Request: Missing fields or username already exists.
-500 Internal Server Error: Server error.
-Login
-URL: /api/login
-Method: POST
-Description: Login an existing user.
-Request Body:
-json
 
+**Response:**
+- \`200 OK\` on success.
+- \`400 Bad Request\` if the username already exists or fields are missing.
+
+
+### User Login
+
+
+#### \`POST /api/login\`
+Logs in a user and returns a JWT token.
+
+
+**Request Body:**
+\`\`\`json
 {
   "username": "string",
   "password": "string"
 }
-Responses:
-200 OK:
-json
+\`\`\`
 
-{
-  "success": true,
-  "userId": "integer",
-  "role": "string",
-  "token": "string"
-}
-401 Unauthorized: Invalid credentials.
-500 Internal Server Error: Server error.
-User Information
-Get Account Info
-URL: /api/account-info
-Method: GET
-Description: Get account information of a user.
-Query Parameters: userId
-Responses:
-200 OK:
-json
 
-{
-  "success": true,
-  "account": {
-    "username": "string",
-    "balance": "number"
-  }
-}
-500 Internal Server Error: Server error.
-Get Purchase History
-URL: /api/purchase-history
-Method: GET
-Description: Get purchase history of a user.
-Query Parameters: userId
-Responses:
-200 OK:
-json
+**Response:**
+- \`200 OK\` on success.
+- \`401 Unauthorized\` if credentials are invalid.
 
-{
-  "success": true,
-  "history": [
-    {
-      "id": "integer",
-      "product_id": "integer",
-      "quantity": "integer",
-      "purchase_date": "string"
-    }
-  ]
-}
-500 Internal Server Error: Server error.
-Cart Operations
-Get Cart Items
-URL: /api/cart
-Method: GET
-Description: Get all items in a user's shopping cart.
-Query Parameters: userId
-Responses:
-200 OK:
-json
 
-{
-  "success": true,
-  "items": [
-    {
-      "id": "integer",
-      "user_id": "integer",
-      "product_id": "integer",
-      "product": "string",
-      "quantity": "integer",
-      "price": "number"
-    }
-  ]
-}
-500 Internal Server Error: Server error.
-Add Item to Cart
-URL: /api/cart
-Method: POST
-Description: Add an item to the shopping cart.
-Request Body:
-json
+### Shopping Cart
 
+
+#### \`GET /api/cart\`
+Retrieves the current user's shopping cart items.
+
+
+**Query Parameters:**
+- \`userId\`: ID of the user.
+
+
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
+
+
+#### \`POST /api/cart\`
+Adds an item to the user's shopping cart.
+
+
+**Request Body:**
+\`\`\`json
 {
   "userId": "integer",
   "productId": "integer",
   "quantity": "integer"
 }
-Responses:
-200 OK:
-json
+\`\`\`
 
-{
-  "success": true,
-  "item": {
-    "id": "integer",
-    "user_id": "integer",
-    "product_id": "integer",
-    "product": "string",
-    "quantity": "integer",
-    "price": "number"
-  }
-}
-400 Bad Request: Missing fields or product not found.
-500 Internal Server Error: Server error.
-Update Cart Item
-URL: /api/cart/:id
-Method: PUT
-Description: Update the quantity of an item in the shopping cart.
-Request Parameters: id
-Request Body:
-json
 
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
+
+
+#### \`PUT /api/cart/:id\`
+Updates the quantity of an item in the user's shopping cart.
+
+
+**Request Parameters:**
+- \`id\`: ID of the cart item.
+
+
+**Request Body:**
+\`\`\`json
 {
   "quantity": "integer"
 }
-Responses:
-200 OK:
-json
+\`\`\`
 
-{
-  "success": true
-}
-500 Internal Server Error: Server error.
-Remove Item from Cart
-URL: /api/cart/:id
-Method: DELETE
-Description: Remove an item from the shopping cart.
-Request Parameters: id
-Responses:
-200 OK:
-json
 
-{
-  "success": true
-}
-500 Internal Server Error: Server error.
-Order Operations
-Place Order
-URL: /api/place-order
-Method: POST
-Description: Place an order for items in the cart.
-Request Body:
-json
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
 
+
+#### \`DELETE /api/cart/:id\`
+Removes an item from the user's shopping cart.
+
+
+**Request Parameters:**
+- \`id\`: ID of the cart item.
+
+
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
+
+
+### Orders
+
+
+#### \`POST /api/place-order\`
+Places an order with the items in the user's shopping cart.
+
+
+**Request Body:**
+\`\`\`json
 {
   "userId": "integer",
   "cartItems": [
     {
-      "product_id": "integer",
+      "productId": "integer",
       "quantity": "integer",
       "price": "number"
     }
   ]
 }
-Responses:
-200 OK:
-json
+\`\`\`
 
-{
-  "success": true,
-  "message": "Order placed successfully."
-}
-400 Bad Request: Insufficient balance.
-500 Internal Server Error: Server error.
-Return Merchandise
-URL: /api/return-merchandise
-Method: POST
-Description: Return purchased merchandise within the return period.
-Request Body:
-json
 
-{
-  "userId": "integer",
-  "productId": "integer",
-  "quantity": "integer"
-}
-Responses:
-200 OK:
-json
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
 
-{
-  "success": true,
-  "message": "Merchandise returned and refunded successfully."
-}
-400 Bad Request: Return period expired or no purchase record found.
-500 Internal Server Error: Server error.
-Products
-Get All Products
-URL: /api/products
-Method: GET
-Description: Retrieve all products.
-Responses:
-200 OK:
-json
 
-{
-  "success": true,
-  "products": [
-    {
-      "id": "integer",
-      "name": "string",
-      "description": "string",
-      "price": "number",
-      "stock": "integer",
-      "image_url": "string"
-    }
-  ]
-}
-500 Internal Server Error: Server error.
-Add New Product
-URL: /api/products
-Method: POST
-Description: Add a new product.
-Request Body:
-json
+### Products
 
+
+#### \`GET /api/products\`
+Retrieves all products.
+
+
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
+
+
+#### \`POST /api/products\`
+Adds a new product.
+
+
+**Request Body:**
+\`\`\`json
 {
   "name": "string",
   "description": "string",
@@ -423,53 +347,32 @@ json
   "stock": "integer",
   "image_url": "string"
 }
-Responses:
-200 OK:
-json
+\`\`\`
 
-{
-  "success": true,
-  "product": {
-    "id": "integer",
-    "name": "string",
-    "description": "string",
-    "price": "number",
-    "stock": "integer",
-    "image_url": "string"
-  }
-}
-500 Internal Server Error: Server error.
-Supplies
-Get All Supplies
-URL: /api/supplies
-Method: GET
-Description: Retrieve all supplies.
-Responses:
-200 OK:
-json
 
-{
-  "success": true,
-  "supplies": [
-    {
-      "id": "integer",
-      "name": "string",
-      "description": "string",
-      "price": "number",
-      "cost": "number",
-      "stock": "integer",
-      "image_url": "string"
-    }
-  ]
-}
-500 Internal Server Error: Server error.
-Add New Supply
-URL: /api/supplies
-Method: POST
-Description: Add a new supply.
-Request Body:
-json
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
 
+
+### Supplies
+
+
+#### \`GET /api/supplies\`
+Retrieves all supplies.
+
+
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
+
+
+#### \`POST /api/supplies\`
+Adds a new supply.
+
+
+**Request Body:**
+\`\`\`json
 {
   "name": "string",
   "description": "string",
@@ -478,202 +381,151 @@ json
   "stock": "integer",
   "image_url": "string"
 }
-Responses:
-200 OK:
-json
+\`\`\`
 
-{
-  "success": true,
-  "supply": {
-    "id": "integer",
-    "name": "string",
-    "description": "string",
-    "price": "number",
-    "cost": "number",
-    "stock": "integer",
-    "image_url": "string"
-  }
-}
-500 Internal Server Error: Server error.
-Supply Requests
-Request Supply
-URL: /api/request-supply
-Method: POST
-Description: Request supplies from suppliers.
-Request Body:
-json
 
-{
-  "merchantId": "integer",
-  "productId": "integer",
-  "quantity": "integer"
-}
-Responses:
-200 OK:
-json
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
 
-{
-  "success": true,
-  "request": {
-    "id": "integer",
-    "merchant_id": "integer",
-    "product_id": "integer",
-    "quantity": "integer",
-    "request_date": "string"
-  }
-}
-500 Internal Server Error: Server error.
-Get Supply Requests
-URL: /api/supply-requests
-Method: GET
-Description: Retrieve all supply requests.
-Responses:
-200 OK:
-json
 
-{
-  "success": true,
-  "requests": [
-    {
-      "id": "integer",
-      "merchant_id": "integer",
-      "product_id": "integer",
-      "quantity": "integer",
-      "request_date": "string",
-      "name": "string",
-      "description": "string",
-      "image_url": "string"
-    }
-  ]
-}
-500 Internal Server Error: Server error.
-Send Supplies
-URL: /api/send-supplies
-Method: POST
-Description: Send supplies to merchants.
-Request Body:
-json
+### User Account
 
-{
-  "supplierId": "integer",
-  "merchantId": "integer",
-  "productId": "integer",
-  "quantity": "integer"
-}
-Responses:
-200 OK:
-json
 
-{
-  "success": true,
-  "message": "Supplies sent and stock updated successfully."
-}
-500 Internal Server Error: Server error.
-Funds
-Add Funds
-URL: /api/add-funds
-Method: POST
-Description: Add funds to a user's account.
-Request Body:
-json
+#### \`GET /api/account-info\`
+Retrieves account information for a user.
 
+
+**Query Parameters:**
+- \`userId\`: ID of the user.
+
+
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
+
+
+### Purchase History
+
+
+#### \`GET /api/purchase-history\`
+Retrieves the purchase history for a user.
+
+
+**Query Parameters:**
+- \`userId\`: ID of the user.
+
+
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
+
+
+### Miscellaneous
+
+
+#### \`POST /api/add-funds\`
+Adds funds to a user's account.
+
+
+**Request Body:**
+\`\`\`json
 {
   "userId": "integer",
   "amount": "number"
 }
-Responses:
-200 OK:
-json
+\`\`\`
 
-{
-  "success": true,
-  "message": "Funds added successfully."
-}
-400 Bad Request: Amount must be greater than zero.
-500 Internal Server Error: Server error.
-Get Received Supplies
-URL: /api/received-supplies
-Method: GET
-Description: Retrieve all received supplies.
-Responses:
-200 OK:
-json
 
-{
-  "success": true,
-  "supplies": [
-    {
-      "id": "integer",
-      "name": "string",
-      "description": "string",
-      "price": "number",
-      "stock": "integer",
-      "image_url": "string"
-    }
-  ]
-}
-500 Internal Server Error: Server error.
-Users
-Get User Data
-URL: /api/users/:userId
-Method: GET
-Description: Get user data including shopping and search history.
-Request Parameters: userId
-Responses:
-200 OK:
-json
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
 
-{
-  "success": true,
-  "user": {
-    "username": "string",
-    "balance": "number",
-    "shoppingHistory": [
-      {
-        "id": "integer",
-        "product_id": "integer",
-        "quantity": "integer",
-        "purchase_date": "string"
-      }
-    ],
-    "searchHistory": [
-      {
-        "id": "integer",
-        "search_query": "string",
-        "search_date": "string"
-      }
-    ]
-  }
-}
-404 Not Found: User not found.
-500 Internal Server Error: Server error.
-Add Search History
-URL: /api/search-history
-Method: POST
-Description: Add a search query to the user's search history.
-Request Body:
-json
 
+#### \`GET /api/received-supplies\`
+Retrieves the received supplies.
+
+
+**Response:**
+- \`200 OK\` on success.
+- \`500 Internal Server Error\` on failure.
+
+
+## WebSocket Events
+
+
+### Connection
+Listens for client connections.
+
+
+### \`sendMessage\`
+Sends a message in the chat.
+
+
+**Payload:**
+\`\`\`json
 {
+  "message": "string",
   "userId": "integer",
-  "searchQuery": "string"
+  "role": "string"
 }
-Responses:
-200 OK:
-json
+\`\`\`
 
+
+### \`sendSupplierMessage\`
+Sends a message from a supplier.
+
+
+**Payload:**
+\`\`\`json
 {
-  "success": true
+  "message": "string",
+  "userId": "integer",
+  "role": "string"
 }
-500 Internal Server Error: Server error.
-Static Files and Pages
-Serve Static Files
-URL: /*
-Method: GET
-Description: Serve static files and HTML pages.
-Responses:
-200 OK: Serves the requested HTML page.
-404 Not Found: Page not found.
+\`\`\`
+
+
+### \`sendMerchantMessage\`
+Sends a message from a merchant.
+
+
+**Payload:**
+\`\`\`json
+{
+  "message": "string",
+  "userId": "integer",
+  "role": "string"
+}
+\`\`\`
+
+
+### \`disconnect\`
+Handles client disconnection.
+
+
+## Error Handling
+- Errors return a JSON response with a \`success\` flag and a \`message\`.
+
+
+## Notes
+- Ensure the database and Redis server are running.
+- Replace \`your_secret_key\` with a secure key in production.
+
+
+## Authors
+- Your Name
+- Contributors
+`;
+
+
+fs.writeFile('API_DOCUMENTATION.md', documentation, (err) => {
+  if (err) throw err;
+  console.log('Documentation has been saved!');
+});
+
+
+
 User Roles and Functionality
 Merchant
 Add New Products: Merchants can add new products with details like name, description, price, stock, and image URL.
