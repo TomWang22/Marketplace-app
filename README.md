@@ -1,4 +1,4 @@
-# Marketplace Application
+ Marketplace Application
 
 ## Table of Contents
 1. [Project Overview](#project-overview)
@@ -46,31 +46,29 @@ cd marketplace
 Next, install all the necessary dependencies listed in your package.json file. This can be done using npm:
 
 bash
-
+Copy code
 npm install
-This command reads the package.json file and installs the required packages, which include Express, body-parser, bcryptjs, jsonwebtoken, pg, Redis-related packages, and socket.io among others.
-
 3. Set Up PostgreSQL Database
 Ensure you have PostgreSQL installed on your machine. Create a new database named marketplace:
 
 bash
-
+Copy code
 psql -U postgres -c "CREATE DATABASE marketplace;"
 Run the SQL scripts provided in the db directory to set up the necessary tables:
 
 bash
-
+Copy code
 psql -U postgres -d marketplace -f db/scripts.sql
 4. Set Up Redis
 Ensure Redis is installed and running on your machine. Typically, you can start Redis with the following command:
 
 bash
-
+Copy code
 redis-server
 Update the Redis connection settings in server.js if necessary. The default connection settings might look something like this:
 
 javascript
-
+Copy code
 const redis = require('ioredis');
 const redisClient = new redis({
   host: 'localhost',
@@ -80,7 +78,7 @@ const redisClient = new redis({
 Start the backend server by running:
 
 bash
-
+Copy code
 npm start
 This will start the Express server, which will be listening on a port (typically 3000) for incoming requests.
 
@@ -89,7 +87,7 @@ Running the Application
 Start the backend server:
 
 bash
-
+Copy code
 npm start
 Open your browser and navigate to http://localhost:3000.
 
@@ -110,7 +108,7 @@ Ensure all these dependencies are installed and properly configured in your proj
 
 File Structure
 plaintext
-
+Copy code
 marketplace/
 ├── db/
 │   └── scripts.sql
@@ -147,7 +145,7 @@ Method: POST
 Description: Register a new user.
 Request Body:
 json
-
+Copy code
 {
   "username": "string",
   "password": "string",
@@ -156,7 +154,7 @@ json
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "user": {
@@ -174,7 +172,7 @@ Method: POST
 Description: Login an existing user.
 Request Body:
 json
-
+Copy code
 {
   "username": "string",
   "password": "string"
@@ -182,7 +180,7 @@ json
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "userId": "integer",
@@ -200,7 +198,7 @@ Query Parameters: userId
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "account": {
@@ -217,7 +215,7 @@ Query Parameters: userId
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "history": [
@@ -239,7 +237,7 @@ Query Parameters: userId
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "items": [
@@ -260,7 +258,7 @@ Method: POST
 Description: Add an item to the shopping cart.
 Request Body:
 json
-
+Copy code
 {
   "userId": "integer",
   "productId": "integer",
@@ -269,7 +267,7 @@ json
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "item": {
@@ -290,14 +288,14 @@ Description: Update the quantity of an item in the shopping cart.
 Request Parameters: id
 Request Body:
 json
-
+Copy code
 {
   "quantity": "integer"
 }
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true
 }
@@ -310,7 +308,7 @@ Request Parameters: id
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true
 }
@@ -322,7 +320,7 @@ Method: POST
 Description: Place an order for items in the cart.
 Request Body:
 json
-
+Copy code
 {
   "userId": "integer",
   "cartItems": [
@@ -336,7 +334,7 @@ json
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "message": "Order placed successfully."
@@ -349,7 +347,7 @@ Method: POST
 Description: Return purchased merchandise within the return period.
 Request Body:
 json
-
+Copy code
 {
   "userId": "integer",
   "productId": "integer",
@@ -358,7 +356,7 @@ json
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "message": "Merchandise returned and refunded successfully."
@@ -373,7 +371,7 @@ Description: Retrieve all products.
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "products": [
@@ -394,7 +392,7 @@ Method: POST
 Description: Add a new product.
 Request Body:
 json
-
+Copy code
 {
   "name": "string",
   "description": "string",
@@ -405,7 +403,7 @@ json
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "product": {
@@ -426,7 +424,7 @@ Description: Retrieve all supplies.
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "supplies": [
@@ -448,7 +446,7 @@ Method: POST
 Description: Add a new supply.
 Request Body:
 json
-
+Copy code
 {
   "name": "string",
   "description": "string",
@@ -460,7 +458,7 @@ json
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "supply": {
@@ -481,7 +479,7 @@ Method: POST
 Description: Request supplies from suppliers.
 Request Body:
 json
-
+Copy code
 {
   "merchantId": "integer",
   "productId": "integer",
@@ -490,7 +488,7 @@ json
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "request": {
@@ -509,7 +507,7 @@ Description: Retrieve all supply requests.
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "requests": [
@@ -532,7 +530,7 @@ Method: POST
 Description: Send supplies to merchants.
 Request Body:
 json
-
+Copy code
 {
   "supplierId": "integer",
   "merchantId": "integer",
@@ -542,7 +540,7 @@ json
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "message": "Supplies sent and stock updated successfully."
@@ -555,7 +553,7 @@ Method: POST
 Description: Add funds to a user's account.
 Request Body:
 json
-
+Copy code
 {
   "userId": "integer",
   "amount": "number"
@@ -563,7 +561,7 @@ json
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "message": "Funds added successfully."
@@ -577,7 +575,7 @@ Description: Retrieve all received supplies.
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "supplies": [
@@ -601,7 +599,7 @@ Request Parameters: userId
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true,
   "user": {
@@ -632,7 +630,7 @@ Method: POST
 Description: Add a search query to the user's search history.
 Request Body:
 json
-
+Copy code
 {
   "userId": "integer",
   "searchQuery": "string"
@@ -640,7 +638,7 @@ json
 Responses:
 200 OK:
 json
-
+Copy code
 {
   "success": true
 }
