@@ -117,6 +117,52 @@ if (cluster.isMaster) {
       }
     });
 
+    socket.on('sendSupplierMessage', async (data) => {
+      const { message, userId, role } = data;
+      const timestamp = new Date();
+
+      try {
+        const userResult = await pool.query(
+          'SELECT username FROM users WHERE id = $1',
+          [userId]
+        );
+        const username = userResult.rows[0]?.username || 'Unknown User';
+
+        const result = await pool.query(
+          'INSERT INTO chat (user_id, role, message, timestamp, username) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+          [userId, role, message, timestamp, username]
+        );
+        const chatMessage = result.rows[0];
+
+        io.emit('receiveSupplierMessage', chatMessage);
+      } catch (error) {
+        console.error('Error inserting chat message into database:', error);
+      }
+    });
+
+    socket.on('sendMerchantMessage', async (data) => {
+      const { message, userId, role } = data;
+      const timestamp = new Date();
+
+      try {
+        const userResult = await pool.query(
+          'SELECT username FROM users WHERE id = $1',
+          [userId]
+        );
+        const username = userResult.rows[0]?.username || 'Unknown User';
+
+        const result = await pool.query(
+          'INSERT INTO chat (user_id, role, message, timestamp, username) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+          [userId, role, message, timestamp, username]
+        );
+        const chatMessage = result.rows[0];
+
+        io.emit('receiveMerchantMessage', chatMessage);
+      } catch (error) {
+        console.error('Error inserting chat message into database:', error);
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log("A user disconnected");
     });

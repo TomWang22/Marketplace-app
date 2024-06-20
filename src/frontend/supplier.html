@@ -39,6 +39,14 @@
             <div id="supplyRequestsList" style="display:none;"></div>
         </section>
 
+        <!-- Chat Section -->
+        <div id="chatContainer">
+            <h2>Chat with Merchants</h2>
+            <ul id="chatList"></ul>
+            <input type="text" id="chatInput" placeholder="Type your message here">
+            <button id="chatSendButton">Send</button>
+        </div>
+
         <section id="notifications-section">
             <ul id="notificationsList"></ul>
         </section>
@@ -49,6 +57,7 @@
             <a href="#">Contact</a>
         </nav>
     </footer>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="supplier.js"></script>
 </body>
 </html>

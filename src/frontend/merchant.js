@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toggleSupplyRequestsButton = document.getElementById('toggleSupplyRequestsButton');
     const supplyRequestsContainer = document.getElementById('supplyRequestsContainer');
     const supplyRequestsList = document.getElementById('supplyRequestsList');
+    const chatSupplierContainer = document.getElementById('chatSupplierContainer');
+    const chatSupplierInput = document.getElementById('chatSupplierInput');
+    const chatSupplierSendButton = document.getElementById('chatSupplierSendButton');
+    const chatSupplierList = document.getElementById('chatSupplierList');
     const merchantId = localStorage.getItem('userId');
     if (!merchantId) {
         console.error('Merchant ID is not set in local storage');
@@ -51,6 +55,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (message) {
             socket.emit('sendMessage', { message, userId: merchantId, role: 'merchant' });
             chatInput.value = '';
+        }
+    });
+
+    socket.on('previousSupplierChats', (chats) => {
+        chatSupplierList.innerHTML = '';
+        chats.forEach(chat => {
+            const chatItem = document.createElement('li');
+            chatItem.textContent = `${chat.username} (${chat.role}, ID: ${chat.user_id}): ${chat.message} (${chat.timestamp})`;
+            chatSupplierList.appendChild(chatItem);
+        });
+    });
+
+    socket.on('receiveSupplierMessage', (chat) => {
+        const chatItem = document.createElement('li');
+        chatItem.textContent = `${chat.username} (${chat.role}, ID: ${chat.user_id}): ${chat.message} (${chat.timestamp})`;
+        chatSupplierList.appendChild(chatItem);
+    });
+
+    chatSupplierSendButton.addEventListener('click', () => {
+        const message = chatSupplierInput.value;
+        if (message) {
+            socket.emit('sendSupplierMessage', { message, userId: merchantId, role: 'merchant' });
+            chatSupplierInput.value = '';
         }
     });
 
