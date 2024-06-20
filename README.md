@@ -108,7 +108,7 @@ Method: POST
 Description: Register a new user.
 Request Body:
 json
-Copy code
+
 {
   "username": "string",
   "password": "string",
@@ -117,7 +117,7 @@ Copy code
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "user": {
@@ -135,7 +135,7 @@ Method: POST
 Description: Login an existing user.
 Request Body:
 json
-Copy code
+
 {
   "username": "string",
   "password": "string"
@@ -143,7 +143,7 @@ Copy code
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "userId": "integer",
@@ -161,7 +161,7 @@ Query Parameters: userId
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "account": {
@@ -178,7 +178,7 @@ Query Parameters: userId
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "history": [
@@ -200,7 +200,7 @@ Query Parameters: userId
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "items": [
@@ -221,7 +221,7 @@ Method: POST
 Description: Add an item to the shopping cart.
 Request Body:
 json
-Copy code
+
 {
   "userId": "integer",
   "productId": "integer",
@@ -230,7 +230,7 @@ Copy code
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "item": {
@@ -251,14 +251,14 @@ Description: Update the quantity of an item in the shopping cart.
 Request Parameters: id
 Request Body:
 json
-Copy code
+
 {
   "quantity": "integer"
 }
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true
 }
@@ -271,7 +271,7 @@ Request Parameters: id
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true
 }
@@ -283,7 +283,7 @@ Method: POST
 Description: Place an order for items in the cart.
 Request Body:
 json
-Copy code
+
 {
   "userId": "integer",
   "cartItems": [
@@ -297,7 +297,7 @@ Copy code
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "message": "Order placed successfully."
@@ -310,7 +310,7 @@ Method: POST
 Description: Return purchased merchandise within the return period.
 Request Body:
 json
-Copy code
+
 {
   "userId": "integer",
   "productId": "integer",
@@ -319,7 +319,7 @@ Copy code
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "message": "Merchandise returned and refunded successfully."
@@ -334,7 +334,7 @@ Description: Retrieve all products.
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "products": [
@@ -355,7 +355,7 @@ Method: POST
 Description: Add a new product.
 Request Body:
 json
-Copy code
+
 {
   "name": "string",
   "description": "string",
@@ -366,7 +366,7 @@ Copy code
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "product": {
@@ -387,7 +387,7 @@ Description: Retrieve all supplies.
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "supplies": [
@@ -409,7 +409,7 @@ Method: POST
 Description: Add a new supply.
 Request Body:
 json
-Copy code
+
 {
   "name": "string",
   "description": "string",
@@ -421,7 +421,7 @@ Copy code
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "supply": {
@@ -442,7 +442,7 @@ Method: POST
 Description: Request supplies from suppliers.
 Request Body:
 json
-Copy code
+
 {
   "merchantId": "integer",
   "productId": "integer",
@@ -451,7 +451,7 @@ Copy code
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "request": {
@@ -470,7 +470,7 @@ Description: Retrieve all supply requests.
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "requests": [
@@ -493,7 +493,7 @@ Method: POST
 Description: Send supplies to merchants.
 Request Body:
 json
-Copy code
+
 {
   "supplierId": "integer",
   "merchantId": "integer",
@@ -503,7 +503,7 @@ Copy code
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "message": "Supplies sent and stock updated successfully."
@@ -516,7 +516,7 @@ Method: POST
 Description: Add funds to a user's account.
 Request Body:
 json
-Copy code
+
 {
   "userId": "integer",
   "amount": "number"
@@ -524,7 +524,7 @@ Copy code
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "message": "Funds added successfully."
@@ -539,7 +539,7 @@ Description: Retrieve all received supplies.
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "supplies": [
@@ -563,7 +563,7 @@ Request Parameters: userId
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true,
   "user": {
@@ -594,7 +594,7 @@ Method: POST
 Description: Add a search query to the user's search history.
 Request Body:
 json
-Copy code
+
 {
   "userId": "integer",
   "searchQuery": "string"
@@ -602,7 +602,7 @@ Copy code
 Responses:
 200 OK:
 json
-Copy code
+
 {
   "success": true
 }
