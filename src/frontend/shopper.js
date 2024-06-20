@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const inventoryButton = document.getElementById('inventoryButton');
+    const inventoryContainer = document.getElementById('inventoryContainer');
+    const inventoryItemsList = document.getElementById('inventoryItemsList');
     const shoppingCartButton = document.getElementById('shoppingCartButton');
     const cartItemsContainer = document.getElementById('cartItemsContainer');
     const cartItemsList = document.getElementById('cartItemsList');
@@ -228,12 +231,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Function to fetch inventory items from the server
+    const fetchInventoryItems = async () => {
+        try {
+            const response = await fetch(`http://localhost:3000/api/inventory?userId=${userId}`);
+            const data = await response.json();
+            return data.items;
+        } catch (error) {
+            console.error('Error fetching inventory items:', error);
+            return [];
+        }
+    };
+
+    // Function to display inventory items
+    const displayInventoryItems = async () => {
+        const inventoryItems = await fetchInventoryItems();
+
+        // Clear the current list
+        inventoryItemsList.innerHTML = '';
+
+        // Populate the list with inventory items
+        inventoryItems.forEach(item => {
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `<span>${item.product} - $${item.price.toFixed(2)} - Quantity: ${item.quantity}</span>`;
+            inventoryItemsList.appendChild(listItem);
+        });
+
+        // Show the inventory items container
+        inventoryContainer.style.display = 'block';
+    };
+
     // Event listeners for buttons
     addFundsButton.addEventListener('click', addFunds);
     returnMerchandiseButton.addEventListener('click', returnMerchandise);
     shoppingCartButton.addEventListener('click', () => {
         window.location.href = 'shopping-cart.html';
     });
+    inventoryButton.addEventListener('click', displayInventoryItems);
 
     // Event listener for Shop button
     shopButton.addEventListener('click', () => {

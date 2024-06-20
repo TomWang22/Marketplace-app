@@ -319,6 +319,12 @@ if (cluster.isMaster) {
                 "UPDATE users SET balance = balance + $1 WHERE id = $2",
                 [price * quantity, merchantId]
             );
+
+            // Insert into the inventory table
+            await pool.query(
+                "INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp) VALUES ($1, $2, $3, $4, $5, NOW())",
+                [userId, item.product, quantity, price, product_id]
+            );
         }
 
         // Delete items from the shopping cart after order is placed
@@ -335,6 +341,16 @@ if (cluster.isMaster) {
     }
 });
 
+app.get("/api/inventory", async (req, res) => {
+  const userId = req.query.userId;
+  try {
+      const result = await pool.query("SELECT * FROM inventory WHERE user_id = $1", [userId]);
+      res.json({ success: true, items: result.rows });
+  } catch (error) {
+      console.error("Error fetching inventory items:", error);
+      res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
 
   app.post("/api/return-merchandise", async (req, res) => {
     const { userId, productId, quantity } = req.body;
