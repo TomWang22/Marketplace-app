@@ -123,3 +123,188 @@ marketplace/
 │   │   ├── contact.html
 │   │   ├── about.js
 │   │   ├── about.html
+
+# API Documentation
+
+## User Endpoints
+
+### User Registration
+- **URL**: `/api/register`
+- **Method**: `POST`
+- **Description**: Register a new user.
+- **Request Body**:
+    ```json
+    {
+        "username": "string",
+        "password": "string",
+        "role": "string"
+    }
+    ```
+- **Response**:
+    - `201 Created`: User registered successfully.
+    - `400 Bad Request`: Validation error.
+
+### User Login
+- **URL**: `/api/login`
+- **Method**: `POST`
+- **Description**: Authenticate a user and return a JWT token.
+- **Request Body**:
+    ```json
+    {
+        "username": "string",
+        "password": "string"
+    }
+    ```
+- **Response**:
+    - `200 OK`: Login successful, returns JWT token.
+    - `401 Unauthorized`: Invalid credentials.
+
+## Shopping Cart Endpoints
+
+### Fetch Cart Items
+- **URL**: `/api/cart`
+- **Method**: `GET`
+- **Description**: Fetch items in the user's shopping cart.
+- **Query Parameters**:
+    - `userId`: The ID of the user.
+- **Response**:
+    - `200 OK`: Returns an array of cart items.
+    - `401 Unauthorized`: User not authenticated.
+
+### Update Cart Item Quantity
+- **URL**: `/api/cart/:id`
+- **Method**: `PUT`
+- **Description**: Update the quantity of an item in the cart.
+- **Request Body**:
+    ```json
+    {
+        "quantity": "number"
+    }
+    ```
+- **Response**:
+    - `200 OK`: Quantity updated successfully.
+    - `400 Bad Request`: Validation error.
+    - `401 Unauthorized`: User not authenticated.
+
+### Remove Cart Item
+- **URL**: `/api/cart/:id`
+- **Method**: `DELETE`
+- **Description**: Remove an item from the cart.
+- **Response**:
+    - `200 OK`: Item removed successfully.
+    - `401 Unauthorized`: User not authenticated.
+
+## Order Endpoints
+
+### Place Order
+- **URL**: `/api/place-order`
+- **Method**: `POST`
+- **Description**: Place an order for the items in the cart.
+- **Request Body**:
+    ```json
+    {
+        "userId": "string",
+        "cartItems": [
+            {
+                "productId": "string",
+                "quantity": "number",
+                "price": "number"
+            }
+        ]
+    }
+    ```
+- **Response**:
+    - `201 Created`: Order placed successfully.
+    - `400 Bad Request`: Validation error.
+    - `401 Unauthorized`: User not authenticated.
+
+### Return Merchandise
+- **URL**: `/api/return-merchandise`
+- **Method**: `POST`
+- **Description**: Return purchased merchandise.
+- **Request Body**:
+    ```json
+    {
+        "userId": "string",
+        "productId": "string",
+        "quantity": "number"
+    }
+    ```
+- **Response**:
+    - `200 OK`: Merchandise returned successfully.
+    - `400 Bad Request`: Validation error.
+    - `401 Unauthorized`: User not authenticated.
+
+## Supply Endpoints
+
+### Receive Supplies
+- **URL**: `/api/receive-supplies`
+- **Method**: `POST`
+- **Description**: Record receipt of supplies.
+- **Request Body**:
+    ```json
+    {
+        "merchantId": "string",
+        "productId": "string",
+        "quantity": "number"
+    }
+    ```
+- **Response**:
+    - `201 Created`: Supplies received successfully.
+    - `400 Bad Request`: Validation error.
+    - `401 Unauthorized`: User not authenticated.
+
+### Fetch Received Supplies
+- **URL**: `/api/received-supplies`
+- **Method**: `GET`
+- **Description**: Fetch a list of supplies received by merchants.
+- **Response**:
+    - `200 OK`: Returns an array of received supplies.
+    - `401 Unauthorized`: User not authenticated.
+
+## Product Endpoints
+
+### Add New Product
+- **URL**: `/api/products`
+- **Method**: `POST`
+- **Description**: Add a new product to the marketplace.
+- **Request Body**:
+    ```json
+    {
+        "name": "string",
+        "description": "string",
+        "price": "number",
+        "stock": "number",
+        "image_url": "string"
+    }
+    ```
+- **Response**:
+    - `201 Created`: Product added successfully.
+    - `400 Bad Request`: Validation error.
+    - `401 Unauthorized`: User not authenticated.
+
+### Fetch Products
+- **URL**: `/api/products`
+- **Method**: `GET`
+- **Description**: Fetch all products in the marketplace.
+- **Response**:
+    - `200 OK`: Returns an array of products.
+    - `401 Unauthorized`: User not authenticated.
+
+## Funds Endpoints
+
+### Add Funds
+- **URL**: `/api/add-funds`
+- **Method**: `POST`
+- **Description**: Add funds to a user's account.
+- **Request Body**:
+    ```json
+    {
+        "userId": "string",
+        "amount": "number"
+    }
+    ```
+- **Response**:
+    - `200 OK`: Funds added successfully.
+    - `400 Bad Request`: Validation error.
+    - `401 Unauthorized`: User not authenticated.
