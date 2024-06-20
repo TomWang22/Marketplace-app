@@ -53,6 +53,11 @@ This project is a web-based marketplace application designed to manage and facil
 2. Open your browser and navigate to `http://localhost:3000`.
 
 ## User Roles and Functionality
+Local Storage Usage:
+
+User Authentication Tokens: Store JWT tokens to maintain user sessions.
+
+User Roles and IDs: Persist the role and ID of the logged-in user### README
 ### Merchant
 - **Add New Products**: Add new products with details like name, description, price, stock, and image URL.
 - **View and Manage Received Supplies**: View a list of supplies received.
