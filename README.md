@@ -19,9 +19,9 @@ This project is a web-based marketplace application designed to manage and facil
 
 ## Features
 - **Multi-View User Interface**: Separate dashboards for merchants, suppliers, and shoppers.
-  - **Merchants**: Can manage products, view received supplies, and send merchandise.
-  - **Suppliers**: Can add supplies and send supplies to merchants.
-  - **Shoppers**: Can manage their shopping cart, add funds, and return merchandise.
+  - **Merchants**: Manage products, view received supplies, and send merchandise.
+  - **Suppliers**: Add supplies and send supplies to merchants.
+  - **Shoppers**: Manage shopping cart, add funds, and return merchandise.
 - **Local Storage Implementation**: Persistent user sessions and data storage.
 - **Dynamic DOM and UI Updates**: Real-time updates to the UI based on user interactions.
 - **Event Handling**: Responsive handling of user actions like clicks and inputs.
@@ -35,8 +35,6 @@ This project is a web-based marketplace application designed to manage and facil
 - **Authentication**: JWT (JSON Web Tokens)
 - **CSS Framework**: Bootstrap (for enhanced styling)
 
-# Marketplace Application Setup Guide
-
 ## Installation
 
 ### 1. Clone the Repository
@@ -44,7 +42,7 @@ First, you need to clone the repository from GitHub to your local machine. Open 
 ```bash
 git clone https://github.com/yourusername/marketplace.git
 cd marketplace
-### 2. Install Dependencies
+2. Install Dependencies
 Next, install all the necessary dependencies listed in your package.json file. This can be done using npm:
 
 bash
@@ -52,7 +50,7 @@ bash
 npm install
 This command reads the package.json file and installs the required packages, which include Express, body-parser, bcryptjs, jsonwebtoken, pg, Redis-related packages, and socket.io among others.
 
-### 3. Set Up PostgreSQL Database
+3. Set Up PostgreSQL Database
 Ensure you have PostgreSQL installed on your machine. Create a new database named marketplace:
 
 bash
@@ -63,7 +61,7 @@ Run the SQL scripts provided in the db directory to set up the necessary tables:
 bash
 
 psql -U postgres -d marketplace -f db/scripts.sql
-### 4. Set Up Redis
+4. Set Up Redis
 Ensure Redis is installed and running on your machine. Typically, you can start Redis with the following command:
 
 bash
@@ -78,7 +76,7 @@ const redisClient = new redis({
   host: 'localhost',
   port: 6379
 });
-### 5. Start the Server
+5. Start the Server
 Start the backend server by running:
 
 bash
@@ -110,14 +108,15 @@ connect-redis: Redis session store for Express.
 socket.io: Library to enable real-time, bidirectional, event-based communication.
 Ensure all these dependencies are installed and properly configured in your project to guarantee smooth operation of the marketplace application.
 
-## File Structure
-```plaintext
+File Structure
+plaintext
+
 marketplace/
 ├── db/
 │   └── scripts.sql
 ├── src/
 │   ├── backend/
-│   │   ├── server.js
+│   │   └── server.js
 │   ├── frontend/
 │   │   ├── createaccount.html
 │   │   ├── login.html
@@ -140,10 +139,7 @@ marketplace/
 │   │   ├── contact.html
 │   │   ├── about.js
 │   │   ├── about.html
-
 API Endpoints
-The backend API provides the following endpoints:
-
 Authentication
 Register
 URL: /api/register
@@ -574,7 +570,6 @@ json
 }
 400 Bad Request: Amount must be greater than zero.
 500 Internal Server Error: Server error.
-Received Supplies
 Get Received Supplies
 URL: /api/received-supplies
 Method: GET
@@ -685,3 +680,6 @@ Button Styles: Custom styles for buttons to enhance user experience.
 Form Elements: Styled input fields and forms for a consistent look and feel.
 Contributing
 Contributions are welcome! Please fork the repository and create a pull request with your changes. Ensure that your code adheres to the existing style and conventions used in the project.
+
+License
+MIT
