@@ -92,7 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const itemDetails = document.createElement('div');
             itemDetails.className = 'cart-item-details';
-            itemDetails.innerHTML = `<span>${item.product} - $${item.price.toFixed(2)}</span>`;
+            const price = parseFloat(item.price);  // Convert price to a number
+            itemDetails.innerHTML = `<span>${item.product} - $${price.toFixed(2)}</span>`;
 
             const itemQuantity = document.createElement('div');
             itemQuantity.className = 'cart-item-quantity';
@@ -111,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
             listItem.appendChild(removeButton);
             cartItemsList.appendChild(listItem);
 
-            totalCost += item.price * item.quantity;
+            totalCost += price * item.quantity;
 
             // Event listener for quantity decrease
             itemQuantity.querySelector('.quantity-decrease').addEventListener('click', async () => {
@@ -245,6 +246,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to display inventory items
     const displayInventoryItems = async () => {
+        if (inventoryContainer.style.display === 'block') {
+            inventoryContainer.style.display = 'none';
+            return;
+        }
+
         const inventoryItems = await fetchInventoryItems();
 
         // Clear the current list
@@ -253,7 +259,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Populate the list with inventory items
         inventoryItems.forEach(item => {
             const listItem = document.createElement('li');
-            listItem.innerHTML = `<span>${item.product} - $${item.price.toFixed(2)} - Quantity: ${item.quantity}</span>`;
+            const price = parseFloat(item.price);  // Convert price to a number
+            listItem.innerHTML = `<span>${item.product} - $${price.toFixed(2)} - Quantity: ${item.quantity}</span>`;
             inventoryItemsList.appendChild(listItem);
         });
 
