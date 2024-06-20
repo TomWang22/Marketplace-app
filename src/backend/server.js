@@ -488,6 +488,79 @@ app.get("/api/inventory", async (req, res) => {
     }
   });
 
+  app.get('/api/purchased-items', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM purchased_items');
+        res.json({ success: true, items: result.rows });
+    } catch (error) {
+        console.error('Error fetching purchased items:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+app.post('/api/fulfill-order', async (req, res) => {
+    const { orderId, productId, quantity, userId } = req.body;
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // Add item to inventory
+        const insertInventoryQuery = `
+            INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp)
+            SELECT $1, product, $2, price, product_id, now()
+            FROM shopping_cart
+            WHERE product_id = $3
+            RETURNING *;
+        `;
+        const inventoryResult = await client.query(insertInventoryQuery, [userId, quantity, productId]);
+
+        if (inventoryResult.rows.length === 0) {
+            throw new Error('Failed to add item to inventory.');
+        }
+
+        // Update merchant balance
+        const updateBalanceQuery = `
+            UPDATE users
+            SET balance = balance + (
+                SELECT spent
+                FROM purchased_items
+                WHERE order_id = $1
+            )
+            WHERE id = $2
+            RETURNING *;
+        `;
+        const balanceResult = await client.query(updateBalanceQuery, [orderId, userId]);
+
+        if (balanceResult.rows.length === 0) {
+            throw new Error('Failed to update merchant balance.');
+        }
+
+        // Remove item from purchased items
+        const deletePurchasedItemQuery = `
+            DELETE FROM purchased_items
+            WHERE order_id = $1 AND product_id = $2
+            RETURNING *;
+        `;
+        const deleteResult = await client.query(deletePurchasedItemQuery, [orderId, productId]);
+
+        if (deleteResult.rows.length === 0) {
+            throw new Error('Failed to delete purchased item.');
+        }
+
+        await client.query('COMMIT');
+        res.json({ success: true, message: 'Order fulfilled and item added to inventory.' });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error fulfilling order:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+});
+
+
+
   app.get("/api/supplies", async (req, res) => {
     try {
       const result = await pool.query("SELECT * FROM supplies;");

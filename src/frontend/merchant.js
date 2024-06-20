@@ -17,10 +17,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toggleSupplyRequestsButton = document.getElementById('toggleSupplyRequestsButton');
     const supplyRequestsContainer = document.getElementById('supplyRequestsContainer');
     const supplyRequestsList = document.getElementById('supplyRequestsList');
-    const chatSupplierContainer = document.getElementById('chatSupplierContainer');
-    const chatSupplierInput = document.getElementById('chatSupplierInput');
-    const chatSupplierSendButton = document.getElementById('chatSupplierSendButton');
-    const chatSupplierList = document.getElementById('chatSupplierList');
+    const ordersList = document.getElementById('ordersList');
+    const showOrdersButton = document.getElementById('showOrdersButton');
     const merchantId = localStorage.getItem('userId');
     if (!merchantId) {
         console.error('Merchant ID is not set in local storage');
@@ -34,6 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let suppliesVisible = false;
     let productsVisible = false;
+    let ordersVisible = false;
 
     socket.on('previousChats', (chats) => {
         chatList.innerHTML = '';
@@ -50,40 +49,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatList.appendChild(chatItem);
     });
 
-    if (chatSendButton) {
-        chatSendButton.addEventListener('click', () => {
-            const message = chatInput.value;
-            if (message) {
-                socket.emit('sendMessage', { message, userId: merchantId, role: 'merchant' });
-                chatInput.value = '';
-            }
-        });
-    }
-
-    socket.on('previousSupplierChats', (chats) => {
-        chatSupplierList.innerHTML = '';
-        chats.forEach(chat => {
-            const chatItem = document.createElement('li');
-            chatItem.textContent = `${chat.username} (${chat.role}, ID: ${chat.user_id}): ${chat.message} (${chat.timestamp})`;
-            chatSupplierList.appendChild(chatItem);
-        });
+    chatSendButton.addEventListener('click', () => {
+        const message = chatInput.value;
+        if (message) {
+            socket.emit('sendMessage', { message, userId: merchantId, role: 'merchant' });
+            chatInput.value = '';
+        }
     });
 
-    socket.on('receiveSupplierMessage', (chat) => {
-        const chatItem = document.createElement('li');
-        chatItem.textContent = `${chat.username} (${chat.role}, ID: ${chat.user_id}): ${chat.message} (${chat.timestamp})`;
-        chatSupplierList.appendChild(chatItem);
-    });
-
-    if (chatSupplierSendButton) {
-        chatSupplierSendButton.addEventListener('click', () => {
-            const message = chatSupplierInput.value;
-            if (message) {
-                socket.emit('sendSupplierMessage', { message, userId: merchantId, role: 'merchant' });
-                chatSupplierInput.value = '';
-            }
-        });
-    }
 
     function displayNotification(message) {
         const listItem = document.createElement('li');
@@ -263,23 +236,63 @@ document.addEventListener('DOMContentLoaded', async () => {
         productList.style.display = 'block';
     }
 
-    async function sendMerchandise(customerId, productId, quantity) {
+    async function fetchPurchasedItems() {
         try {
-            const response = await fetch('http://localhost:3000/api/send-merchandise', {
+            const response = await fetch('http://localhost:3000/api/purchased-items');
+            const data = await response.json();
+            return data.items;
+        } catch (error) {
+            console.error('Error fetching purchased items:', error);
+            return [];
+        }
+    }
+
+    async function displayPurchasedItems() {
+        const items = await fetchPurchasedItems();
+        ordersList.innerHTML = '';
+        items.forEach(item => {
+            const listItem = document.createElement('div');
+            listItem.className = 'order-item';
+            listItem.innerHTML = `
+                <div>
+                    <span>Order ID: ${item.order_id} - Product ID: ${item.product_id} - Quantity: ${item.quantity} - Spent: $${item.spent}</span>
+                    <button class="fulfill-button" data-order-id="${item.order_id}" data-product-id="${item.product_id}" data-quantity="${item.quantity}" data-user-id="${item.user_id}">Fulfill Order</button>
+                </div>
+            `;
+            ordersList.appendChild(listItem);
+        });
+
+        document.querySelectorAll('.fulfill-button').forEach(button => {
+            button.addEventListener('click', async (event) => {
+                const orderId = button.getAttribute('data-order-id');
+                const productId = button.getAttribute('data-product-id');
+                const quantity = button.getAttribute('data-quantity');
+                const userId = button.getAttribute('data-user-id');
+                await fulfillOrder(orderId, productId, quantity, userId);
+                displayPurchasedItems(); // Refresh the list after fulfilling the order
+            });
+        });
+
+        ordersList.style.display = 'block';
+    }
+
+    async function fulfillOrder(orderId, productId, quantity, userId) {
+        try {
+            const response = await fetch('http://localhost:3000/api/fulfill-order', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ customerId, productId, quantity })
+                body: JSON.stringify({ orderId, productId, quantity, userId })
             });
             const data = await response.json();
             if (data.success) {
-                displayNotification(`Sent ${quantity} units of product ID ${productId} to customer ID ${customerId}`);
+                displayNotification('Order fulfilled and item added to inventory.');
             } else {
-                displayNotification(`Failed to send merchandise: ${data.message}`);
+                displayNotification('Failed to fulfill order: ' + data.message);
             }
         } catch (error) {
-            console.error('Error sending merchandise:', error);
+            console.error('Error fulfilling order:', error);
         }
     }
 
@@ -321,5 +334,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const productId = document.getElementById('productIdToSend').value;
         const quantity = parseInt(document.getElementById('quantityToSend').value);
         sendMerchandise(customerId, productId, quantity);
+    });
+
+    showOrdersButton.addEventListener('click', async (event) => {
+        event.preventDefault();
+        ordersVisible = !ordersVisible;
+        if (ordersVisible) {
+            await displayPurchasedItems();
+            showOrdersButton.textContent = 'Hide Orders';
+        } else {
+            ordersList.style.display = 'none';
+            showOrdersButton.textContent = 'Show Orders';
+        }
     });
 });
