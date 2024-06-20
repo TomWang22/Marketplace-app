@@ -98,28 +98,523 @@ marketplace/
 │   │   ├── about.js
 │   │   ├── about.html
 
-
 API Endpoints
 The backend API provides the following endpoints:
 
-User Endpoints
-User Registration: POST /api/register
-User Login: POST /api/login
-Shopping Cart Endpoints
-Fetch Cart Items: GET /api/cart
-Update Cart Item Quantity: PUT /api/cart/:id
-Remove Cart Item: DELETE /api/cart/:id
-Order Endpoints
-Place Order: POST /api/place-order
-Return Merchandise: POST /api/return-merchandise
-Supply Endpoints
-Receive Supplies: POST /api/receive-supplies
-Fetch Received Supplies: GET /api/received-supplies
-Product Endpoints
-Add New Product: POST /api/products
-Fetch Products: GET /api/products
-Funds Endpoints
-Add Funds: POST /api/add-funds
+Authentication
+Register
+URL: /api/register
+Method: POST
+Description: Register a new user.
+Request Body:
+json
+Copy code
+{
+  "username": "string",
+  "password": "string",
+  "role": "string"
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "user": {
+    "id": "integer",
+    "username": "string",
+    "role": "string",
+    "balance": "number"
+  }
+}
+400 Bad Request: Missing fields or username already exists.
+500 Internal Server Error: Server error.
+Login
+URL: /api/login
+Method: POST
+Description: Login an existing user.
+Request Body:
+json
+Copy code
+{
+  "username": "string",
+  "password": "string"
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "userId": "integer",
+  "role": "string",
+  "token": "string"
+}
+401 Unauthorized: Invalid credentials.
+500 Internal Server Error: Server error.
+User Information
+Get Account Info
+URL: /api/account-info
+Method: GET
+Description: Get account information of a user.
+Query Parameters: userId
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "account": {
+    "username": "string",
+    "balance": "number"
+  }
+}
+500 Internal Server Error: Server error.
+Get Purchase History
+URL: /api/purchase-history
+Method: GET
+Description: Get purchase history of a user.
+Query Parameters: userId
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "history": [
+    {
+      "id": "integer",
+      "product_id": "integer",
+      "quantity": "integer",
+      "purchase_date": "string"
+    }
+  ]
+}
+500 Internal Server Error: Server error.
+Cart Operations
+Get Cart Items
+URL: /api/cart
+Method: GET
+Description: Get all items in a user's shopping cart.
+Query Parameters: userId
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "items": [
+    {
+      "id": "integer",
+      "user_id": "integer",
+      "product_id": "integer",
+      "product": "string",
+      "quantity": "integer",
+      "price": "number"
+    }
+  ]
+}
+500 Internal Server Error: Server error.
+Add Item to Cart
+URL: /api/cart
+Method: POST
+Description: Add an item to the shopping cart.
+Request Body:
+json
+Copy code
+{
+  "userId": "integer",
+  "productId": "integer",
+  "quantity": "integer"
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "item": {
+    "id": "integer",
+    "user_id": "integer",
+    "product_id": "integer",
+    "product": "string",
+    "quantity": "integer",
+    "price": "number"
+  }
+}
+400 Bad Request: Missing fields or product not found.
+500 Internal Server Error: Server error.
+Update Cart Item
+URL: /api/cart/:id
+Method: PUT
+Description: Update the quantity of an item in the shopping cart.
+Request Parameters: id
+Request Body:
+json
+Copy code
+{
+  "quantity": "integer"
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true
+}
+500 Internal Server Error: Server error.
+Remove Item from Cart
+URL: /api/cart/:id
+Method: DELETE
+Description: Remove an item from the shopping cart.
+Request Parameters: id
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true
+}
+500 Internal Server Error: Server error.
+Order Operations
+Place Order
+URL: /api/place-order
+Method: POST
+Description: Place an order for items in the cart.
+Request Body:
+json
+Copy code
+{
+  "userId": "integer",
+  "cartItems": [
+    {
+      "product_id": "integer",
+      "quantity": "integer",
+      "price": "number"
+    }
+  ]
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "message": "Order placed successfully."
+}
+400 Bad Request: Insufficient balance.
+500 Internal Server Error: Server error.
+Return Merchandise
+URL: /api/return-merchandise
+Method: POST
+Description: Return purchased merchandise within the return period.
+Request Body:
+json
+Copy code
+{
+  "userId": "integer",
+  "productId": "integer",
+  "quantity": "integer"
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "message": "Merchandise returned and refunded successfully."
+}
+400 Bad Request: Return period expired or no purchase record found.
+500 Internal Server Error: Server error.
+Products
+Get All Products
+URL: /api/products
+Method: GET
+Description: Retrieve all products.
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "products": [
+    {
+      "id": "integer",
+      "name": "string",
+      "description": "string",
+      "price": "number",
+      "stock": "integer",
+      "image_url": "string"
+    }
+  ]
+}
+500 Internal Server Error: Server error.
+Add New Product
+URL: /api/products
+Method: POST
+Description: Add a new product.
+Request Body:
+json
+Copy code
+{
+  "name": "string",
+  "description": "string",
+  "price": "number",
+  "stock": "integer",
+  "image_url": "string"
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "product": {
+    "id": "integer",
+    "name": "string",
+    "description": "string",
+    "price": "number",
+    "stock": "integer",
+    "image_url": "string"
+  }
+}
+500 Internal Server Error: Server error.
+Supplies
+Get All Supplies
+URL: /api/supplies
+Method: GET
+Description: Retrieve all supplies.
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "supplies": [
+    {
+      "id": "integer",
+      "name": "string",
+      "description": "string",
+      "price": "number",
+      "cost": "number",
+      "stock": "integer",
+      "image_url": "string"
+    }
+  ]
+}
+500 Internal Server Error: Server error.
+Add New Supply
+URL: /api/supplies
+Method: POST
+Description: Add a new supply.
+Request Body:
+json
+Copy code
+{
+  "name": "string",
+  "description": "string",
+  "price": "number",
+  "cost": "number",
+  "stock": "integer",
+  "image_url": "string"
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "supply": {
+    "id": "integer",
+    "name": "string",
+    "description": "string",
+    "price": "number",
+    "cost": "number",
+    "stock": "integer",
+    "image_url": "string"
+  }
+}
+500 Internal Server Error: Server error.
+Supply Requests
+Request Supply
+URL: /api/request-supply
+Method: POST
+Description: Request supplies from suppliers.
+Request Body:
+json
+Copy code
+{
+  "merchantId": "integer",
+  "productId": "integer",
+  "quantity": "integer"
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "request": {
+    "id": "integer",
+    "merchant_id": "integer",
+    "product_id": "integer",
+    "quantity": "integer",
+    "request_date": "string"
+  }
+}
+500 Internal Server Error: Server error.
+Get Supply Requests
+URL: /api/supply-requests
+Method: GET
+Description: Retrieve all supply requests.
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "requests": [
+    {
+      "id": "integer",
+      "merchant_id": "integer",
+      "product_id": "integer",
+      "quantity": "integer",
+      "request_date": "string",
+      "name": "string",
+      "description": "string",
+      "image_url": "string"
+    }
+  ]
+}
+500 Internal Server Error: Server error.
+Send Supplies
+URL: /api/send-supplies
+Method: POST
+Description: Send supplies to merchants.
+Request Body:
+json
+Copy code
+{
+  "supplierId": "integer",
+  "merchantId": "integer",
+  "productId": "integer",
+  "quantity": "integer"
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "message": "Supplies sent and stock updated successfully."
+}
+500 Internal Server Error: Server error.
+Funds
+Add Funds
+URL: /api/add-funds
+Method: POST
+Description: Add funds to a user's account.
+Request Body:
+json
+Copy code
+{
+  "userId": "integer",
+  "amount": "number"
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "message": "Funds added successfully."
+}
+400 Bad Request: Amount must be greater than zero.
+500 Internal Server Error: Server error.
+Received Supplies
+Get Received Supplies
+URL: /api/received-supplies
+Method: GET
+Description: Retrieve all received supplies.
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "supplies": [
+    {
+      "id": "integer",
+      "name": "string",
+      "description": "string",
+      "price": "number",
+      "stock": "integer",
+      "image_url": "string"
+    }
+  ]
+}
+500 Internal Server Error: Server error.
+Users
+Get User Data
+URL: /api/users/:userId
+Method: GET
+Description: Get user data including shopping and search history.
+Request Parameters: userId
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true,
+  "user": {
+    "username": "string",
+    "balance": "number",
+    "shoppingHistory": [
+      {
+        "id": "integer",
+        "product_id": "integer",
+        "quantity": "integer",
+        "purchase_date": "string"
+      }
+    ],
+    "searchHistory": [
+      {
+        "id": "integer",
+        "search_query": "string",
+        "search_date": "string"
+      }
+    ]
+  }
+}
+404 Not Found: User not found.
+500 Internal Server Error: Server error.
+Add Search History
+URL: /api/search-history
+Method: POST
+Description: Add a search query to the user's search history.
+Request Body:
+json
+Copy code
+{
+  "userId": "integer",
+  "searchQuery": "string"
+}
+Responses:
+200 OK:
+json
+Copy code
+{
+  "success": true
+}
+500 Internal Server Error: Server error.
+Static Files and Pages
+Serve Static Files
+URL: /*
+Method: GET
+Description: Serve static files and HTML pages.
+Responses:
+200 OK: Serves the requested HTML page.
+404 Not Found: Page not found.
 User Roles and Functionality
 Merchant
 Add New Products: Merchants can add new products with details like name, description, price, stock, and image URL.
@@ -147,6 +642,3 @@ Button Styles: Custom styles for buttons to enhance user experience.
 Form Elements: Styled input fields and forms for a consistent look and feel.
 Contributing
 Contributions are welcome! Please fork the repository and create a pull request with your changes. Ensure that your code adheres to the existing style and conventions used in the project.
-
-License
-This project is licensed under the MIT License. See the LICENSE file for more details.
