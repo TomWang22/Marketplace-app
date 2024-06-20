@@ -1,45 +1,68 @@
- Marketplace Application
+Marketplace Application
 
-## Table of Contents
-1. [Project Overview](#project-overview)
-2. [Features](#features)
-3. [Technologies Used](#technologies-used)
-4. [Installation](#installation)
-5. [Usage](#usage)
-6. [File Structure](#file-structure)
-7. [API Endpoints](#api-endpoints)
-8. [User Roles and Functionality](#user-roles-and-functionality)
-9. [Local Storage Usage](#local-storage-usage)
-10. [CSS and Visual Design](#css-and-visual-design)
-11. [Contributing](#contributing)
-12. [License](#license)
+Table of Contents
+-----------------
 
-## Project Overview
+[](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#table-of-contents)
+
+1.  [Project Overview](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#project-overview)
+2.  [Features](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#features)
+3.  [Technologies Used](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#technologies-used)
+4.  [Installation](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#installation)
+5.  [Usage](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#usage)
+6.  [File Structure](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#file-structure)
+7.  [API Endpoints](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#api-endpoints)
+8.  [User Roles and Functionality](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#user-roles-and-functionality)
+9.  [Local Storage Usage](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#local-storage-usage)
+10. [CSS and Visual Design](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#css-and-visual-design)
+11. [Contributing](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#contributing)
+12. [License](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#license)
+
+Project Overview
+----------------
+
+[](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#project-overview)
+
 This project is a web-based marketplace application designed to manage and facilitate transactions between merchants, suppliers, and shoppers. It provides distinct dashboards and functionalities for different user roles, ensuring a seamless and user-friendly experience. The primary goal is to offer a platform where various users can interact with the marketplace according to their roles, making the buying and selling process efficient and streamlined.
 
-## Features
-- **Multi-View User Interface**: Separate dashboards for merchants, suppliers, and shoppers.
-  - **Merchants**: Manage products, view received supplies, and send merchandise.
-  - **Suppliers**: Add supplies and send supplies to merchants.
-  - **Shoppers**: Manage shopping cart, add funds, and return merchandise.
-- **Local Storage Implementation**: Persistent user sessions and data storage.
-- **Dynamic DOM and UI Updates**: Real-time updates to the UI based on user interactions.
-- **Event Handling**: Responsive handling of user actions like clicks and inputs.
-- **CSS and Visual Design**: Enhanced visual design and responsiveness using a CSS framework.
+Features
+--------
 
-## Technologies Used
-- **Frontend**: HTML, CSS, JavaScript
-- **Backend**: Node.js, Express.js
-- **Database**: PostgreSQL
-- **Session Management**: Redis
-- **Authentication**: JWT (JSON Web Tokens)
-- **CSS Framework**: Bootstrap (for enhanced styling)
+[](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#features)
 
-## Installation
+-   Multi-View User Interface: Separate dashboards for merchants, suppliers, and shoppers.
+    -   Merchants: Manage products, view received supplies, and send merchandise.
+    -   Suppliers: Add supplies and send supplies to merchants.
+    -   Shoppers: Manage shopping cart, add funds, and return merchandise.
+-   Local Storage Implementation: Persistent user sessions and data storage.
+-   Dynamic DOM and UI Updates: Real-time updates to the UI based on user interactions.
+-   Event Handling: Responsive handling of user actions like clicks and inputs.
+-   CSS and Visual Design: Enhanced visual design and responsiveness using a CSS framework.
 
-### 1. Clone the Repository
+Technologies Used
+-----------------
+
+[](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#technologies-used)
+
+-   Frontend: HTML, CSS, JavaScript
+-   Backend: Node.js, Express.js
+-   Database: PostgreSQL
+-   Session Management: Redis
+-   Authentication: JWT (JSON Web Tokens)
+-   CSS Framework: Bootstrap (for enhanced styling)
+
+Installation
+------------
+
+[](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#installation)
+
+### 1\. Clone the Repository
+
+[](https://github.com/TomWang22/Marketplace-app/blob/main/README.md#1-clone-the-repository)
+
 First, you need to clone the repository from GitHub to your local machine. Open your terminal and run:
-```bash
+
+```source-shell
 git clone https://github.com/yourusername/marketplace.git
 cd marketplace
 2. Install Dependencies
@@ -74,7 +97,7 @@ const redisClient = new redis({
   host: 'localhost',
   port: 6379
 });
-5. Start the Server
+5\. Start the Server
 Start the backend server by running:
 
 bash
@@ -681,3 +704,4 @@ Contributions are welcome! Please fork the repository and create a pull request 
 
 License
 MIT
+```
