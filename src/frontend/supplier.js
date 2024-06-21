@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const logoutButton = document.getElementById('logoutButton');
     const accountButton = document.getElementById('accountButton');
     const homeButton = document.getElementById('homeButton');
+    const supplierAccountSection = document.getElementById('supplier-account-section');
+    const supplierBalance = document.getElementById('supplierBalance');
 
     const supplierId = localStorage.getItem('userId');
     if (!supplierId) {
@@ -149,9 +151,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'marketplace.html';
     });
 
-    accountButton.addEventListener('click', () => {
-        window.location.href = 'account.html';
+    accountButton.addEventListener('click', async () => {
+        await displaySupplierAccountInfo();
     });
+
+    async function fetchSupplierData(supplierId) {
+        try {
+            const response = await fetch(`http://localhost:3000/api/account-info?userId=${supplierId}`);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            if (data.success) {
+                return data.account;
+            } else {
+                console.error('Failed to fetch supplier data:', data.message);
+                return null;
+            }
+        } catch (error) {
+            console.error('Error fetching supplier data:', error);
+            return null;
+        }
+    }
+
+    async function displaySupplierAccountInfo() {
+        const supplierData = await fetchSupplierData(supplierId);
+        if (supplierData) {
+            const balance = parseFloat(supplierData.balance);
+            supplierBalance.textContent = isNaN(balance) ? '0.00' : balance.toFixed(2);
+            // Add more account details here if needed
+        } else {
+            supplierBalance.textContent = '0.00';
+        }
+
+        // Show account section and hide other sections if necessary
+        supplierAccountSection.style.display = 'block';
+        document.getElementById('send-supplies-section').style.display = 'none';
+        document.getElementById('add-supplies-section').style.display = 'none';
+        document.getElementById('view-requests-section').style.display = 'none';
+        chatContainer.style.display = 'none';
+    }
 
     addSupplyButton.addEventListener('click', () => {
         const name = document.getElementById('supplyName').value;
