@@ -571,18 +571,31 @@ if (cluster.isMaster) {
 
   app.get('/api/purchased-items', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM orders ORDER BY id ASC');
-        res.json({ success: true, items: result.rows });
+        const result = await pool.query(`
+            SELECT 
+                o.id AS order_id, 
+                o.total_cost, 
+                oi.product_id, 
+                oi.quantity,
+                o.user_id
+            FROM orders o
+            JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.user_id = $1`, [req.query.userId]);
+
+        res.json({ items: result.rows });
     } catch (error) {
         console.error('Error fetching purchased items:', error);
         res.status(500).json({ success: false, message: 'Internal server error.' });
     }
 });
 
-app.post('/api/fulfill-order', async (req, res) => {
-  const { orderId, productId, quantity, userId } = req.body;
 
-  if (!orderId || !productId || !quantity || !userId) {
+
+
+app.post('/api/fulfill-order', async (req, res) => {
+  const { orderId, totalCost, userId } = req.body;
+
+  if (!orderId || !totalCost || !userId) {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
   }
 
@@ -592,11 +605,28 @@ app.post('/api/fulfill-order', async (req, res) => {
       try {
           await client.query('BEGIN');
 
-          // Update order status to 'fulfilled'
-          await client.query(
-              'UPDATE orders SET status = $1 WHERE id = $2',
-              ['fulfilled', orderId]
-          );
+          // Get the order details
+          const orderResult = await client.query('SELECT product_id, quantity FROM orders WHERE id = $1', [orderId]);
+          const order = orderResult.rows[0];
+
+          if (!order) {
+              throw new Error('Order not found');
+          }
+
+          const productId = order.product_id;
+          const productResult = await client.query('SELECT price, stock FROM products WHERE id = $1', [productId]);
+          const product = productResult.rows[0];
+
+          if (!product) {
+              throw new Error('Product not found');
+          }
+
+          const quantity = Math.floor(totalCost / product.price);
+          const totalSpent = quantity * product.price;
+
+          if (quantity > product.stock) {
+              return res.status(400).json({ success: false, message: 'Insufficient stock' });
+          }
 
           // Deduct stock from product
           await client.query(
@@ -605,11 +635,9 @@ app.post('/api/fulfill-order', async (req, res) => {
           );
 
           // Add money to merchant balance
-          const productResult = await client.query('SELECT price FROM products WHERE id = $1', [productId]);
-          const productPrice = productResult.rows[0].price;
           await client.query(
               'UPDATE users SET balance = balance + $1 WHERE id = $2',
-              [quantity * productPrice, userId]
+              [totalSpent, userId]
           );
 
           // Delete the order from the orders table
@@ -629,6 +657,9 @@ app.post('/api/fulfill-order', async (req, res) => {
       res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
+
+
+
 
 
 

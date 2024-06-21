@@ -107,6 +107,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         supplyRequestsList.appendChild(listItem);
     }
 
+    function clearRequestSupplyFields() {
+        document.getElementById('productIdToRequest').value = '';
+        document.getElementById('quantityToRequest').value = '';
+    }
+
     async function requestSupply(productId, quantity) {
         try {
             const response = await fetch('http://localhost:3000/api/request-supply', {
@@ -119,6 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             if (data.success) {
                 displayNotification(`Requested ${quantity} units of product ID ${productId}`);
+                clearRequestSupplyFields(); // Clear the form fields after a successful request
                 socket.emit('newSupplyRequest', data.request); // Emit new supply request
             } else {
                 displayNotification(`Failed to request supply: ${data.message}`);
@@ -295,7 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function fetchPurchasedItems() {
         try {
-            const response = await fetch('http://localhost:3000/api/purchased-items');
+            const response = await fetch(`http://localhost:3000/api/purchased-items?userId=${merchantId}`);
             const data = await response.json();
             return data.items;
         } catch (error) {
@@ -312,8 +318,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             listItem.className = 'order-item';
             listItem.innerHTML = `
                 <div>
-                    <span>Order ID: ${item.id} - Product ID: ${item.product_id} - Quantity: ${item.quantity} - Spent: $${item.spent}</span>
-                    <button class="fulfill-button" data-order-id="${item.id}" data-product-id="${item.product_id}" data-quantity="${item.quantity}" data-user-id="${item.user_id}">Fulfill Order</button>
+                    <span>Order ID: ${item.order_id} - Product ID: ${item.product_id} - Quantity: ${item.quantity} - Spent: $${item.total_cost}</span>
+                    <button class="fulfill-button" data-order-id="${item.order_id}" data-product-id="${item.product_id}" data-quantity="${item.quantity}" data-user-id="${item.user_id}">Fulfill Order</button>
                 </div>
             `;
             ordersList.appendChild(listItem);
@@ -361,7 +367,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('An error occurred while fulfilling the order.');
         }
     }
-
 
     addProductButton.addEventListener('click', (event) => {
         event.preventDefault();
