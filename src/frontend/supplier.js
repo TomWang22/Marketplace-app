@@ -87,11 +87,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             document.querySelectorAll('.fulfillRequestButton').forEach(button => {
-                button.addEventListener('click', (event) => {
+                button.addEventListener('click', async (event) => {
                     const merchantId = button.getAttribute('data-merchant-id');
                     const productId = button.getAttribute('data-product-id');
                     const quantity = button.getAttribute('data-quantity');
-                    sendSupplies(merchantId, productId, quantity);
+                    const listItem = button.parentElement;
+                    await fulfillSupplyRequest(merchantId, productId, quantity, listItem);
                 });
             });
         } catch (error) {
@@ -99,10 +100,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function sendSupplies(merchantId, productId, quantity) {
-        const supplierId = localStorage.getItem('userId');
+    async function fulfillSupplyRequest(merchantId, productId, quantity, listItem) {
         try {
-            const response = await fetch('http://localhost:3000/api/send-supplies', {
+            const response = await fetch('http://localhost:3000/api/fulfill-supply-request', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -112,8 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             if (data.success) {
                 displayNotification(`Sent ${quantity} units of product ID ${productId} to merchant ID ${merchantId}`);
-                clearSendSuppliesForm();
-                await fetchSupplyRequests(); // Refresh the supply requests list to show updated status
+                listItem.remove(); // Remove the list item from the UI
             } else {
                 displayNotification(`Failed to send supplies: ${data.message}`);
                 alert(`Failed to send supplies: ${data.message}`);
@@ -125,23 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function clearSendSuppliesForm() {
-        document.getElementById('merchantId').value = '';
-        document.getElementById('productIdToSupply').value = '';
-        document.getElementById('quantityToSupply').value = '';
-    }
-
-    if (sendSuppliesButton) {
-        sendSuppliesButton.addEventListener('click', () => {
-            const merchantId = document.getElementById('merchantId').value;
-            const productId = document.getElementById('productIdToSupply').value;
-            const quantity = parseInt(document.getElementById('quantityToSupply').value);
-            sendSupplies(merchantId, productId, quantity);
-        });
-    }
-
     async function addSupply(name, description, price, cost, stock, image_url) {
-        const merchantId = localStorage.getItem('userId');
         try {
             const response = await fetch('http://localhost:3000/api/supplies', {
                 method: 'POST',
@@ -149,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
-                body: JSON.stringify({ name, description, price, cost, stock, image_url, merchantId })
+                body: JSON.stringify({ name, description, price, cost, stock, image_url, supplierId })
             });
             const data = await response.json();
             if (data.success) {
@@ -285,6 +268,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('add-supplies-section').style.display = 'none';
         document.getElementById('view-requests-section').style.display = 'none';
         document.getElementById('add-supplies-id-quantity-section').style.display = 'none';
-        chatContainer.style.display = 'none';
+        document.getElementById('chatContainer').style.display = 'none';
     }
 });
