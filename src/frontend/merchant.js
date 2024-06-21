@@ -357,6 +357,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('An error occurred while fulfilling the order.');
         }
     }
+    
+    
 
     addProductButton.addEventListener('click', (event) => {
         event.preventDefault();

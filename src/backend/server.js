@@ -167,7 +167,7 @@ if (cluster.isMaster) {
       console.log("A user disconnected");
     });
   });
-
+  
   app.post("/api/register", async (req, res) => {
     const { username, password, role } = req.body;
     if (!username || !password || !role) {
@@ -233,7 +233,16 @@ if (cluster.isMaster) {
         .json({ success: false, message: "Internal server error" });
     }
   });
-
+ 
+  async function setAllOrdersToPending() {
+    try {
+        await pool.query('UPDATE orders SET status = $1', ['pending']);
+        console.log('All orders set to pending status.');
+    } catch (error) {
+        console.error('Error setting orders to pending:', error);
+    }
+}
+ 
   app.get("/api/cart", async (req, res) => {
     const userId = req.query.userId;
     try {
@@ -470,6 +479,8 @@ if (cluster.isMaster) {
     }
   });
 
+  setAllOrdersToPending();
+
   app.post('/api/fulfill-order', async (req, res) => {
     const { orderId, productId, quantity, userId } = req.body;
 
@@ -521,8 +532,6 @@ if (cluster.isMaster) {
         res.status(500).json({ success: false, message: 'Internal server error.' });
     }
 });
-
-
 
   app.get("/api/products", async (req, res) => {
     try {
