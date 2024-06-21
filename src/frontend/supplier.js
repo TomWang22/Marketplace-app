@@ -116,10 +116,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await fetchSupplyRequests(); // Refresh the supply requests list to show updated status
             } else {
                 displayNotification(`Failed to send supplies: ${data.message}`);
+                alert(`Failed to send supplies: ${data.message}`);
             }
         } catch (error) {
             console.error('Error sending supplies:', error);
             displayNotification('An error occurred while sending supplies.');
+            alert('An error occurred while sending supplies.');
         }
     }
 
@@ -139,6 +141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function addSupply(name, description, price, cost, stock, image_url) {
+        const merchantId = localStorage.getItem('userId');
         try {
             const response = await fetch('http://localhost:3000/api/supplies', {
                 method: 'POST',
@@ -146,18 +149,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
-                body: JSON.stringify({ name, description, price, cost, stock, image_url })
+                body: JSON.stringify({ name, description, price, cost, stock, image_url, merchantId })
             });
             const data = await response.json();
             if (data.success) {
                 displayNotification(`Supply "${name}" added successfully.`);
                 clearAddSupplyForm();
+                alert(`Supply "${name}" added successfully.`);
             } else {
                 displayNotification(`Failed to add supply: ${data.message}`);
+                alert(`Failed to add supply: ${data.message}`);
             }
         } catch (error) {
             console.error('Error adding supply:', error);
             displayNotification('An error occurred while adding supply.');
+            alert('An error occurred while adding supply.');
         }
     }
 
@@ -175,15 +181,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data.success) {
                 displayNotification(`Supply with ID "${id}" added successfully.`);
                 clearAddSupplyByIdForm();
+                alert(`Supply with ID "${id}" added successfully.`);
             } else {
                 displayNotification(`Failed to add supply: ${data.message}`);
+                alert(`Failed to add supply: ${data.message}`);
             }
         } catch (error) {
             console.error('Error adding supply by ID:', error);
             displayNotification('An error occurred while adding supply by ID.');
+            alert('An error occurred while adding supply by ID.');
         }
     }
-    
 
     function clearAddSupplyForm() {
         document.getElementById('supplyName').value = '';
