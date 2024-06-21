@@ -19,7 +19,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const supplyRequestsList = document.getElementById('supplyRequestsList');
     const ordersList = document.getElementById('ordersList');
     const showOrdersButton = document.getElementById('showOrdersButton');
+    const merchantAccountSection = document.getElementById('merchant-account-section');
+    const merchantBalance = document.getElementById('merchantBalance');
+    const merchantProductListings = document.getElementById('merchantProductListings');
+    const merchantOrderHistory = document.getElementById('merchantOrderHistory');
     const merchantId = localStorage.getItem('userId');
+
     if (!merchantId) {
         console.error('Merchant ID is not set in local storage');
         return;
@@ -57,7 +62,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-
     function displayNotification(message) {
         const listItem = document.createElement('li');
         listItem.textContent = message;
@@ -79,9 +83,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const response = await fetch('http://localhost:3000/api/supply-requests');
             const data = await response.json();
-
             supplyRequestsList.innerHTML = '';
-
             data.requests.forEach(request => {
                 const listItem = document.createElement('li');
                 listItem.textContent = `${request.name} - Quantity: ${request.quantity} - Requested by Merchant ID: ${request.merchant_id}`;
@@ -139,9 +141,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = 'marketplace.html';
     });
 
-    accountButton.addEventListener('click', () => {
-        window.location.href = 'account.html';
+    accountButton.addEventListener('click', async () => {
+        await displayMerchantAccountInfo();
     });
+
+    async function fetchMerchantData(merchantId) {
+        try {
+            const response = await fetch(`http://localhost:3000/api/account-info?userId=${merchantId}`);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            if (data.success) {
+                return data.account;
+            } else {
+                console.error('Failed to fetch merchant data:', data.message);
+                return null;
+            }
+        } catch (error) {
+            console.error('Error fetching merchant data:', error);
+            return null;
+        }
+    }
+
+    async function displayMerchantAccountInfo() {
+        const merchantData = await fetchMerchantData(merchantId);
+        if (merchantData) {
+            const balance = parseFloat(merchantData.balance);
+            merchantBalance.textContent = isNaN(balance) ? '0.00' : balance.toFixed(2);
+            merchantProductListings.innerHTML = ''; // Assuming you might want to add product listings here
+            merchantOrderHistory.innerHTML = ''; // Assuming you might want to add order history here
+        } else {
+            merchantBalance.textContent = '0.00';
+            merchantProductListings.innerHTML = '<li>No products found.</li>';
+            merchantOrderHistory.innerHTML = '<li>No order history found.</li>';
+        }
+
+        // Show account section and hide other sections if necessary
+        merchantAccountSection.style.display = 'block';
+        document.getElementById('addProductContainer').style.display = 'none';
+        document.getElementById('requestSupplyContainer').style.display = 'none';
+        document.getElementById('sendMerchandiseContainer').style.display = 'none';
+        chatContainer.style.display = 'none';
+    }
 
     async function addProduct(name, description, price, stock, imageUrl) {
         try {

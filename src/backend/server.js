@@ -117,49 +117,49 @@ if (cluster.isMaster) {
       }
     });
 
-    socket.on('sendSupplierMessage', async (data) => {
+    socket.on("sendSupplierMessage", async (data) => {
       const { message, userId, role } = data;
       const timestamp = new Date();
 
       try {
         const userResult = await pool.query(
-          'SELECT username FROM users WHERE id = $1',
+          "SELECT username FROM users WHERE id = $1",
           [userId]
         );
-        const username = userResult.rows[0]?.username || 'Unknown User';
+        const username = userResult.rows[0]?.username || "Unknown User";
 
         const result = await pool.query(
-          'INSERT INTO chat (user_id, role, message, timestamp, username) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+          "INSERT INTO chat (user_id, role, message, timestamp, username) VALUES ($1, $2, $3, $4, $5) RETURNING *",
           [userId, role, message, timestamp, username]
         );
         const chatMessage = result.rows[0];
 
-        io.emit('receiveSupplierMessage', chatMessage);
+        io.emit("receiveSupplierMessage", chatMessage);
       } catch (error) {
-        console.error('Error inserting chat message into database:', error);
+        console.error("Error inserting chat message into database:", error);
       }
     });
 
-    socket.on('sendMerchantMessage', async (data) => {
+    socket.on("sendMerchantMessage", async (data) => {
       const { message, userId, role } = data;
       const timestamp = new Date();
 
       try {
         const userResult = await pool.query(
-          'SELECT username FROM users WHERE id = $1',
+          "SELECT username FROM users WHERE id = $1",
           [userId]
         );
-        const username = userResult.rows[0]?.username || 'Unknown User';
+        const username = userResult.rows[0]?.username || "Unknown User";
 
         const result = await pool.query(
-          'INSERT INTO chat (user_id, role, message, timestamp, username) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+          "INSERT INTO chat (user_id, role, message, timestamp, username) VALUES ($1, $2, $3, $4, $5) RETURNING *",
           [userId, role, message, timestamp, username]
         );
         const chatMessage = result.rows[0];
 
-        io.emit('receiveMerchantMessage', chatMessage);
+        io.emit("receiveMerchantMessage", chatMessage);
       } catch (error) {
-        console.error('Error inserting chat message into database:', error);
+        console.error("Error inserting chat message into database:", error);
       }
     });
 
@@ -168,37 +168,46 @@ if (cluster.isMaster) {
     });
   });
 
-  app.post('/api/register', async (req, res) => {
+  app.post("/api/register", async (req, res) => {
     const { username, password, role } = req.body;
     if (!username || !password || !role) {
-        return res.status(400).json({ success: false, message: 'All fields are required' });
+      return res
+        .status(400)
+        .json({ success: false, message: "All fields are required" });
     }
 
     try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const result = await pool.query('INSERT INTO users (username, password, role, balance) VALUES ($1, $2, $3, $4) RETURNING *', [username, hashedPassword, role, 50000]);
-        const newUser = result.rows[0];
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const result = await pool.query(
+        "INSERT INTO users (username, password, role, balance) VALUES ($1, $2, $3, $4) RETURNING *",
+        [username, hashedPassword, role, 50000]
+      );
+      const newUser = result.rows[0];
 
-        // Add default products if the new user is a merchant
-        if (role === 'merchant') {
-            await pool.query('SELECT add_default_products($1)', [newUser.id]);
-        }
+      // Add default products if the new user is a merchant
+      if (role === "merchant") {
+        await pool.query("SELECT add_default_products($1)", [newUser.id]);
+      }
 
-        // Add default supplies if the new user is a supplier
-        if (role === 'supplier') {
-            await pool.query('SELECT add_default_supplies($1)', [newUser.id]);
-        }
+      // Add default supplies if the new user is a supplier
+      if (role === "supplier") {
+        await pool.query("SELECT add_default_supplies($1)", [newUser.id]);
+      }
 
-        res.json({ success: true, user: newUser });
+      res.json({ success: true, user: newUser });
     } catch (error) {
-        if (error.code === '23505') {
-            res.status(400).json({ success: false, message: 'Username already exists' });
-        } else {
-            console.error('Error during registration:', error);
-            res.status(500).json({ success: false, message: 'Internal server error' });
-        }
+      if (error.code === "23505") {
+        res
+          .status(400)
+          .json({ success: false, message: "Username already exists" });
+      } else {
+        console.error("Error during registration:", error);
+        res
+          .status(500)
+          .json({ success: false, message: "Internal server error" });
+      }
     }
-});
+  });
 
   app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
@@ -248,109 +257,112 @@ if (cluster.isMaster) {
     console.log("Received cart items:", cartItems);
 
     try {
-        const totalCost = cartItems.reduce(
-            (total, item) => total + item.price * item.quantity,
-            0
-        );
-        const balanceResult = await pool.query(
-            "SELECT balance FROM users WHERE id = $1",
-            [userId]
-        );
-        const userBalance = balanceResult.rows[0].balance;
+      const totalCost = cartItems.reduce(
+        (total, item) => total + item.price * item.quantity,
+        0
+      );
+      const balanceResult = await pool.query(
+        "SELECT balance FROM users WHERE id = $1",
+        [userId]
+      );
+      const userBalance = balanceResult.rows[0].balance;
 
-        if (userBalance < totalCost) {
-            return res
-                .status(400)
-                .json({
-                    success: false,
-                    message: "Insufficient balance to complete the purchase.",
-                });
+      if (userBalance < totalCost) {
+        return res.status(400).json({
+          success: false,
+          message: "Insufficient balance to complete the purchase.",
+        });
+      }
+
+      await pool.query(
+        "UPDATE users SET balance = balance - $1 WHERE id = $2",
+        [totalCost, userId]
+      );
+      const orderResult = await pool.query(
+        "INSERT INTO orders (user_id, total_cost, order_date) VALUES ($1, $2, NOW()) RETURNING id",
+        [userId, totalCost]
+      );
+      const orderId = orderResult.rows[0].id;
+
+      for (const item of cartItems) {
+        const { product_id, quantity, price } = item;
+
+        // Log the current item for debugging
+        console.log("Processing item:", item);
+
+        if (!product_id) {
+          throw new Error(`Product ID is missing for one of the items.`);
         }
 
         await pool.query(
-            "UPDATE users SET balance = balance - $1 WHERE id = $2",
-            [totalCost, userId]
+          "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)",
+          [orderId, product_id, quantity, price]
         );
-        const orderResult = await pool.query(
-            "INSERT INTO orders (user_id, total_cost, order_date) VALUES ($1, $2, NOW()) RETURNING id",
-            [userId, totalCost]
+
+        await pool.query(
+          "INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())",
+          [userId, product_id, quantity, price]
         );
-        const orderId = orderResult.rows[0].id;
 
-        for (const item of cartItems) {
-            const { product_id, quantity, price } = item;
+        await pool.query(
+          "INSERT INTO purchased_items (order_id, product_id, quantity, spent) VALUES ($1, $2, $3, $4)",
+          [orderId, product_id, quantity, price * quantity]
+        );
 
-            // Log the current item for debugging
-            console.log("Processing item:", item);
+        const productResult = await pool.query(
+          "SELECT merchant_id FROM products WHERE id = $1",
+          [product_id]
+        );
+        const merchantId = productResult.rows[0]?.merchant_id;
 
-            if (!product_id) {
-                throw new Error(`Product ID is missing for one of the items.`);
-            }
-
-            await pool.query(
-                "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)",
-                [orderId, product_id, quantity, price]
-            );
-
-            await pool.query(
-                "INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())",
-                [userId, product_id, quantity, price]
-            );
-
-            await pool.query(
-                "INSERT INTO purchased_items (order_id, product_id, quantity, spent) VALUES ($1, $2, $3, $4)",
-                [orderId, product_id, quantity, price * quantity]
-            );
-
-            const productResult = await pool.query(
-                "SELECT merchant_id FROM products WHERE id = $1",
-                [product_id]
-            );
-            const merchantId = productResult.rows[0]?.merchant_id;
-
-            if (!merchantId) {
-                throw new Error(
-                    `Merchant ID not found for product ID ${product_id}.`
-                );
-            }
-
-            // Add the money to the merchant's account
-            await pool.query(
-                "UPDATE users SET balance = balance + $1 WHERE id = $2",
-                [price * quantity, merchantId]
-            );
-
-            // Insert into the inventory table
-            await pool.query(
-                "INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp) VALUES ($1, $2, $3, $4, $5, NOW())",
-                [userId, item.product, quantity, price, product_id]
-            );
+        if (!merchantId) {
+          throw new Error(
+            `Merchant ID not found for product ID ${product_id}.`
+          );
         }
 
-        // Delete items from the shopping cart after order is placed
-        await pool.query("DELETE FROM shopping_cart WHERE user_id = $1", [
-            userId,
-        ]);
+        // Add the money to the merchant's account
+        await pool.query(
+          "UPDATE users SET balance = balance + $1 WHERE id = $2",
+          [price * quantity, merchantId]
+        );
 
-        res.json({ success: true, message: "Order placed successfully." });
+        // Insert into the inventory table
+        await pool.query(
+          "INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp) VALUES ($1, $2, $3, $4, $5, NOW())",
+          [userId, item.product, quantity, price, product_id]
+        );
+      }
+
+      // Delete items from the shopping cart after order is placed
+      await pool.query("DELETE FROM shopping_cart WHERE user_id = $1", [
+        userId,
+      ]);
+
+      res.json({ success: true, message: "Order placed successfully." });
     } catch (error) {
-        console.error("Error placing order:", error);
-        res
-            .status(500)
-            .json({ success: false, message: "Internal server error." });
+      console.error("Error placing order:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
     }
-});
+  });
 
-app.get("/api/inventory", async (req, res) => {
-  const userId = req.query.userId;
-  try {
-      const result = await pool.query("SELECT * FROM inventory WHERE user_id = $1", [userId]);
+  app.get("/api/inventory", async (req, res) => {
+    const userId = req.query.userId;
+    try {
+      const result = await pool.query(
+        "SELECT * FROM inventory WHERE user_id = $1",
+        [userId]
+      );
       res.json({ success: true, items: result.rows });
-  } catch (error) {
+    } catch (error) {
       console.error("Error fetching inventory items:", error);
-      res.status(500).json({ success: false, message: "Internal server error" });
-  }
-});
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+  });
 
   app.post("/api/return-merchandise", async (req, res) => {
     const { userId, productId, quantity } = req.body;
@@ -363,12 +375,10 @@ app.get("/api/inventory", async (req, res) => {
       const orderItem = orderItemResult.rows[0];
 
       if (!orderItem) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "No purchase record found for the specified product.",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "No purchase record found for the specified product.",
+        });
       }
 
       const orderDate = new Date(orderItem.order_date);
@@ -376,12 +386,10 @@ app.get("/api/inventory", async (req, res) => {
       const daysDiff = (currentDate - orderDate) / (1000 * 60 * 60 * 24);
 
       if (daysDiff > 30) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "The return period for this product has expired.",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "The return period for this product has expired.",
+        });
       }
 
       const refundAmount = orderItem.price * quantity;
@@ -488,39 +496,45 @@ app.get("/api/inventory", async (req, res) => {
     }
   });
 
-  app.get('/api/purchased-items', async (req, res) => {
+  app.get("/api/purchased-items", async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM purchased_items');
-        res.json({ success: true, items: result.rows });
+      const result = await pool.query("SELECT * FROM purchased_items");
+      res.json({ success: true, items: result.rows });
     } catch (error) {
-        console.error('Error fetching purchased items:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+      console.error("Error fetching purchased items:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
     }
-});
+  });
 
-app.post('/api/fulfill-order', async (req, res) => {
+  app.post("/api/fulfill-order", async (req, res) => {
     const { orderId, productId, quantity, userId } = req.body;
     const client = await pool.connect();
 
     try {
-        await client.query('BEGIN');
+      await client.query("BEGIN");
 
-        // Add item to inventory
-        const insertInventoryQuery = `
+      // Add item to inventory
+      const insertInventoryQuery = `
             INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp)
             SELECT $1, product, $2, price, product_id, now()
             FROM shopping_cart
             WHERE product_id = $3
             RETURNING *;
         `;
-        const inventoryResult = await client.query(insertInventoryQuery, [userId, quantity, productId]);
+      const inventoryResult = await client.query(insertInventoryQuery, [
+        userId,
+        quantity,
+        productId,
+      ]);
 
-        if (inventoryResult.rows.length === 0) {
-            throw new Error('Failed to add item to inventory.');
-        }
+      if (inventoryResult.rows.length === 0) {
+        throw new Error("Failed to add item to inventory.");
+      }
 
-        // Update merchant balance
-        const updateBalanceQuery = `
+      // Update merchant balance
+      const updateBalanceQuery = `
             UPDATE users
             SET balance = balance + (
                 SELECT spent
@@ -530,36 +544,45 @@ app.post('/api/fulfill-order', async (req, res) => {
             WHERE id = $2
             RETURNING *;
         `;
-        const balanceResult = await client.query(updateBalanceQuery, [orderId, userId]);
+      const balanceResult = await client.query(updateBalanceQuery, [
+        orderId,
+        userId,
+      ]);
 
-        if (balanceResult.rows.length === 0) {
-            throw new Error('Failed to update merchant balance.');
-        }
+      if (balanceResult.rows.length === 0) {
+        throw new Error("Failed to update merchant balance.");
+      }
 
-        // Remove item from purchased items
-        const deletePurchasedItemQuery = `
+      // Remove item from purchased items
+      const deletePurchasedItemQuery = `
             DELETE FROM purchased_items
             WHERE order_id = $1 AND product_id = $2
             RETURNING *;
         `;
-        const deleteResult = await client.query(deletePurchasedItemQuery, [orderId, productId]);
+      const deleteResult = await client.query(deletePurchasedItemQuery, [
+        orderId,
+        productId,
+      ]);
 
-        if (deleteResult.rows.length === 0) {
-            throw new Error('Failed to delete purchased item.');
-        }
+      if (deleteResult.rows.length === 0) {
+        throw new Error("Failed to delete purchased item.");
+      }
 
-        await client.query('COMMIT');
-        res.json({ success: true, message: 'Order fulfilled and item added to inventory.' });
+      await client.query("COMMIT");
+      res.json({
+        success: true,
+        message: "Order fulfilled and item added to inventory.",
+      });
     } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('Error fulfilling order:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+      await client.query("ROLLBACK");
+      console.error("Error fulfilling order:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
     } finally {
-        client.release();
+      client.release();
     }
-});
-
-
+  });
 
   app.get("/api/supplies", async (req, res) => {
     try {
