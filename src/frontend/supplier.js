@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const accountButton = document.getElementById('accountButton');
     const homeButton = document.getElementById('homeButton');
     const supplierAccountSection = document.getElementById('supplier-account-section');
+    const supplierUsername = document.getElementById('supplierUsername');
     const supplierBalance = document.getElementById('supplierBalance');
 
     const supplierId = localStorage.getItem('userId');
@@ -140,20 +141,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    logoutButton.addEventListener('click', () => {
-        localStorage.removeItem('userId');
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        window.location.href = 'login.html';
-    });
+    if (logoutButton) {
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('userId');
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = 'login.html';
+        });
+    }
 
-    homeButton.addEventListener('click', () => {
-        window.location.href = 'marketplace.html';
-    });
+    if (homeButton) {
+        homeButton.addEventListener('click', () => {
+            window.location.href = 'marketplace.html';
+        });
+    }
 
-    accountButton.addEventListener('click', async () => {
-        await displaySupplierAccountInfo();
-    });
+    if (accountButton) {
+        accountButton.addEventListener('click', async () => {
+            await displaySupplierAccountInfo();
+        });
+    }
 
     async function fetchSupplierData(supplierId) {
         try {
@@ -177,10 +184,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function displaySupplierAccountInfo() {
         const supplierData = await fetchSupplierData(supplierId);
         if (supplierData) {
+            supplierUsername.textContent = supplierData.username || 'N/A';
             const balance = parseFloat(supplierData.balance);
             supplierBalance.textContent = isNaN(balance) ? '0.00' : balance.toFixed(2);
             // Add more account details here if needed
         } else {
+            supplierUsername.textContent = 'N/A';
             supplierBalance.textContent = '0.00';
         }
 

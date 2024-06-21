@@ -613,17 +613,20 @@ if (cluster.isMaster) {
   app.get("/api/account-info", async (req, res) => {
     const userId = req.query.userId;
     try {
-      const result = await pool.query(
-        "SELECT username, balance FROM users WHERE id = $1",
-        [userId]
-      );
-      res.json({ success: true, account: result.rows[0] });
+        const result = await pool.query(
+            "SELECT username, balance FROM users WHERE id = $1",
+            [userId]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+        res.json({ success: true, account: result.rows[0] });
     } catch (error) {
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
+        console.error("Error fetching account info:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
     }
-  });
+});
+
 
   app.get("/api/purchase-history", async (req, res) => {
     const userId = req.query.userId;

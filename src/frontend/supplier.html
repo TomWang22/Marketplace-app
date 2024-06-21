@@ -10,6 +10,7 @@
     <header>
         <div class="logo">Supplier Dashboard</div>
         <button id="accountButton">Account</button>
+        <button id="homeButton">Home</button> <!-- Added homeButton -->
         <button id="logoutButton">Logout</button>
     </header>
     <main>
@@ -43,6 +44,7 @@
         <section id="supplier-account-section" style="display: none;">
             <h1>Supplier Account Information</h1>
             <div>
+                <p><strong>Username:</strong> <span id="supplierUsername">Loading...</span></p>
                 <p><strong>Balance:</strong> $<span id="supplierBalance">0.00</span></p>
                 <!-- Add any other account details you want to display here -->
             </div>

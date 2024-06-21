@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ordersList = document.getElementById('ordersList');
     const showOrdersButton = document.getElementById('showOrdersButton');
     const merchantAccountSection = document.getElementById('merchant-account-section');
+    const merchantUsername = document.getElementById('merchantUsername');
     const merchantBalance = document.getElementById('merchantBalance');
     const merchantProductListings = document.getElementById('merchantProductListings');
     const merchantOrderHistory = document.getElementById('merchantOrderHistory');
@@ -167,11 +168,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function displayMerchantAccountInfo() {
         const merchantData = await fetchMerchantData(merchantId);
         if (merchantData) {
+            merchantUsername.textContent = merchantData.username || 'N/A';
             const balance = parseFloat(merchantData.balance);
             merchantBalance.textContent = isNaN(balance) ? '0.00' : balance.toFixed(2);
             merchantProductListings.innerHTML = ''; // Assuming you might want to add product listings here
             merchantOrderHistory.innerHTML = ''; // Assuming you might want to add order history here
         } else {
+            merchantUsername.textContent = 'N/A';
             merchantBalance.textContent = '0.00';
             merchantProductListings.innerHTML = '<li>No products found.</li>';
             merchantOrderHistory.innerHTML = '<li>No order history found.</li>';

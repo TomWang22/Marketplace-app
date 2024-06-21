@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const userId = localStorage.getItem('userId');
         const cartItems = await fetchCartItems();
         const existingItem = cartItems.find(item => item.productId === productId);
-    
+
         if (existingItem) {
             await updateCartItemQuantity(existingItem.id, existingItem.quantity + 1);
         } else {
@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Error adding item to cart.');
             }
         }
-    
+
         updateCartItemCount();
     }
 
@@ -221,19 +221,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         displayProducts();
     }
+
     function displayProducts() {
         const start = (currentPage - 1) * itemsPerPage;
         const end = start + itemsPerPage;
         const productsToDisplay = filteredProducts.slice(start, end);
-    
+
         productGrid.innerHTML = '';
         productsToDisplay.forEach(product => {
             const productElement = document.createElement('div');
             productElement.className = 'product';
-            
+
             // Ensure product.price is a number before calling toFixed
             const price = parseFloat(product.price);
-            
+
             productElement.innerHTML = `
                 <img src="${product.image_url}" alt="${product.name}">
                 <h3>${product.name}</h3>
@@ -242,18 +243,17 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             productGrid.appendChild(productElement);
         });
-    
+
         document.querySelectorAll('.view-details').forEach(button => {
             button.addEventListener('click', (event) => {
                 const productId = event.target.getAttribute('data-id');
                 window.location.href = `product-details.html?id=${productId}`;
             });
         });
-    
+
         const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
         pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
     }
-    
 
     async function init() {
         allProducts = await fetchProducts();
@@ -265,6 +265,15 @@ document.addEventListener('DOMContentLoaded', () => {
     async function updateCartItemCount() {
         const cartItems = await fetchCartItems();
         cartItemCount.textContent = cartItems.length;
+    }
+
+    function hideMarketplaceControls() {
+        // Add logic to hide any marketplace-specific controls
+        priceFilter.style.display = 'none';
+        itemsPerPageSelect.style.display = 'none';
+        prevPageButton.style.display = 'none';
+        nextPageButton.style.display = 'none';
+        searchInput.style.display = 'none';
     }
 
     init();
