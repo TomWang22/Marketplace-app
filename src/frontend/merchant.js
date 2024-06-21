@@ -55,6 +55,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatList.appendChild(chatItem);
     });
 
+    socket.on('newSupplyRequest', (supply) => {
+        displaySupplyRequest(supply);
+    });
+
     chatSendButton.addEventListener('click', () => {
         const message = chatInput.value;
         if (message) {
@@ -82,21 +86,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function fetchSupplyRequests() {
         try {
-            const response = await fetch('http://localhost:3000/api/supply-requests');
+            const response = await fetch(`http://localhost:3000/api/merchant-supply-requests?merchantId=${merchantId}`);
             const data = await response.json();
             supplyRequestsList.innerHTML = '';
             data.requests.forEach(request => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `${request.name} - Quantity: ${request.quantity} - Requested by Merchant ID: ${request.merchant_id}`;
-                supplyRequestsList.appendChild(listItem);
+                displaySupplyRequest(request);
             });
         } catch (error) {
             console.error('Error fetching supply requests:', error);
         }
     }
 
+    function displaySupplyRequest(request) {
+        const listItem = document.createElement('li');
+        listItem.textContent = `${request.product_name} - Quantity: ${request.quantity} - Requested on: ${new Date(request.request_date).toLocaleString()} - Status: ${request.status}`;
+        supplyRequestsList.appendChild(listItem);
+    }
+
     async function requestSupply(productId, quantity) {
-        const merchantId = localStorage.getItem('userId');
         try {
             const response = await fetch('http://localhost:3000/api/request-supply', {
                 method: 'POST',
@@ -108,6 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             if (data.success) {
                 displayNotification(`Requested ${quantity} units of product ID ${productId}`);
+                socket.emit('newSupplyRequest', data.request); // Emit new supply request
             } else {
                 displayNotification(`Failed to request supply: ${data.message}`);
             }
@@ -392,4 +400,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             showOrdersButton.textContent = 'Show Orders';
         }
     });
+
+    // Initial fetch of supply requests
+    fetchSupplyRequests();
 });

@@ -99,6 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function sendSupplies(merchantId, productId, quantity) {
+        const supplierId = localStorage.getItem('userId');
         try {
             const response = await fetch('http://localhost:3000/api/send-supplies', {
                 method: 'POST',
@@ -110,6 +111,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             if (data.success) {
                 displayNotification(`Sent ${quantity} units of product ID ${productId} to merchant ID ${merchantId}`);
+                clearSendSuppliesForm();
+                await fetchSupplyRequests(); // Refresh the supply requests list to show updated status
             } else {
                 displayNotification(`Failed to send supplies: ${data.message}`);
             }
@@ -117,6 +120,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error sending supplies:', error);
             displayNotification('An error occurred while sending supplies.');
         }
+    }
+
+    function clearSendSuppliesForm() {
+        document.getElementById('merchantId').value = '';
+        document.getElementById('productIdToSupply').value = '';
+        document.getElementById('quantityToSupply').value = '';
     }
 
     async function addSupply(name, description, price, cost, stock, image_url) {

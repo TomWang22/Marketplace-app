@@ -613,20 +613,23 @@ if (cluster.isMaster) {
   app.get("/api/account-info", async (req, res) => {
     const userId = req.query.userId;
     try {
-        const result = await pool.query(
-            "SELECT username, balance FROM users WHERE id = $1",
-            [userId]
-        );
-        if (result.rows.length === 0) {
-            return res.status(404).json({ success: false, message: "User not found" });
-        }
-        res.json({ success: true, account: result.rows[0] });
+      const result = await pool.query(
+        "SELECT username, balance FROM users WHERE id = $1",
+        [userId]
+      );
+      if (result.rows.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+      res.json({ success: true, account: result.rows[0] });
     } catch (error) {
-        console.error("Error fetching account info:", error);
-        res.status(500).json({ success: false, message: "Internal server error" });
+      console.error("Error fetching account info:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
     }
-});
-
+  });
 
   app.get("/api/purchase-history", async (req, res) => {
     const userId = req.query.userId;
@@ -855,73 +858,102 @@ if (cluster.isMaster) {
   });
 
   // Endpoint for suppliers to send supplies
+  // Endpoint for suppliers to send supplies
+  // Endpoint for suppliers to send supplies
   app.post("/api/send-supplies", async (req, res) => {
     const { supplierId, merchantId, productId, quantity } = req.body;
 
-    try {
-      // Retrieve the supply details
-      const supplyResult = await pool.query(
-        "SELECT * FROM supplies WHERE id = $1",
-        [productId]
-      );
-      const supply = supplyResult.rows[0];
+    console.log('Request payload:', req.body); // Log the request payload
 
-      if (!supply) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Supply not found." });
-      }
-
-      // Check if enough stock is available
-      if (supply.stock < quantity) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Insufficient stock." });
-      }
-
-      // Calculate the total cost and profit
-      const totalCost = supply.cost * quantity;
-      const totalProfit = (supply.price - supply.cost) * quantity;
-
-      // Reduce the supplier's stock
-      await pool.query(
-        "UPDATE supplies SET stock = stock - $1, profit = profit + $2 WHERE id = $3",
-        [quantity, totalProfit, productId]
-      );
-
-      // Update the merchant's balance
-      await pool.query(
-        "UPDATE users SET balance = balance - $1 WHERE id = $2",
-        [totalCost, merchantId]
-      );
-
-      // Record the received supplies
-      await pool.query(
-        "INSERT INTO received_supplies (merchant_id, product_id, quantity, supply_date) VALUES ($1, $2, $3, NOW())",
-        [merchantId, productId, quantity]
-      );
-
-      // Update the supply request status to fulfilled
-      await pool.query(
-        "UPDATE supply_requests SET status = $1 WHERE merchant_id = $2 AND product_id = $3 AND status = $4",
-        ["fulfilled", merchantId, productId, "pending"]
-      );
-
-      res.json({
-        success: true,
-        message: "Supplies sent and stock updated successfully.",
-      });
-    } catch (error) {
-      console.error("Error sending supplies:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error." });
+    if (!supplierId || !merchantId || !productId || !quantity) {
+        return res.status(400).json({ success: false, message: "Missing required fields." });
     }
-  });
+
+    try {
+        // Retrieve the supply details
+        const supplyResult = await pool.query(
+            "SELECT * FROM supplies WHERE id = $1",
+            [productId]
+        );
+        const supply = supplyResult.rows[0];
+
+        if (!supply) {
+            return res.status(400).json({ success: false, message: "Supply not found." });
+        }
+
+        // Check if enough stock is available
+        if (supply.stock < quantity) {
+            return res.status(400).json({ success: false, message: "Insufficient stock." });
+        }
+
+        // Calculate the total cost and profit
+        const totalCost = supply.cost * quantity;
+        const totalProfit = (supply.price - supply.cost) * quantity;
+
+        // Reduce the supplier's stock
+        await pool.query(
+            "UPDATE supplies SET stock = stock - $1, profit = profit + $2 WHERE id = $3",
+            [quantity, totalProfit, productId]
+        );
+
+        // Update the merchant's balance
+        await pool.query(
+            "UPDATE users SET balance = balance - $1 WHERE id = $2",
+            [totalCost, merchantId]
+        );
+
+        // Record the received supplies
+        const receivedSupplyResult = await pool.query(
+            "INSERT INTO received_supplies (merchant_id, product_id, quantity, supply_date) VALUES ($1, $2, $3, NOW()) RETURNING *",
+            [merchantId, productId, quantity]
+        );
+
+        // Update the supply request status to completed
+        await pool.query(
+            "UPDATE supply_requests SET status = $1 WHERE merchant_id = $2 AND product_id = $3 AND status = $4",
+            ["completed", merchantId, productId, "pending"]
+        );
+
+        // Emit the new supply event
+        const newSupply = receivedSupplyResult.rows[0];
+        io.emit('newSupply', newSupply);
+
+        res.json({
+            success: true,
+            message: `Sent ${quantity} units of product ID ${productId} to merchant ID ${merchantId}`,
+        });
+    } catch (error) {
+        console.error("Error sending supplies:", error);
+        res.status(500).json({ success: false, message: "Internal server error." });
+    }
+});
+
 
   server.listen(port, () => {
     console.log(`Worker ${process.pid} is running on http://localhost:${port}`);
   });
+
+  // Endpoint to fetch past supply requests for a merchant
+app.get("/api/merchant-supply-requests", async (req, res) => {
+  const merchantId = req.query.merchantId;
+
+  try {
+      const result = await pool.query(`
+          SELECT sr.id, sr.merchant_id, sr.product_id, sr.quantity, sr.request_date, sr.status, 
+                 p.name AS product_name, p.description AS product_description, p.image_url AS product_image_url
+          FROM supply_requests sr
+          JOIN products p ON sr.product_id = p.id
+          WHERE sr.merchant_id = $1
+          ORDER BY sr.request_date DESC
+      `, [merchantId]);
+
+      res.json({ success: true, requests: result.rows });
+  } catch (error) {
+      console.error("Error fetching merchant supply requests:", error);
+      res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
 
   function generateToken(userId) {
     const secretKey = "your_secret_key";
