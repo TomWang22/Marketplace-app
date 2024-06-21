@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
     const addSupplyButton = document.getElementById('addSupplyButton');
+    const addSupplyByIdButton = document.getElementById('addSupplyByIdButton');
     const sendSuppliesButton = document.getElementById('sendSuppliesButton');
     const notificationsList = document.getElementById('notificationsList');
     const supplyRequestsList = document.getElementById('supplyRequestsList');
@@ -128,6 +129,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('quantityToSupply').value = '';
     }
 
+    if (sendSuppliesButton) {
+        sendSuppliesButton.addEventListener('click', () => {
+            const merchantId = document.getElementById('merchantId').value;
+            const productId = document.getElementById('productIdToSupply').value;
+            const quantity = parseInt(document.getElementById('quantityToSupply').value);
+            sendSupplies(merchantId, productId, quantity);
+        });
+    }
+
     async function addSupply(name, description, price, cost, stock, image_url) {
         try {
             const response = await fetch('http://localhost:3000/api/supplies', {
@@ -141,6 +151,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             if (data.success) {
                 displayNotification(`Supply "${name}" added successfully.`);
+                clearAddSupplyForm();
             } else {
                 displayNotification(`Failed to add supply: ${data.message}`);
             }
@@ -148,6 +159,64 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error adding supply:', error);
             displayNotification('An error occurred while adding supply.');
         }
+    }
+
+    async function addSupplyById(id, quantity) {
+        try {
+            const response = await fetch('http://localhost:3000/api/add-supply-by-id', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ id, quantity })
+            });
+            const data = await response.json();
+            if (data.success) {
+                displayNotification(`Supply with ID "${id}" added successfully.`);
+                clearAddSupplyByIdForm();
+            } else {
+                displayNotification(`Failed to add supply: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Error adding supply by ID:', error);
+            displayNotification('An error occurred while adding supply by ID.');
+        }
+    }
+    
+
+    function clearAddSupplyForm() {
+        document.getElementById('supplyName').value = '';
+        document.getElementById('supplyDescription').value = '';
+        document.getElementById('supplyPrice').value = '';
+        document.getElementById('supplyCost').value = '';
+        document.getElementById('supplyStock').value = '';
+        document.getElementById('supplyImageUrl').value = '';
+    }
+
+    function clearAddSupplyByIdForm() {
+        document.getElementById('supplyId').value = '';
+        document.getElementById('supplyQuantity').value = '';
+    }
+
+    if (addSupplyButton) {
+        addSupplyButton.addEventListener('click', () => {
+            const name = document.getElementById('supplyName').value;
+            const description = document.getElementById('supplyDescription').value;
+            const price = parseFloat(document.getElementById('supplyPrice').value);
+            const cost = parseFloat(document.getElementById('supplyCost').value);
+            const stock = parseInt(document.getElementById('supplyStock').value);
+            const image_url = document.getElementById('supplyImageUrl').value;
+            addSupply(name, description, price, cost, stock, image_url);
+        });
+    }
+
+    if (addSupplyByIdButton) {
+        addSupplyByIdButton.addEventListener('click', () => {
+            const id = document.getElementById('supplyId').value;
+            const quantity = parseInt(document.getElementById('supplyQuantity').value);
+            addSupplyById(id, quantity);
+        });
     }
 
     if (logoutButton) {
@@ -207,23 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('send-supplies-section').style.display = 'none';
         document.getElementById('add-supplies-section').style.display = 'none';
         document.getElementById('view-requests-section').style.display = 'none';
+        document.getElementById('add-supplies-id-quantity-section').style.display = 'none';
         chatContainer.style.display = 'none';
     }
-
-    addSupplyButton.addEventListener('click', () => {
-        const name = document.getElementById('supplyName').value;
-        const description = document.getElementById('supplyDescription').value;
-        const price = parseFloat(document.getElementById('supplyPrice').value);
-        const cost = parseFloat(document.getElementById('supplyCost').value);
-        const stock = parseInt(document.getElementById('supplyStock').value);
-        const image_url = document.getElementById('supplyImageUrl').value;
-        addSupply(name, description, price, cost, stock, image_url);
-    });
-
-    sendSuppliesButton.addEventListener('click', () => {
-        const merchantId = document.getElementById('merchantId').value;
-        const productId = document.getElementById('productIdToSupply').value;
-        const quantity = parseInt(document.getElementById('quantityToSupply').value);
-        sendSupplies(merchantId, productId, quantity);
-    });
 });

@@ -60,10 +60,11 @@ if (cluster.isMaster) {
     cors({
       origin: "http://127.0.0.1:5500",
       methods: ["GET", "POST"],
-      allowedHeaders: ["Content-Type"],
+      allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
     })
   );
+  
 
   app.use(
     session({
@@ -902,10 +903,10 @@ if (cluster.isMaster) {
             [totalCost, merchantId]
         );
 
-        // Record the received supplies
+        // Record the received supplies with necessary adjustments
         const receivedSupplyResult = await pool.query(
-            "INSERT INTO received_supplies (merchant_id, product_id, quantity, supply_date) VALUES ($1, $2, $3, NOW()) RETURNING *",
-            [merchantId, productId, quantity]
+            "INSERT INTO received_supplies (name, description, price, stock, image_url, merchant_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+            [supply.name, supply.description, supply.price, quantity, supply.image_url, merchantId]
         );
 
         // Update the supply request status to completed
@@ -927,6 +928,7 @@ if (cluster.isMaster) {
         res.status(500).json({ success: false, message: "Internal server error." });
     }
 });
+
 
 
   server.listen(port, () => {
@@ -951,6 +953,41 @@ app.get("/api/merchant-supply-requests", async (req, res) => {
   } catch (error) {
       console.error("Error fetching merchant supply requests:", error);
       res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+app.post("/api/add-supply-by-id", async (req, res) => {
+  const { id, quantity } = req.body;
+
+  if (!id || !quantity) {
+      return res.status(400).json({ success: false, message: "Missing required fields." });
+  }
+
+  try {
+      // Retrieve the supply details
+      const supplyResult = await pool.query(
+          "SELECT * FROM supplies WHERE id = $1",
+          [id]
+      );
+      const supply = supplyResult.rows[0];
+
+      if (!supply) {
+          return res.status(400).json({ success: false, message: "Supply not found." });
+      }
+
+      // Update the supply stock
+      await pool.query(
+          "UPDATE supplies SET stock = stock + $1 WHERE id = $2",
+          [quantity, id]
+      );
+
+      res.json({
+          success: true,
+          message: `Added ${quantity} units to supply ID ${id}.`,
+      });
+  } catch (error) {
+      console.error("Error adding supply by ID:", error);
+      res.status(500).json({ success: false, message: "Internal server error." });
   }
 });
 

@@ -10,7 +10,6 @@
     <header>
         <div class="logo">Supplier Dashboard</div>
         <button id="accountButton">Account</button>
-        <button id="homeButton">Home</button> <!-- Added homeButton -->
         <button id="logoutButton">Logout</button>
     </header>
     <main>
@@ -35,6 +34,14 @@
             </form>
         </section>
 
+        <section id="add-supplies-id-quantity-section">
+            <form>
+                <input type="text" id="supplyId" placeholder="Supply ID">
+                <input type="number" id="supplyQuantity" placeholder="Quantity">
+                <button id="addSupplyByIdButton" type="button">Add Supply by ID</button>
+            </form>
+        </section>
+
         <section id="view-requests-section">
             <button id="viewRequestsButton">View Supply Requests</button>
             <div id="supplyRequestsList" style="display:none;"></div>
@@ -44,7 +51,6 @@
         <section id="supplier-account-section" style="display: none;">
             <h1>Supplier Account Information</h1>
             <div>
-                <p><strong>Username:</strong> <span id="supplierUsername">Loading...</span></p>
                 <p><strong>Balance:</strong> $<span id="supplierBalance">0.00</span></p>
                 <!-- Add any other account details you want to display here -->
             </div>
