@@ -482,11 +482,11 @@ if (cluster.isMaster) {
   setAllOrdersToPending();
 
   app.post('/api/fulfill-order', async (req, res) => {
-    const { orderId, productId, quantity, userId } = req.body;
+    const { orderId, productId, quantity } = req.body;
 
     console.log('Request payload:', req.body); // Log the request payload
 
-    if (!orderId || !productId || !quantity || !userId) {
+    if (!orderId || !productId || !quantity) {
         return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
 
@@ -494,6 +494,14 @@ if (cluster.isMaster) {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
+
+            // Fetch userId from orders table
+            const orderResult = await client.query('SELECT user_id FROM orders WHERE id = $1', [orderId]);
+            const order = orderResult.rows[0];
+            if (!order) {
+                throw new Error('Order not found.');
+            }
+            const userId = order.user_id;
 
             // Get product price and stock
             const productResult = await client.query('SELECT price, stock FROM products WHERE id = $1', [productId]);
@@ -515,11 +523,11 @@ if (cluster.isMaster) {
             // Reduce product stock
             await client.query('UPDATE products SET stock = stock - $1 WHERE id = $2', [quantity, productId]);
 
-            // Update order status
-            await client.query('UPDATE orders SET status = $1 WHERE id = $2', ['fulfilled', orderId]);
+            // Delete the order from orders table
+            await client.query('DELETE FROM orders WHERE id = $1', [orderId]);
 
             await client.query('COMMIT');
-            res.json({ success: true, message: 'Order fulfilled successfully.' });
+            res.json({ success: true, message: 'Order fulfilled and deleted successfully.' });
         } catch (e) {
             await client.query('ROLLBACK');
             console.error('Error fulfilling order:', e);
@@ -532,6 +540,8 @@ if (cluster.isMaster) {
         res.status(500).json({ success: false, message: 'Internal server error.' });
     }
 });
+
+
 
   app.get("/api/products", async (req, res) => {
     try {

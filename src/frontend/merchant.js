@@ -312,8 +312,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             listItem.className = 'order-item';
             listItem.innerHTML = `
                 <div>
-                    <span>Order ID: ${item.order_id} - Product ID: ${item.product_id} - Quantity: ${item.quantity} - Spent: $${item.spent}</span>
-                    <button class="fulfill-button" data-order-id="${item.order_id}" data-product-id="${item.product_id}" data-quantity="${item.quantity}" data-user-id="${item.user_id}">Fulfill Order</button>
+                    <span>Order ID: ${item.id} - Product ID: ${item.product_id} - Quantity: ${item.quantity} - Spent: $${item.spent}</span>
+                    <button class="fulfill-button" data-order-id="${item.id}" data-product-id="${item.product_id}" data-quantity="${item.quantity}" data-user-id="${item.user_id}">Fulfill Order</button>
                 </div>
             `;
             ordersList.appendChild(listItem);
@@ -325,6 +325,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const productId = button.getAttribute('data-product-id');
                 const quantity = button.getAttribute('data-quantity');
                 const userId = button.getAttribute('data-user-id');
+                if (!userId) {
+                    alert('User ID not found. Please log in again.');
+                    return;
+                }
                 const listItem = button.parentElement; // Get the parent element to remove it later
                 await fulfillOrder(orderId, productId, quantity, userId, listItem);
             });
@@ -357,8 +361,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert('An error occurred while fulfilling the order.');
         }
     }
-    
-    
 
     addProductButton.addEventListener('click', (event) => {
         event.preventDefault();
