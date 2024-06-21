@@ -362,6 +362,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+
     addProductButton.addEventListener('click', (event) => {
         event.preventDefault();
         const name = document.getElementById('productName').value;

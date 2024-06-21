@@ -569,93 +569,68 @@ if (cluster.isMaster) {
     }
   });
 
-  app.get("/api/purchased-items", async (req, res) => {
+  app.get('/api/purchased-items', async (req, res) => {
     try {
-      const result = await pool.query("SELECT * FROM purchased_items");
-      res.json({ success: true, items: result.rows });
+        const result = await pool.query('SELECT * FROM orders ORDER BY id ASC');
+        res.json({ success: true, items: result.rows });
     } catch (error) {
-      console.error("Error fetching purchased items:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
+        console.error('Error fetching purchased items:', error);
+        res.status(500).json({ success: false, message: 'Internal server error.' });
     }
-  });
+});
 
-  app.post("/api/fulfill-order", async (req, res) => {
-    const { orderId, productId, quantity, userId } = req.body;
-    const client = await pool.connect();
+app.post('/api/fulfill-order', async (req, res) => {
+  const { orderId, productId, quantity, userId } = req.body;
 
-    try {
-      await client.query("BEGIN");
+  if (!orderId || !productId || !quantity || !userId) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+  }
 
-      // Add item to inventory
-      const insertInventoryQuery = `
-            INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp)
-            SELECT $1, product, $2, price, product_id, now()
-            FROM shopping_cart
-            WHERE product_id = $3
-            RETURNING *;
-        `;
-      const inventoryResult = await client.query(insertInventoryQuery, [
-        userId,
-        quantity,
-        productId,
-      ]);
+  try {
+      const client = await pool.connect();
 
-      if (inventoryResult.rows.length === 0) {
-        throw new Error("Failed to add item to inventory.");
+      try {
+          await client.query('BEGIN');
+
+          // Update order status to 'fulfilled'
+          await client.query(
+              'UPDATE orders SET status = $1 WHERE id = $2',
+              ['fulfilled', orderId]
+          );
+
+          // Deduct stock from product
+          await client.query(
+              'UPDATE products SET stock = stock - $1 WHERE id = $2',
+              [quantity, productId]
+          );
+
+          // Add money to merchant balance
+          const productResult = await client.query('SELECT price FROM products WHERE id = $1', [productId]);
+          const productPrice = productResult.rows[0].price;
+          await client.query(
+              'UPDATE users SET balance = balance + $1 WHERE id = $2',
+              [quantity * productPrice, userId]
+          );
+
+          // Delete the order from the orders table
+          await client.query('DELETE FROM orders WHERE id = $1', [orderId]);
+
+          await client.query('COMMIT');
+          res.json({ success: true, message: 'Order fulfilled and removed successfully' });
+      } catch (error) {
+          await client.query('ROLLBACK');
+          console.error('Error fulfilling order:', error);
+          res.status(500).json({ success: false, message: 'Internal server error' });
+      } finally {
+          client.release();
       }
+  } catch (error) {
+      console.error('Error connecting to database:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
 
-      // Update merchant balance
-      const updateBalanceQuery = `
-            UPDATE users
-            SET balance = balance + (
-                SELECT spent
-                FROM purchased_items
-                WHERE order_id = $1
-            )
-            WHERE id = $2
-            RETURNING *;
-        `;
-      const balanceResult = await client.query(updateBalanceQuery, [
-        orderId,
-        userId,
-      ]);
 
-      if (balanceResult.rows.length === 0) {
-        throw new Error("Failed to update merchant balance.");
-      }
-
-      // Remove item from purchased items
-      const deletePurchasedItemQuery = `
-            DELETE FROM purchased_items
-            WHERE order_id = $1 AND product_id = $2
-            RETURNING *;
-        `;
-      const deleteResult = await client.query(deletePurchasedItemQuery, [
-        orderId,
-        productId,
-      ]);
-
-      if (deleteResult.rows.length === 0) {
-        throw new Error("Failed to delete purchased item.");
-      }
-
-      await client.query("COMMIT");
-      res.json({
-        success: true,
-        message: "Order fulfilled and item added to inventory.",
-      });
-    } catch (error) {
-      await client.query("ROLLBACK");
-      console.error("Error fulfilling order:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    } finally {
-      client.release();
-    }
-  });
 
   app.get("/api/supplies", async (req, res) => {
     try {
