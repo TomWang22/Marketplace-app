@@ -68,6 +68,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     function displayNotification(message) {
+        if (!notificationsList) {
+            console.error('notificationsList element not found');
+            return;
+        }
         const listItem = document.createElement('li');
         listItem.textContent = message;
         notificationsList.appendChild(listItem);
@@ -321,16 +325,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const productId = button.getAttribute('data-product-id');
                 const quantity = button.getAttribute('data-quantity');
                 const userId = button.getAttribute('data-user-id');
-                await fulfillOrder(orderId, productId, quantity, userId);
-                displayPurchasedItems(); // Refresh the list after fulfilling the order
+                const listItem = button.parentElement; // Get the parent element to remove it later
+                await fulfillOrder(orderId, productId, quantity, userId, listItem);
             });
         });
 
         ordersList.style.display = 'block';
     }
 
-    async function fulfillOrder(orderId, productId, quantity, userId) {
+    async function fulfillOrder(orderId, productId, quantity, userId, listItem) {
         try {
+            console.log('Fulfilling order with payload:', { orderId, productId, quantity, userId }); // Log the payload
             const response = await fetch('http://localhost:3000/api/fulfill-order', {
                 method: 'POST',
                 headers: {
@@ -341,11 +346,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             if (data.success) {
                 displayNotification('Order fulfilled and item added to inventory.');
+                listItem.remove(); // Remove the list item from the UI
             } else {
                 displayNotification('Failed to fulfill order: ' + data.message);
+                alert('Failed to fulfill order: ' + data.message);
             }
         } catch (error) {
             console.error('Error fulfilling order:', error);
+            displayNotification('An error occurred while fulfilling the order.');
+            alert('An error occurred while fulfilling the order.');
         }
     }
 

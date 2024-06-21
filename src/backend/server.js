@@ -470,6 +470,60 @@ if (cluster.isMaster) {
     }
   });
 
+  app.post('/api/fulfill-order', async (req, res) => {
+    const { orderId, productId, quantity, userId } = req.body;
+
+    console.log('Request payload:', req.body); // Log the request payload
+
+    if (!orderId || !productId || !quantity || !userId) {
+        return res.status(400).json({ success: false, message: 'Missing required fields.' });
+    }
+
+    try {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // Get product price and stock
+            const productResult = await client.query('SELECT price, stock FROM products WHERE id = $1', [productId]);
+            const product = productResult.rows[0];
+
+            if (!product) {
+                throw new Error('Product not found.');
+            }
+
+            if (product.stock < quantity) {
+                throw new Error('Insufficient stock.');
+            }
+
+            const totalCost = product.price * quantity;
+
+            // Update merchant's balance
+            await client.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [totalCost, userId]);
+
+            // Reduce product stock
+            await client.query('UPDATE products SET stock = stock - $1 WHERE id = $2', [quantity, productId]);
+
+            // Update order status
+            await client.query('UPDATE orders SET status = $1 WHERE id = $2', ['fulfilled', orderId]);
+
+            await client.query('COMMIT');
+            res.json({ success: true, message: 'Order fulfilled successfully.' });
+        } catch (e) {
+            await client.query('ROLLBACK');
+            console.error('Error fulfilling order:', e);
+            res.status(500).json({ success: false, message: 'Internal server error.' });
+        } finally {
+            client.release();
+        }
+    } catch (e) {
+        console.error('Error connecting to database:', e);
+        res.status(500).json({ success: false, message: 'Internal server error.' });
+    }
+});
+
+
+
   app.get("/api/products", async (req, res) => {
     try {
       const result = await pool.query("SELECT * FROM products;");
