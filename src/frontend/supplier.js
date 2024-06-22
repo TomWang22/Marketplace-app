@@ -11,9 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const logoutButton = document.getElementById("logoutButton");
   const accountButton = document.getElementById("accountButton");
   const homeButton = document.getElementById("homeButton");
-  const supplierAccountSection = document.getElementById(
-    "supplier-account-section"
-  );
+  const supplierAccountSection = document.getElementById("supplier-account-section");
   const supplierUsername = document.getElementById("supplierUsername");
   const supplierBalance = document.getElementById("supplierBalance");
 
@@ -75,83 +73,73 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function fetchSupplyRequests() {
     try {
-        const response = await fetch("http://localhost:3000/api/supply-requests");
-        const data = await response.json();
-        supplyRequestsList.innerHTML = "";
+      const response = await fetch("http://localhost:3000/api/supply-requests");
+      const data = await response.json();
+      supplyRequestsList.innerHTML = "";
 
-        // Debug: Log the fetched data
-        console.log("Fetched supply requests:", data.requests);
+      // Log the raw data received
+      console.log("Fetched supply requests (raw):", data);
 
-        // Ensure data is in the expected format
-        if (!data.success) {
-            throw new Error(data.message || "Failed to fetch supply requests.");
-        }
+      // Ensure data is in the expected format
+      if (!data.success) {
+        throw new Error(data.message || "Failed to fetch supply requests.");
+      }
 
-        // Filter the requests to only include those with a status of "pending"
-        const pendingRequests = data.requests.filter(
-            (request) => request.status === "pending"
-        );
+      // Log the requests array
+      console.log("Fetched supply requests (requests array):", data.requests);
 
-        // Debug: Log the filtered requests
-        console.log("Pending supply requests:", pendingRequests);
+      // Filter the requests to only include those with a status of "pending"
+      const pendingRequests = data.requests.filter(
+        (request) => request.status === "pending"
+      );
 
-        if (pendingRequests.length === 0) {
-            const noRequestsMessage = document.createElement("p");
-            noRequestsMessage.textContent = "No pending supply requests.";
-            supplyRequestsList.appendChild(noRequestsMessage);
-        }
+      // Log the filtered requests
+      console.log("Pending supply requests:", pendingRequests);
 
-        pendingRequests.forEach((request) => {
-            const listItem = document.createElement("div");
-            listItem.className = "request-item";
-            listItem.innerHTML = `
+      if (pendingRequests.length === 0) {
+        const noRequestsMessage = document.createElement("p");
+        noRequestsMessage.textContent = "No pending supply requests.";
+        supplyRequestsList.appendChild(noRequestsMessage);
+      }
+
+      pendingRequests.forEach((request) => {
+        const listItem = document.createElement("div");
+        listItem.className = "request-item";
+        listItem.innerHTML = `
                 <div>
                     <span>Product ID: ${request.product_id} - Name: ${request.name} - Quantity: ${request.quantity}</span>
                     <button class="fulfillRequestButton" data-merchant-id="${request.merchant_id}" data-product-id="${request.product_id}" data-quantity="${request.quantity}">Fulfill</button>
                 </div>
             `;
-            supplyRequestsList.appendChild(listItem);
-        });
+        supplyRequestsList.appendChild(listItem);
+      });
 
-        document.querySelectorAll('.fulfillRequestButton').forEach(button => {
-            button.addEventListener('click', async (event) => {
-                const merchantId = button.getAttribute('data-merchant-id');
-                const productId = button.getAttribute('data-product-id');
-                const quantity = button.getAttribute('data-quantity');
-                const listItem = button.parentElement;
-                await fulfillSupplyRequest(merchantId, productId, quantity, listItem);
-            });
+      document.querySelectorAll(".fulfillRequestButton").forEach((button) => {
+        button.addEventListener("click", async (event) => {
+          const merchantId = button.getAttribute("data-merchant-id");
+          const productId = button.getAttribute("data-product-id");
+          const quantity = button.getAttribute("data-quantity");
+          const listItem = button.parentElement;
+          await fulfillSupplyRequest(merchantId, productId, quantity, listItem);
         });
+      });
     } catch (error) {
-        console.error('Error fetching supply requests:', error);
+      console.error("Error fetching supply requests:", error);
     }
-}
+  }
 
-
-
-
-  async function fulfillSupplyRequest(
-    merchantId,
-    productId,
-    quantity,
-    listItem
-  ) {
+  async function fulfillSupplyRequest(merchantId, productId, quantity, listItem) {
     try {
-      const response = await fetch(
-        "http://localhost:3000/api/fulfill-supply-request",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ supplierId, merchantId, productId, quantity }),
-        }
-      );
+      const response = await fetch("http://localhost:3000/api/fulfill-supply-request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ supplierId, merchantId, productId, quantity }),
+      });
       const data = await response.json();
       if (data.success) {
-        displayNotification(
-          `Sent ${quantity} units of product ID ${productId} to merchant ID ${merchantId}`
-        );
+        displayNotification(`Sent ${quantity} units of product ID ${productId} to merchant ID ${merchantId}`);
         listItem.remove(); // Remove the list item from the UI
       } else {
         displayNotification(`Failed to send supplies: ${data.message}`);
@@ -200,17 +188,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function addSupplyById(id, quantity) {
     try {
-      const response = await fetch(
-        "http://localhost:3000/api/add-supply-by-id",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: JSON.stringify({ id, quantity }),
-        }
-      );
+      const response = await fetch("http://localhost:3000/api/add-supply-by-id", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ id, quantity }),
+      });
       const data = await response.json();
       if (data.success) {
         displayNotification(`Supply with ID "${id}" added successfully.`);
@@ -256,9 +241,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (addSupplyByIdButton) {
     addSupplyByIdButton.addEventListener("click", () => {
       const id = document.getElementById("supplyId").value;
-      const quantity = parseInt(
-        document.getElementById("supplyQuantity").value
-      );
+      const quantity = parseInt(document.getElementById("supplyQuantity").value);
       addSupplyById(id, quantity);
     });
   }
@@ -286,9 +269,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function fetchSupplierData(supplierId) {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/account-info?userId=${supplierId}`
-      );
+      const response = await fetch(`http://localhost:3000/api/account-info?userId=${supplierId}`);
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
@@ -310,9 +291,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (supplierData) {
       supplierUsername.textContent = supplierData.username || "N/A";
       const balance = parseFloat(supplierData.balance);
-      supplierBalance.textContent = isNaN(balance)
-        ? "0.00"
-        : balance.toFixed(2);
+      supplierBalance.textContent = isNaN(balance) ? "0.00" : balance.toFixed(2);
       // Add more account details here if needed
     } else {
       supplierUsername.textContent = "N/A";
@@ -324,8 +303,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("send-supplies-section").style.display = "none";
     document.getElementById("add-supplies-section").style.display = "none";
     document.getElementById("view-requests-section").style.display = "none";
-    document.getElementById("add-supplies-id-quantity-section").style.display =
-      "none";
+    document.getElementById("add-supplies-id-quantity-section").style.display = "none";
     document.getElementById("chatContainer").style.display = "none";
   }
 });
