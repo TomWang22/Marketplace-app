@@ -107,11 +107,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         supplyRequestsList.appendChild(listItem);
     }
 
-    function clearRequestSupplyFields() {
-        document.getElementById('productIdToRequest').value = '';
-        document.getElementById('quantityToRequest').value = '';
-    }
-
     async function requestSupply(productId, quantity) {
         try {
             const response = await fetch('http://localhost:3000/api/request-supply', {
@@ -124,7 +119,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             if (data.success) {
                 displayNotification(`Requested ${quantity} units of product ID ${productId}`);
-                clearRequestSupplyFields(); // Clear the form fields after a successful request
                 socket.emit('newSupplyRequest', data.request); // Emit new supply request
             } else {
                 displayNotification(`Failed to request supply: ${data.message}`);
@@ -299,53 +293,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         productList.style.display = 'block';
     }
 
-    async function fetchMerchantOrders() {
+    async function fetchPurchasedItems() {
         try {
-            const response = await fetch(`http://localhost:3000/api/merchant-orders`);
+            const response = await fetch('http://localhost:3000/api/purchased-items');
             const data = await response.json();
             return data.items;
         } catch (error) {
-            console.error('Error fetching merchant orders:', error);
+            console.error('Error fetching purchased items:', error);
             return [];
         }
     }
 
-    async function displayMerchantOrders() {
-        const orders = await fetchMerchantOrders();
+    async function displayPurchasedItems() {
+        const items = await fetchPurchasedItems();
         ordersList.innerHTML = '';
-        if (orders.length > 0) {
-            orders.forEach(order => {
-                const listItem = document.createElement('div');
-                listItem.className = 'order-item';
-                listItem.innerHTML = `
-                    <div>
-                        <span>Order ID: ${order.order_id} - Product ID: ${order.product_id} - Quantity: ${order.quantity} - Spent: $${order.total_cost}</span>
-                        <button class="fulfill-button" data-order-id="${order.order_id}" data-product-id="${order.product_id}" data-quantity="${order.quantity}" data-user-id="${order.user_id}">Fulfill Order</button>
-                    </div>
-                `;
-                ordersList.appendChild(listItem);
-            });
+        items.forEach(item => {
+            const listItem = document.createElement('div');
+            listItem.className = 'order-item';
+            listItem.innerHTML = `
+                <div>
+                    <span>Order ID: ${item.id} - Product ID: ${item.product_id} - Quantity: ${item.quantity} - Spent: $${item.spent}</span>
+                    <button class="fulfill-button" data-order-id="${item.id}" data-product-id="${item.product_id}" data-quantity="${item.quantity}" data-user-id="${item.user_id}">Fulfill Order</button>
+                </div>
+            `;
+            ordersList.appendChild(listItem);
+        });
 
-            document.querySelectorAll('.fulfill-button').forEach(button => {
-                button.addEventListener('click', async (event) => {
-                    const orderId = button.getAttribute('data-order-id');
-                    const productId = button.getAttribute('data-product-id');
-                    const quantity = button.getAttribute('data-quantity');
-                    const userId = button.getAttribute('data-user-id');
-                    if (!userId) {
-                        alert('User ID not found. Please log in again.');
-                        return;
-                    }
-                    const listItem = button.parentElement; // Get the parent element to remove it later
-                    await fulfillOrder(orderId, productId, quantity, userId, listItem);
-                });
+        document.querySelectorAll('.fulfill-button').forEach(button => {
+            button.addEventListener('click', async (event) => {
+                const orderId = button.getAttribute('data-order-id');
+                const productId = button.getAttribute('data-product-id');
+                const quantity = button.getAttribute('data-quantity');
+                const userId = button.getAttribute('data-user-id');
+                if (!userId) {
+                    alert('User ID not found. Please log in again.');
+                    return;
+                }
+                const listItem = button.parentElement; // Get the parent element to remove it later
+                await fulfillOrder(orderId, productId, quantity, userId, listItem);
             });
+        });
 
-            ordersList.style.display = 'block';
-        } else {
-            ordersList.innerHTML = '<p>No orders found.</p>';
-            ordersList.style.display = 'block';
-        }
+        ordersList.style.display = 'block';
     }
 
     async function fulfillOrder(orderId, productId, quantity, userId, listItem) {
@@ -417,7 +406,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         event.preventDefault();
         ordersVisible = !ordersVisible;
         if (ordersVisible) {
-            await displayMerchantOrders();
+            await displayPurchasedItems();
             showOrdersButton.textContent = 'Hide Orders';
         } else {
             ordersList.style.display = 'none';

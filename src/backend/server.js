@@ -48,22 +48,30 @@ if (cluster.isMaster) {
   const io = socketIo(server, {
     cors: {
       origin: "http://127.0.0.1:5500",
-      methods: ["GET", "POST"],
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type"],
       credentials: true,
     },
   });
+  
 
   app.use(bodyParser.json());
 
   app.use(
     cors({
       origin: "http://127.0.0.1:5500",
-      methods: ["GET", "POST"],
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
     })
   );
+  app.options("*", cors({
+    origin: "http://127.0.0.1:5500",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  }));
+  
 
   app.use(
     session({
@@ -167,7 +175,7 @@ if (cluster.isMaster) {
       console.log("A user disconnected");
     });
   });
-
+  
   app.post("/api/register", async (req, res) => {
     const { username, password, role } = req.body;
     if (!username || !password || !role) {
@@ -233,16 +241,16 @@ if (cluster.isMaster) {
         .json({ success: false, message: "Internal server error" });
     }
   });
-
+ 
   async function setAllOrdersToPending() {
     try {
-      await pool.query("UPDATE orders SET status = $1", ["pending"]);
-      console.log("All orders set to pending status.");
+        await pool.query('UPDATE orders SET status = $1', ['pending']);
+        console.log('All orders set to pending status.');
     } catch (error) {
-      console.error("Error setting orders to pending:", error);
+        console.error('Error setting orders to pending:', error);
     }
-  }
-
+}
+ 
   app.get("/api/cart", async (req, res) => {
     const userId = req.query.userId;
     try {
@@ -262,33 +270,40 @@ if (cluster.isMaster) {
   app.post("/api/place-order", async (req, res) => {
     const { userId, cartItems } = req.body;
 
-    // Log the received cart items for debugging
-    console.log("Received cart items:", cartItems);
+    if (!userId || !Array.isArray(cartItems) || cartItems.length === 0) {
+        return res.status(400).json({ success: false, message: 'Invalid order data.' });
+    }
 
+    const client = await pool.connect();
     try {
+        await client.query('BEGIN');
+
         const totalCost = cartItems.reduce(
             (total, item) => total + item.price * item.quantity,
             0
         );
-        const balanceResult = await pool.query(
+
+        const balanceResult = await client.query(
             "SELECT balance FROM users WHERE id = $1",
             [userId]
         );
         const userBalance = balanceResult.rows[0].balance;
 
         if (userBalance < totalCost) {
+            await client.query('ROLLBACK');
             return res.status(400).json({
                 success: false,
                 message: "Insufficient balance to complete the purchase.",
             });
         }
 
-        await pool.query(
+        await client.query(
             "UPDATE users SET balance = balance - $1 WHERE id = $2",
             [totalCost, userId]
         );
-        const orderResult = await pool.query(
-            "INSERT INTO orders (user_id, total_cost, order_date) VALUES ($1, $2, NOW()) RETURNING id",
+
+        const orderResult = await client.query(
+            "INSERT INTO orders (user_id, total_cost, order_date, status) VALUES ($1, $2, NOW(), 'pending') RETURNING id",
             [userId, totalCost]
         );
         const orderId = orderResult.rows[0].id;
@@ -296,70 +311,52 @@ if (cluster.isMaster) {
         for (const item of cartItems) {
             const { product_id, quantity, price } = item;
 
-            // Log the current item for debugging
-            console.log("Processing item:", item);
-
-            if (!product_id) {
-                throw new Error(`Product ID is missing for one of the items.`);
-            }
-
-            await pool.query(
+            await client.query(
                 "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)",
                 [orderId, product_id, quantity, price]
             );
 
-            await pool.query(
+            await client.query(
                 "INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())",
                 [userId, product_id, quantity, price]
             );
 
-            await pool.query(
-                "INSERT INTO purchased_items (order_id, product_id, quantity, spent) VALUES ($1, $2, $3, $4)",
-                [orderId, product_id, quantity, price * quantity]
+            await client.query(
+                "INSERT INTO order_summary (order_id, total_cost, product_id, quantity, user_id, status) VALUES ($1, $2, $3, $4, $5, 'pending')",
+                [orderId, totalCost, product_id, quantity, userId]
             );
 
-            const productResult = await pool.query(
+            const productResult = await client.query(
                 "SELECT merchant_id FROM products WHERE id = $1",
                 [product_id]
             );
             const merchantId = productResult.rows[0]?.merchant_id;
 
             if (!merchantId) {
-                throw new Error(
-                    `Merchant ID not found for product ID ${product_id}.`
-                );
+                throw new Error(`Merchant ID not found for product ID ${product_id}.`);
             }
 
-            // Add the money to the merchant's account
-            await pool.query(
+            await client.query(
                 "UPDATE users SET balance = balance + $1 WHERE id = $2",
                 [price * quantity, merchantId]
             );
 
-            // Insert into the inventory table
-            await pool.query(
+            await client.query(
                 "INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp) VALUES ($1, $2, $3, $4, $5, NOW())",
                 [userId, item.product, quantity, price, product_id]
             );
-
-            // Insert into order_summary table
-            await pool.query(
-                "INSERT INTO order_summary (order_id, total_cost, product_id, quantity, user_id, price, purchase_date) VALUES ($1, $2, $3, $4, $5, $6, NOW())",
-                [orderId, totalCost, product_id, quantity, userId, price]
-            );
         }
 
-        // Delete items from the shopping cart after order is placed
-        await pool.query("DELETE FROM shopping_cart WHERE user_id = $1", [
-            userId,
-        ]);
+        await client.query("DELETE FROM shopping_cart WHERE user_id = $1", [userId]);
 
+        await client.query('COMMIT');
         res.json({ success: true, message: "Order placed successfully." });
     } catch (error) {
+        await client.query('ROLLBACK');
         console.error("Error placing order:", error);
-        res
-            .status(500)
-            .json({ success: false, message: "Internal server error." });
+        res.status(500).json({ success: false, message: "Internal server error." });
+    } finally {
+        client.release();
     }
 });
 
@@ -488,98 +485,67 @@ if (cluster.isMaster) {
 
   setAllOrdersToPending();
 
-  app.post("/api/fulfill-order", async (req, res) => {
+  app.post('/api/fulfill-order', async (req, res) => {
     const { orderId, productId, quantity } = req.body;
 
-    console.log("Request payload:", req.body); // Log the request payload
+    console.log('Request payload:', req.body); // Log the request payload
 
     if (!orderId || !productId || !quantity) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing required fields." });
+        return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
 
     try {
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
 
-        // Fetch userId from orders table
-        const orderResult = await client.query(
-          "SELECT user_id FROM orders WHERE id = $1",
-          [orderId]
-        );
-        const order = orderResult.rows[0];
-        if (!order) {
-          throw new Error("Order not found.");
+            // Fetch userId from orders table
+            const orderResult = await client.query('SELECT user_id FROM orders WHERE id = $1', [orderId]);
+            const order = orderResult.rows[0];
+            if (!order) {
+                throw new Error('Order not found.');
+            }
+            const userId = order.user_id;
+
+            // Get product price and stock
+            const productResult = await client.query('SELECT price, stock FROM products WHERE id = $1', [productId]);
+            const product = productResult.rows[0];
+
+            if (!product) {
+                throw new Error('Product not found.');
+            }
+
+            if (product.stock < quantity) {
+                throw new Error('Insufficient stock.');
+            }
+
+            const totalCost = product.price * quantity;
+
+            // Update merchant's balance
+            await client.query('UPDATE users SET balance = balance + $1 WHERE id = $2', [totalCost, userId]);
+
+            // Reduce product stock
+            await client.query('UPDATE products SET stock = stock - $1 WHERE id = $2', [quantity, productId]);
+
+            // Delete the order from orders table
+            await client.query('DELETE FROM orders WHERE id = $1', [orderId]);
+
+            await client.query('COMMIT');
+            res.json({ success: true, message: 'Order fulfilled and deleted successfully.' });
+        } catch (e) {
+            await client.query('ROLLBACK');
+            console.error('Error fulfilling order:', e);
+            res.status(500).json({ success: false, message: 'Internal server error.' });
+        } finally {
+            client.release();
         }
-        const userId = order.user_id;
-
-        // Get product price and stock
-        const productResult = await client.query(
-          "SELECT price, stock, name FROM products WHERE id = $1",
-          [productId]
-        );
-        const product = productResult.rows[0];
-
-        if (!product) {
-          throw new Error("Product not found.");
-        }
-
-        if (product.stock < quantity) {
-          throw new Error("Insufficient stock.");
-        }
-
-        const totalCost = product.price * quantity;
-
-        // Update merchant's balance
-        await client.query(
-          "UPDATE users SET balance = balance + $1 WHERE id = $2",
-          [totalCost, userId]
-        );
-
-        // Reduce product stock
-        await client.query(
-          "UPDATE products SET stock = stock - $1 WHERE id = $2",
-          [quantity, productId]
-        );
-
-        // Update the status of the order to "fulfilled"
-        await client.query("UPDATE orders SET status = 'fulfilled' WHERE id = $1", [orderId]);
-
-        // Update the status of the order in order_summary to "fulfilled"
-        await client.query("UPDATE order_summary SET status = 'fulfilled' WHERE order_id = $1", [orderId]);
-
-        // Insert the fulfilled order into inventory
-        await client.query(
-          "INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)",
-          [userId, product.name, quantity, product.price, productId]
-        );
-
-        await client.query("COMMIT");
-        res.json({
-          success: true,
-          message: "Order fulfilled, status updated, and inserted into inventory successfully.",
-        });
-      } catch (e) {
-        await client.query("ROLLBACK");
-        console.error("Error fulfilling order:", e);
-        res
-          .status(500)
-          .json({ success: false, message: "Internal server error." });
-      } finally {
-        client.release();
-      }
     } catch (e) {
-      console.error("Error connecting to database:", e);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error." });
+        console.error('Error connecting to database:', e);
+        res.status(500).json({ success: false, message: 'Internal server error.' });
     }
-  });
+});
 
-  
-  
+
 
   app.get("/api/products", async (req, res) => {
     try {
@@ -606,52 +572,94 @@ if (cluster.isMaster) {
         .json({ success: false, message: "Internal server error" });
     }
   });
-  app.get('/api/merchant-orders', async (req, res) => {
+
+  app.get("/api/purchased-items", async (req, res) => {
     try {
-        const result = await pool.query(`
-            SELECT * FROM order_summary;
-        `);
-
-        res.json({ items: result.rows });
+      const result = await pool.query("SELECT * FROM purchased_items");
+      res.json({ success: true, items: result.rows });
     } catch (error) {
-        console.error('Error fetching merchant orders:', error);
-        res.status(500).json({ success: false, message: 'Internal server error.' });
+      console.error("Error fetching purchased items:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
     }
-});
+  });
 
+  app.post("/api/fulfill-order", async (req, res) => {
+    const { orderId, productId, quantity, userId } = req.body;
+    const client = await pool.connect();
 
-app.post('/api/fulfill-order', async (req, res) => {
-  const { orderId, productId, quantity, userId } = req.body;
+    try {
+      await client.query("BEGIN");
 
-  try {
-      // Start a transaction
-      await pool.query('BEGIN');
+      // Add item to inventory
+      const insertInventoryQuery = `
+            INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp)
+            SELECT $1, product, $2, price, product_id, now()
+            FROM shopping_cart
+            WHERE product_id = $3
+            RETURNING *;
+        `;
+      const inventoryResult = await client.query(insertInventoryQuery, [
+        userId,
+        quantity,
+        productId,
+      ]);
 
-      // Update the order status to 'fulfilled'
-      await pool.query(`
-          UPDATE orders
-          SET status = 'fulfilled'
-          WHERE id = $1
-      `, [orderId]);
+      if (inventoryResult.rows.length === 0) {
+        throw new Error("Failed to add item to inventory.");
+      }
 
-      // Update the inventory, if applicable
-      await pool.query(`
-          UPDATE products
-          SET stock = stock - $1
-          WHERE id = $2
-      `, [quantity, productId]);
+      // Update merchant balance
+      const updateBalanceQuery = `
+            UPDATE users
+            SET balance = balance + (
+                SELECT spent
+                FROM purchased_items
+                WHERE order_id = $1
+            )
+            WHERE id = $2
+            RETURNING *;
+        `;
+      const balanceResult = await client.query(updateBalanceQuery, [
+        orderId,
+        userId,
+      ]);
 
-      // Commit the transaction
-      await pool.query('COMMIT');
+      if (balanceResult.rows.length === 0) {
+        throw new Error("Failed to update merchant balance.");
+      }
 
-      res.json({ success: true });
-  } catch (error) {
-      // Rollback the transaction in case of an error
-      await pool.query('ROLLBACK');
-      console.error('Error fulfilling order:', error);
-      res.status(500).json({ success: false, message: 'Internal server error.' });
-  }
-});
+      // Remove item from purchased items
+      const deletePurchasedItemQuery = `
+            DELETE FROM purchased_items
+            WHERE order_id = $1 AND product_id = $2
+            RETURNING *;
+        `;
+      const deleteResult = await client.query(deletePurchasedItemQuery, [
+        orderId,
+        productId,
+      ]);
+
+      if (deleteResult.rows.length === 0) {
+        throw new Error("Failed to delete purchased item.");
+      }
+
+      await client.query("COMMIT");
+      res.json({
+        success: true,
+        message: "Order fulfilled and item added to inventory.",
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      console.error("Error fulfilling order:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    } finally {
+      client.release();
+    }
+  });
 
   app.get("/api/supplies", async (req, res) => {
     try {

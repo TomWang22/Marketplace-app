@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.removeItem('role');
         window.location.href = 'login.html';
     });
-    
+
     async function fetchCartItems() {
         const userId = localStorage.getItem('userId');
         try {
@@ -25,14 +25,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return [];
         }
     }
-    
-    
 
     async function displayCartItems() {
         const cartItems = await fetchCartItems();
         cartList.innerHTML = '';
         let total = 0;
-    
+
         cartItems.forEach(item => {
             const cartItem = document.createElement('div');
             cartItem.className = 'cart-item';
@@ -46,9 +44,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             cartList.appendChild(cartItem);
             total += parseFloat(item.price) * parseInt(item.quantity, 10);
         });
-    
+
         cartTotal.innerHTML = `Total: $${total.toFixed(2)}`;
-    
+
         // Add event listeners for remove buttons
         document.querySelectorAll('.removeButton').forEach(button => {
             button.addEventListener('click', async (event) => {
@@ -59,7 +57,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
     }
-    
 
     async function updateCartItemQuantity(itemId, quantity) {
         try {
@@ -95,15 +92,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function placeOrder() {
         const userId = localStorage.getItem('userId'); // Ensure userId is set
         const cartItems = await fetchCartItems();
-    
+
         // Log the cart items to check their structure and contents
         console.log('Cart items before placing order:', cartItems);
-    
+
         if (cartItems.length === 0) {
             alert('Your cart is empty.');
             return;
         }
-    
+
         // Ensure each cart item has a product_id
         for (const item of cartItems) {
             if (!item.product_id) {
@@ -111,7 +108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
         }
-    
+
         try {
             const response = await fetch('http://localhost:3000/api/place-order', {
                 method: 'POST',
@@ -131,7 +128,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error placing order:', error);
         }
     }
-    
 
     placeOrderButton.addEventListener('click', placeOrder);
 
