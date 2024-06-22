@@ -1053,6 +1053,15 @@ if (cluster.isMaster) {
   server.listen(port, () => {
     console.log(`Worker ${process.pid} is running on http://localhost:${port}`);
   });
+  
+  app.get("/api/supplies", async (req, res) => {
+    try {
+        const result = await pool.query("SELECT * FROM supplies;");
+        res.json({ success: true, supplies: result.rows });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+});
 
   // Endpoint to fetch past supply requests for a merchant
   app.get("/api/supply-requests", async (req, res) => {
