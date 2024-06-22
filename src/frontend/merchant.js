@@ -1,29 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const addProductButton = document.getElementById('addProductButton');
-    const showReceivedSuppliesButton = document.getElementById('showReceivedSuppliesButton');
-    const listAllProductsButton = document.getElementById('listAllProductsButton');
-    const sendMerchandiseButton = document.getElementById('sendMerchandiseButton');
-    const notificationsList = document.getElementById('notificationsList');
-    const receivedSuppliesList = document.getElementById('receivedSuppliesList');
-    const productList = document.getElementById('productList');
-    const logoutButton = document.getElementById('logoutButton');
-    const homeButton = document.getElementById('homeButton');
-    const accountButton = document.getElementById('accountButton');
-    const requestSupplyButton = document.getElementById('requestSupplyButton');
-    const chatContainer = document.getElementById('chatContainer');
-    const chatInput = document.getElementById('chatInput');
-    const chatSendButton = document.getElementById('chatSendButton');
-    const chatList = document.getElementById('chatList');
-    const toggleSupplyRequestsButton = document.getElementById('toggleSupplyRequestsButton');
-    const supplyRequestsContainer = document.getElementById('supplyRequestsContainer');
-    const supplyRequestsList = document.getElementById('supplyRequestsList');
-    const ordersList = document.getElementById('ordersList');
     const showOrdersButton = document.getElementById('showOrdersButton');
-    const merchantAccountSection = document.getElementById('merchant-account-section');
-    const merchantUsername = document.getElementById('merchantUsername');
-    const merchantBalance = document.getElementById('merchantBalance');
-    const merchantProductListings = document.getElementById('merchantProductListings');
-    const merchantOrderHistory = document.getElementById('merchantOrderHistory');
+    const ordersList = document.getElementById('ordersList');
+    const notificationsList = document.getElementById('notificationsList');
     const merchantId = localStorage.getItem('userId');
 
     if (!merchantId) {
@@ -36,8 +14,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         query: { userId: merchantId }
     });
 
-    let suppliesVisible = false;
-    let productsVisible = false;
     let ordersVisible = false;
 
     socket.on('previousChats', (chats) => {
@@ -77,16 +53,80 @@ document.addEventListener('DOMContentLoaded', async () => {
         notificationsList.appendChild(listItem);
     }
 
-    toggleSupplyRequestsButton.addEventListener('click', async () => {
-        if (supplyRequestsContainer.style.display === 'none') {
-            supplyRequestsContainer.style.display = 'block';
-            toggleSupplyRequestsButton.textContent = 'Hide Supply Requests';
-            await fetchSupplyRequests();
+    showOrdersButton.addEventListener('click', async (event) => {
+        event.preventDefault();
+        ordersVisible = !ordersVisible;
+        if (ordersVisible) {
+            await displayUnfulfilledOrders();
+            ordersList.style.display = 'block';
+            showOrdersButton.textContent = 'Hide Orders';
         } else {
-            supplyRequestsContainer.style.display = 'none';
-            toggleSupplyRequestsButton.textContent = 'Show Supply Requests';
+            ordersList.style.display = 'none';
+            showOrdersButton.textContent = 'Show Orders';
         }
     });
+
+    async function fetchUnfulfilledOrders() {
+        try {
+            const response = await fetch('http://localhost:3000/api/unfulfilled-orders');
+            const data = await response.json();
+            return data.orders;
+        } catch (error) {
+            console.error('Error fetching unfulfilled orders:', error);
+            return [];
+        }
+    }
+
+    async function displayUnfulfilledOrders() {
+        const orders = await fetchUnfulfilledOrders();
+        ordersList.innerHTML = '';
+        orders.forEach(order => {
+            const listItem = document.createElement('div');
+            listItem.className = 'order-item';
+            listItem.innerHTML = `
+                <div>
+                    <span>Order ID: ${order.id} - Product ID: ${order.product_id} - Quantity: ${order.quantity}</span>
+                    <button class="fulfill-button" data-order-id="${order.id}" data-product-id="${order.product_id}" data-quantity="${order.quantity}">Fulfill Order</button>
+                </div>
+            `;
+            ordersList.appendChild(listItem);
+        });
+
+        document.querySelectorAll('.fulfill-button').forEach(button => {
+            button.addEventListener('click', async (event) => {
+                const orderId = button.getAttribute('data-order-id');
+                const productId = button.getAttribute('data-product-id');
+                const quantity = button.getAttribute('data-quantity');
+                const listItem = button.parentElement; // Get the parent element to remove it later
+                await fulfillOrder(orderId, productId, quantity, listItem);
+            });
+        });
+    }
+
+    async function fulfillOrder(orderId, productId, quantity, listItem) {
+        try {
+            console.log('Fulfilling order with payload:', { orderId, productId, quantity }); // Log the payload
+            const response = await fetch('http://localhost:3000/api/fulfill-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ orderId, productId, quantity })
+            });
+            const data = await response.json();
+            if (data.success) {
+                displayNotification('Order fulfilled successfully.');
+                listItem.remove(); // Remove the list item from the UI
+            } else {
+                displayNotification('Failed to fulfill order: ' + data.message);
+                alert('Failed to fulfill order: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error fulfilling order:', error);
+            displayNotification('An error occurred while fulfilling the order.');
+            alert('An error occurred while fulfilling the order.');
+        }
+    }
 
     async function fetchSupplyRequests() {
         try {
@@ -322,7 +362,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             listItem.innerHTML = `
                 <div>
                     <span>Order ID: ${item.id} - Product ID: ${item.product_id} - Quantity: ${item.quantity} - Spent: $${item.spent}</span>
-                    <button class="fulfill-button" data-order-id="${item.id}" data-product-id="${item.product_id}" data-quantity="${item.quantity}" data-user-id="${item.user_id}">Fulfill Order</button>
+                    <button class="fulfill-button" data-order-id="${item.id}" data-product-id="${item.product_id}" data-quantity="${item.quantity}">Fulfill Order</button>
                 </div>
             `;
             ordersList.appendChild(listItem);
@@ -333,32 +373,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const orderId = button.getAttribute('data-order-id');
                 const productId = button.getAttribute('data-product-id');
                 const quantity = button.getAttribute('data-quantity');
-                const userId = button.getAttribute('data-user-id');
-                if (!userId) {
-                    alert('User ID not found. Please log in again.');
-                    return;
-                }
                 const listItem = button.parentElement; // Get the parent element to remove it later
-                await fulfillOrder(orderId, productId, quantity, userId, listItem);
+                await fulfillOrder(orderId, productId, quantity, listItem);
             });
         });
 
         ordersList.style.display = 'block';
     }
 
-    async function fulfillOrder(orderId, productId, quantity, userId, listItem) {
+    async function fulfillOrder(orderId, productId, quantity, listItem) {
         try {
-            console.log('Fulfilling order with payload:', { orderId, productId, quantity, userId }); // Log the payload
+            console.log('Fulfilling order with payload:', { orderId, productId, quantity }); // Log the payload
             const response = await fetch('http://localhost:3000/api/fulfill-order', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ orderId, productId, quantity, userId })
+                body: JSON.stringify({ orderId, productId, quantity })
             });
             const data = await response.json();
             if (data.success) {
-                displayNotification('Order fulfilled and item added to inventory.');
+                displayNotification('Order fulfilled successfully.');
                 listItem.remove(); // Remove the list item from the UI
             } else {
                 displayNotification('Failed to fulfill order: ' + data.message);
@@ -371,15 +406,64 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    addProductButton.addEventListener('click', (event) => {
+    async function fetchSupplyRequests() {
+        try {
+            const response = await fetch(`http://localhost:3000/api/merchant-supply-requests?merchantId=${merchantId}`);
+            const data = await response.json();
+            supplyRequestsList.innerHTML = '';
+            data.requests.forEach(request => {
+                displaySupplyRequest(request);
+            });
+        } catch (error) {
+            console.error('Error fetching supply requests:', error);
+        }
+    }
+
+    function displaySupplyRequest(request) {
+        const listItem = document.createElement('li');
+        listItem.textContent = `${request.product_name} - Quantity: ${request.quantity} - Requested on: ${new Date(request.request_date).toLocaleString()} - Status: ${request.status}`;
+        supplyRequestsList.appendChild(listItem);
+    }
+
+    requestSupplyButton.addEventListener('click', (event) => {
         event.preventDefault();
-        const name = document.getElementById('productName').value;
-        const description = document.getElementById('productDescription').value;
-        const price = parseFloat(document.getElementById('productPrice').value);
-        const stock = parseInt(document.getElementById('productStock').value);
-        const imageUrl = document.getElementById('productImageUrl').value;
-        addProduct(name, description, price, stock, imageUrl);
+        const productId = document.getElementById('productIdToRequest').value;
+        const quantity = parseInt(document.getElementById('quantityToRequest').value);
+        if (productId && quantity) {
+            requestSupply(productId, quantity);
+        } else {
+            displayNotification('Please enter a valid product ID and quantity.');
+        }
     });
+
+    async function addProduct(name, description, price, stock, imageUrl) {
+        try {
+            const response = await fetch('http://localhost:3000/api/products', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, description, price, stock, image_url: imageUrl })
+            });
+            const data = await response.json();
+            if (data.success) {
+                displayNotification(`Product "${name}" added successfully.`);
+                clearInputFields();
+            } else {
+                displayNotification(`Failed to add product: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Error adding product:', error);
+        }
+    }
+
+    function clearInputFields() {
+        document.getElementById('productName').value = '';
+        document.getElementById('productDescription').value = '';
+        document.getElementById('productPrice').value = '';
+        document.getElementById('productStock').value = '';
+        document.getElementById('productImageUrl').value = '';
+    }
 
     showReceivedSuppliesButton.addEventListener('click', (event) => {
         event.preventDefault();
@@ -411,17 +495,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         sendMerchandise(customerId, productId, quantity);
     });
 
-    showOrdersButton.addEventListener('click', async (event) => {
-        event.preventDefault();
-        ordersVisible = !ordersVisible;
-        if (ordersVisible) {
-            await displayPurchasedItems();
-            showOrdersButton.textContent = 'Hide Orders';
-        } else {
-            ordersList.style.display = 'none';
-            showOrdersButton.textContent = 'Show Orders';
+    async function sendMerchandise(customerId, productId, quantity) {
+        try {
+            const response = await fetch('http://localhost:3000/api/send-merchandise', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ customerId, productId, quantity })
+            });
+            const data = await response.json();
+            if (data.success) {
+                displayNotification(`Sent ${quantity} units of product ID ${productId} to customer ID ${customerId}`);
+                // Clear the input fields
+                document.getElementById('customerId').value = '';
+                document.getElementById('productIdToSend').value = '';
+                document.getElementById('quantityToSend').value = '';
+            } else {
+                displayNotification(`Failed to send merchandise: ${data.message}`);
+            }
+        } catch (error) {
+            console.error('Error sending merchandise:', error);
+            displayNotification('An error occurred while sending merchandise.');
         }
-    });
+    }
+
+    async function displayReceivedSupplies() {
+        const supplies = await fetchReceivedSupplies();
+        receivedSuppliesList.innerHTML = '';
+        supplies.forEach(supply => {
+            const price = parseFloat(supply.price);
+            const listItem = document.createElement('div');
+            listItem.className = 'supply-item';
+            listItem.innerHTML = `
+                <div>
+                    <img src="${supply.image_url}" alt="${supply.name}" width="50" height="50">
+                    <span>${supply.name} - ${supply.description} - $${!isNaN(price) ? price.toFixed(2) : 'N/A'} - Stock: ${supply.stock}</span>
+                </div>
+            `;
+            receivedSuppliesList.appendChild(listItem);
+        });
+        receivedSuppliesList.style.display = 'block';
+    }
 
     // Initial fetch of supply requests
     fetchSupplyRequests();
