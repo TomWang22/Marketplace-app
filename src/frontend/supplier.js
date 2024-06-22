@@ -73,7 +73,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             supplyRequestsList.innerHTML = '';
 
-            data.requests.forEach(request => {
+            // Filter the requests to only include those with a status of "pending"
+            const pendingRequests = data.requests.filter(request => request.status === 'pending');
+
+            pendingRequests.forEach(request => {
                 const listItem = document.createElement('div');
                 listItem.className = 'request-item';
                 listItem.innerHTML = `
