@@ -75,58 +75,60 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function fetchSupplyRequests() {
     try {
-      const response = await fetch("http://localhost:3000/api/supply-requests");
-      const data = await response.json();
-      supplyRequestsList.innerHTML = "";
+        const response = await fetch("http://localhost:3000/api/supply-requests");
+        const data = await response.json();
+        supplyRequestsList.innerHTML = "";
 
-      // Debug: Log the fetched data
-      console.log("Fetched supply requests:", data.requests);
+        // Debug: Log the fetched data
+        console.log("Fetched supply requests:", data.requests);
 
-      // Ensure data is in the expected format
-      if (!data.success) {
-        throw new Error(data.message || "Failed to fetch supply requests.");
-      }
+        // Ensure data is in the expected format
+        if (!data.success) {
+            throw new Error(data.message || "Failed to fetch supply requests.");
+        }
 
-      // Filter the requests to only include those with a status of "pending"
-      const pendingRequests = data.requests.filter(
-        (request) => request.status === "pending"
-      );
+        // Filter the requests to only include those with a status of "pending"
+        const pendingRequests = data.requests.filter(
+            (request) => request.status === "pending"
+        );
 
-      // Debug: Log the filtered requests
-      console.log("Pending supply requests:", pendingRequests);
+        // Debug: Log the filtered requests
+        console.log("Pending supply requests:", pendingRequests);
 
-      if (pendingRequests.length === 0) {
-        const noRequestsMessage = document.createElement("p");
-        noRequestsMessage.textContent = "No pending supply requests.";
-        supplyRequestsList.appendChild(noRequestsMessage);
-      }
+        if (pendingRequests.length === 0) {
+            const noRequestsMessage = document.createElement("p");
+            noRequestsMessage.textContent = "No pending supply requests.";
+            supplyRequestsList.appendChild(noRequestsMessage);
+        }
 
-      pendingRequests.forEach((request) => {
-        const listItem = document.createElement("div");
-        listItem.className = "request-item";
-        listItem.innerHTML = `
-                    <div>
-                        <img src="${request.image_url}" alt="${request.name}" width="50" height="50">
-                        <span>${request.name} - ${request.description} - Quantity: ${request.quantity} - Requested by Merchant ID: ${request.merchant_id}</span>
-                        <button class="fulfillRequestButton" data-merchant-id="${request.merchant_id}" data-product-id="${request.product_id}" data-quantity="${request.quantity}">Fulfill</button>
-                    </div>
-                `;
-        supplyRequestsList.appendChild(listItem);
-      });
-
-      document.querySelectorAll(".fulfillRequestButton").forEach((button) => {
-        button.addEventListener("click", async (event) => {
-          const merchantId = button.getAttribute("data-merchant-id");
-          const productId = button.getAttribute("data-product-id");
-          const quantity = button.getAttribute("data-quantity");
-          const listItem = button.parentElement;
-          await fulfillSupplyRequest(merchantId, productId, quantity, listItem);
+        pendingRequests.forEach((request) => {
+            const listItem = document.createElement("div");
+            listItem.className = "request-item";
+            listItem.innerHTML = `
+                <div>
+                    <span>Product ID: ${request.product_id} - Name: ${request.name} - Quantity: ${request.quantity}</span>
+                    <button class="fulfillRequestButton" data-merchant-id="${request.merchant_id}" data-product-id="${request.product_id}" data-quantity="${request.quantity}">Fulfill</button>
+                </div>
+            `;
+            supplyRequestsList.appendChild(listItem);
         });
-      });
+
+        document.querySelectorAll('.fulfillRequestButton').forEach(button => {
+            button.addEventListener('click', async (event) => {
+                const merchantId = button.getAttribute('data-merchant-id');
+                const productId = button.getAttribute('data-product-id');
+                const quantity = button.getAttribute('data-quantity');
+                const listItem = button.parentElement;
+                await fulfillSupplyRequest(merchantId, productId, quantity, listItem);
+            });
+        });
     } catch (error) {
-      console.error("Error fetching supply requests:", error);
+        console.error('Error fetching supply requests:', error);
     }
-  }
+}
+
+
+
 
   async function fulfillSupplyRequest(
     merchantId,

@@ -1027,30 +1027,24 @@ if (cluster.isMaster) {
   });
 
   // Endpoint to fetch past supply requests for a merchant
-  app.get("/api/merchant-supply-requests", async (req, res) => {
-    const merchantId = req.query.merchantId;
-
+  app.get("/api/supply-requests", async (req, res) => {
+    const client = await pool.connect();
     try {
-      const result = await pool.query(
-        `
-          SELECT sr.id, sr.merchant_id, sr.product_id, sr.quantity, sr.request_date, sr.status, 
-                 p.name AS product_name, p.description AS product_description, p.image_url AS product_image_url
-          FROM supply_requests sr
-          JOIN products p ON sr.product_id = p.id
-          WHERE sr.merchant_id = $1
-          ORDER BY sr.request_date DESC
-      `,
-        [merchantId]
-      );
-
-      res.json({ success: true, requests: result.rows });
+        const result = await client.query(`
+            SELECT sr.product_id, sr.quantity, sr.merchant_id, sr.status, p.name
+            FROM supply_requests sr
+            JOIN products p ON sr.product_id = p.id
+            WHERE sr.status = 'pending'
+        `);
+        res.json({ success: true, requests: result.rows });
     } catch (error) {
-      console.error("Error fetching merchant supply requests:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
+        console.error("Error fetching supply requests:", error);
+        res.status(500).json({ success: false, message: "Internal server error." });
+    } finally {
+        client.release();
     }
-  });
+});
+
 
   app.post("/api/add-supply-by-id", async (req, res) => {
     const { id, quantity } = req.body;
