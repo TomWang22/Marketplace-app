@@ -120,11 +120,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data.success) {
                 displayNotification(`Requested ${quantity} units of product ID ${productId}`);
                 socket.emit('newSupplyRequest', data.request); // Emit new supply request
+
+                // Clear the input fields
+                document.getElementById('productIdToRequest').value = '';
+                document.getElementById('quantityToRequest').value = '';
             } else {
                 displayNotification(`Failed to request supply: ${data.message}`);
             }
         } catch (error) {
             console.error('Error requesting supply:', error);
+            displayNotification('An error occurred while requesting supply.');
         }
     }
 
@@ -132,7 +137,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         event.preventDefault();
         const productId = document.getElementById('productIdToRequest').value;
         const quantity = parseInt(document.getElementById('quantityToRequest').value);
-        requestSupply(productId, quantity);
+        if (productId && quantity) {
+            requestSupply(productId, quantity);
+        } else {
+            displayNotification('Please enter a valid product ID and quantity.');
+        }
     });
 
     function clearInputFields() {
