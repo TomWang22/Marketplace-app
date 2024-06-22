@@ -1064,24 +1064,27 @@ if (cluster.isMaster) {
             JOIN products p ON sr.product_id = p.id
             WHERE sr.status = 'pending'
         `);
-        console.log("Raw SQL Query Result:", result); // Log the raw SQL result
-        console.log("SQL Query Result Rows:", result.rows); // Log the result rows
-        
-        // Manually construct the response to ensure structure
-        const response = {
+
+        // Log the raw SQL result
+        console.log("Raw SQL Query Result:", result.rows);
+
+        const requests = result.rows.map(row => ({
+            id: row.id,
+            merchant_id: row.merchant_id,
+            product_id: row.product_id,
+            quantity: row.quantity,
+            request_date: row.request_date,
+            status: row.status,
+            name: row.name || 'Unknown' // Default to 'Unknown' if name is null or undefined
+        }));
+
+        // Log the constructed response
+        console.log("Constructed Response:", requests);
+
+        res.json({
             success: true,
-            requests: result.rows.map(row => ({
-                id: row.id,
-                merchant_id: row.merchant_id,
-                product_id: row.product_id,
-                quantity: row.quantity,
-                request_date: row.request_date,
-                status: row.status,
-                name: row.name
-            }))
-        };
-        console.log("Constructed Response:", response); // Log the constructed response
-        res.json(response);
+            requests: requests
+        });
     } catch (error) {
         console.error("Error fetching supply requests:", error);
         res.status(500).json({ success: false, message: "Internal server error." });
@@ -1089,6 +1092,7 @@ if (cluster.isMaster) {
         client.release();
     }
 });
+
 
   app.post("/api/add-supply-by-id", async (req, res) => {
     const { id, quantity } = req.body;
