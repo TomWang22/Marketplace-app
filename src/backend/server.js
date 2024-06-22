@@ -921,18 +921,20 @@ if (cluster.isMaster) {
 
   // Endpoint for suppliers to get supply requests
   app.get("/api/supply-requests", async (req, res) => {
+    const client = await pool.connect();
     try {
-      const result = await pool.query(
-        "SELECT sr.id, sr.merchant_id, sr.product_id, sr.quantity, sr.request_date, p.name, p.description, p.image_url FROM supply_requests sr JOIN products p ON sr.product_id = p.id"
-      );
-      res.json({ success: true, requests: result.rows });
+        const result = await client.query(
+            "SELECT * FROM supply_requests WHERE status = 'pending'"
+        );
+        res.json({ success: true, requests: result.rows });
     } catch (error) {
-      console.error("Error fetching supply requests:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
+        console.error("Error fetching supply requests:", error);
+        res.status(500).json({ success: false, message: "Internal server error." });
+    } finally {
+        client.release();
     }
-  });
+});
+
 
   // Endpoint for suppliers to send supplies
   // Endpoint for suppliers to send supplies
