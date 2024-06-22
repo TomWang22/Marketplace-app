@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                   listItem.innerHTML = `
                       <div>
                           <img src="${supply.image_url}" alt="${supply.name}" width="50" height="50">
-                          <span>Product ID: ${supply.id} - Quantity: ${supply.stock}</span>
+                          <span>Product ID: ${supply.id} - Name: ${supply.name} - Description: ${supply.description} - Quantity: ${supply.stock}</span>
                       </div>
                   `;
                   suppliesList.appendChild(listItem);
@@ -315,6 +315,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
           const data = await response.json();
           if (data.success) {
+              console.log("Fetched supplier data:", data.account); // Log the supplier data
               return data.account;
           } else {
               console.error("Failed to fetch supplier data:", data.message);
@@ -328,6 +329,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function displaySupplierAccountInfo() {
       const supplierData = await fetchSupplierData(supplierId);
+      console.log("Supplier data:", supplierData); // Log supplier data
       if (supplierData) {
           supplierUsername.textContent = supplierData.username || "N/A";
           const balance = parseFloat(supplierData.balance);

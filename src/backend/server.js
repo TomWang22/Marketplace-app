@@ -1056,12 +1056,18 @@ if (cluster.isMaster) {
   
   app.get("/api/supplies", async (req, res) => {
     try {
-        const result = await pool.query("SELECT * FROM supplies;");
+        const result = await pool.query(`
+            SELECT s.*, p.name, p.description
+            FROM supplies s
+            JOIN products p ON s.product_id = p.id;
+        `);
         res.json({ success: true, supplies: result.rows });
     } catch (error) {
+        console.error("Error fetching supplies:", error);
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 });
+
 
   // Endpoint to fetch past supply requests for a merchant
   app.get("/api/supply-requests", async (req, res) => {
