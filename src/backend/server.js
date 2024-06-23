@@ -177,6 +177,12 @@ if (cluster.isMaster) {
     });
   });
 
+  /**
+   * Register a new user.
+   * @param {string} username - The username of the new user.
+   * @param {string} password - The password of the new user.
+   * @param {string} role - The role of the new user ('shopper', 'merchant', 'supplier').
+   */
   app.post("/api/register", async (req, res) => {
     const { username, password, role } = req.body;
     if (!username || !password || !role) {
@@ -218,6 +224,11 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Login a user.
+   * @param {string} username - The username of the user.
+   * @param {string} password - The password of the user.
+   */
   app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
 
@@ -243,15 +254,10 @@ if (cluster.isMaster) {
     }
   });
 
-  async function setAllOrdersToPending() {
-    try {
-      await pool.query("UPDATE orders SET status = $1", ["pending"]);
-      console.log("All orders set to pending status.");
-    } catch (error) {
-      console.error("Error setting orders to pending:", error);
-    }
-  }
-
+  /**
+   * Fetch cart items for a user.
+   * @param {number} userId - The ID of the user.
+   */
   app.get("/api/cart", async (req, res) => {
     const userId = req.query.userId;
     try {
@@ -268,6 +274,11 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Place an order for a user.
+   * @param {number} userId - The ID of the user.
+   * @param {array} cartItems - The items in the user's cart.
+   */
   app.post("/api/place-order", async (req, res) => {
     const { userId, cartItems } = req.body;
 
@@ -369,6 +380,10 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Fetch inventory items for a user.
+   * @param {number} userId - The ID of the user.
+   */
   app.get("/api/inventory", async (req, res) => {
     const userId = req.query.userId;
     try {
@@ -385,6 +400,12 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Return merchandise for a user.
+   * @param {number} userId - The ID of the user.
+   * @param {number} productId - The ID of the product to be returned.
+   * @param {number} quantity - The quantity of the product to be returned.
+   */
   app.post("/api/return-merchandise", async (req, res) => {
     const { userId, productId, quantity } = req.body;
 
@@ -434,6 +455,12 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Receive supplies for a merchant.
+   * @param {number} merchantId - The ID of the merchant.
+   * @param {number} productId - The ID of the product.
+   * @param {number} quantity - The quantity of the product.
+   */
   app.post("/api/receive-supplies", async (req, res) => {
     const { merchantId, productId, quantity } = req.body;
 
@@ -491,8 +518,12 @@ if (cluster.isMaster) {
     }
   });
 
-  setAllOrdersToPending();
-
+  /**
+   * Fulfill an order.
+   * @param {number} orderId - The ID of the order.
+   * @param {number} productId - The ID of the product in the order.
+   * @param {number} quantity - The quantity of the product to fulfill.
+   */
   app.post("/api/fulfill-order", async (req, res) => {
     const { orderId, productId, quantity } = req.body;
 
@@ -558,6 +589,12 @@ if (cluster.isMaster) {
           [orderId, productId]
         );
 
+        // Insert the fulfilled order into the inventory table
+        await client.query(
+          "INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)",
+          [userId, product.name, quantity, product.price, productId]
+        );
+
         await client.query("COMMIT");
         res.json({
           success: true,
@@ -580,6 +617,26 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Fetch unfulfilled orders.
+   */
+  app.get("/api/unfulfilled-orders", async (req, res) => {
+    try {
+      const result = await pool.query(
+        "SELECT * FROM order_summary WHERE status = 'pending'"
+      );
+      res.json({ success: true, orders: result.rows });
+    } catch (error) {
+      console.error("Error fetching unfulfilled orders:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+  });
+
+  /**
+   * Fetch all products.
+   */
   app.get("/api/products", async (req, res) => {
     try {
       const result = await pool.query("SELECT * FROM products;");
@@ -591,6 +648,14 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Add a new product.
+   * @param {string} name - The name of the product.
+   * @param {string} description - The description of the product.
+   * @param {number} price - The price of the product.
+   * @param {number} stock - The stock quantity of the product.
+   * @param {string} image_url - The image URL of the product.
+   */
   app.post("/api/products", async (req, res) => {
     const { name, description, price, stock, image_url } = req.body;
     try {
@@ -606,6 +671,9 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Fetch purchased items.
+   */
   app.get("/api/purchased-items", async (req, res) => {
     try {
       const result = await pool.query("SELECT * FROM purchased_items");
@@ -617,131 +685,11 @@ if (cluster.isMaster) {
         .json({ success: false, message: "Internal server error" });
     }
   });
-  app.post("/api/fulfill-order", async (req, res) => {
-    const { orderId, productId, quantity } = req.body;
 
-    if (!orderId || !productId || !quantity) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Missing required fields." });
-    }
-
-    try {
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
-
-        // Fetch userId, status, and product details
-        const orderResult = await client.query(
-          "SELECT user_id, status FROM order_summary WHERE order_id = $1 AND product_id = $2",
-          [orderId, productId]
-        );
-        const order = orderResult.rows[0];
-        if (!order) {
-          throw new Error("Order not found.");
-        }
-        if (order.status === "fulfilled") {
-          throw new Error("Order already fulfilled.");
-        }
-        const userId = order.user_id;
-
-        const productResult = await client.query(
-          "SELECT name, price, stock FROM products WHERE id = $1",
-          [productId]
-        );
-        const product = productResult.rows[0];
-        if (!product) {
-          throw new Error("Product not found.");
-        }
-        if (product.stock < quantity) {
-          throw new Error("Insufficient stock.");
-        }
-
-        const totalCost = product.price * quantity;
-
-        // Update merchant's balance
-        await client.query(
-          "UPDATE users SET balance = balance + $1 WHERE id = $2",
-          [totalCost, userId]
-        );
-
-        // Reduce product stock
-        await client.query(
-          "UPDATE products SET stock = stock - $1 WHERE id = $2",
-          [quantity, productId]
-        );
-
-        // Mark the order as fulfilled in order_summary table
-        await client.query(
-          "UPDATE order_summary SET status = 'fulfilled' WHERE order_id = $1 AND product_id = $2",
-          [orderId, productId]
-        );
-
-        // Insert the fulfilled order into the inventory table
-        await client.query(
-          "INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)",
-          [userId, product.name, quantity, product.price, productId]
-        );
-
-        await client.query("COMMIT");
-        res.json({ success: true, message: "Order fulfilled successfully." });
-      } catch (e) {
-        await client.query("ROLLBACK");
-        console.error("Error fulfilling order:", e);
-        res
-          .status(500)
-          .json({ success: false, message: "Internal server error." });
-      } finally {
-        client.release();
-      }
-    } catch (e) {
-      console.error("Error connecting to database:", e);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error." });
-    }
-  });
-
-  app.get("/api/unfulfilled-orders", async (req, res) => {
-    try {
-      const result = await pool.query(
-        "SELECT * FROM order_summary WHERE status = 'pending'"
-      );
-      res.json({ success: true, orders: result.rows });
-    } catch (error) {
-      console.error("Error fetching unfulfilled orders:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error." });
-    }
-  });
-
-  app.get("/api/supplies", async (req, res) => {
-    try {
-      const result = await pool.query("SELECT * FROM supplies;");
-      res.json({ success: true, supplies: result.rows });
-    } catch (error) {
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-  });
-
-  app.post("/api/supplies", async (req, res) => {
-    const { name, description, price, cost, stock, image_url } = req.body;
-    try {
-      const result = await pool.query(
-        "INSERT INTO supplies (name, description, price, cost, stock, image_url) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-        [name, description, price, cost, stock, image_url]
-      );
-      res.json({ success: true, supply: result.rows[0] });
-    } catch (error) {
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-  });
-
+  /**
+   * Fetch account information for a user.
+   * @param {number} userId - The ID of the user.
+   */
   app.get("/api/account-info", async (req, res) => {
     const userId = req.query.userId;
     try {
@@ -763,6 +711,10 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Fetch purchase history for a user.
+   * @param {number} userId - The ID of the user.
+   */
   app.get("/api/purchase-history", async (req, res) => {
     const userId = req.query.userId;
     try {
@@ -778,6 +730,12 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Add an item to the cart.
+   * @param {number} userId - The ID of the user.
+   * @param {number} productId - The ID of the product.
+   * @param {number} quantity - The quantity of the product.
+   */
   app.post("/api/cart", async (req, res) => {
     const { userId, productId, quantity } = req.body;
 
@@ -812,6 +770,11 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Update the quantity of an item in the cart.
+   * @param {number} itemId - The ID of the cart item.
+   * @param {number} quantity - The new quantity of the item.
+   */
   app.put("/api/cart/:id", async (req, res) => {
     const itemId = req.params.id;
     const { quantity } = req.body;
@@ -829,6 +792,10 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Remove an item from the cart.
+   * @param {number} itemId - The ID of the cart item.
+   */
   app.delete("/api/cart/:id", async (req, res) => {
     const itemId = req.params.id;
 
@@ -842,6 +809,11 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Add funds to a user's account.
+   * @param {number} userId - The ID of the user.
+   * @param {number} amount - The amount to add.
+   */
   app.post("/api/add-funds", async (req, res) => {
     const { userId, amount } = req.body;
 
@@ -864,6 +836,9 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Fetch received supplies.
+   */
   app.get("/api/received-supplies", async (req, res) => {
     try {
       const result = await pool.query("SELECT * FROM received_supplies");
@@ -904,6 +879,10 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Fetch user data, including shopping and search history.
+   * @param {number} userId - The ID of the user.
+   */
   app.get("/api/users/:userId", async (req, res) => {
     const userId = req.params.userId;
 
@@ -943,6 +922,11 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Add a search query to a user's search history.
+   * @param {number} userId - The ID of the user.
+   * @param {string} searchQuery - The search query.
+   */
   app.post("/api/search-history", async (req, res) => {
     const { userId, searchQuery } = req.body;
     try {
@@ -957,7 +941,13 @@ if (cluster.isMaster) {
         .json({ success: false, message: "Internal server error" });
     }
   });
-  // Endpoint for merchants to request supplies
+
+  /**
+   * Request supplies for a merchant.
+   * @param {number} merchantId - The ID of the merchant.
+   * @param {number} productId - The ID of the product.
+   * @param {number} quantity - The quantity of the product.
+   */
   app.post("/api/request-supply", async (req, res) => {
     const { merchantId, productId, quantity } = req.body;
     try {
@@ -974,7 +964,9 @@ if (cluster.isMaster) {
     }
   });
 
-  // Endpoint for suppliers to get supply requests
+  /**
+   * Fetch pending supply requests.
+   */
   app.get("/api/supply-requests", async (req, res) => {
     const client = await pool.connect();
     try {
@@ -992,9 +984,13 @@ if (cluster.isMaster) {
     }
   });
 
-  // Endpoint for suppliers to send supplies
-  // Endpoint for suppliers to send supplies
-  // Endpoint for suppliers to send supplies
+  /**
+   * Send supplies from a supplier to a merchant.
+   * @param {number} supplierId - The ID of the supplier.
+   * @param {number} merchantId - The ID of the merchant.
+   * @param {number} productId - The ID of the product.
+   * @param {number} quantity - The quantity of the product.
+   */
   app.post("/api/send-supplies", async (req, res) => {
     const { supplierId, merchantId, productId, quantity } = req.body;
 
@@ -1082,6 +1078,9 @@ if (cluster.isMaster) {
     console.log(`Worker ${process.pid} is running on http://localhost:${port}`);
   });
 
+  /**
+   * Fetch all supplies.
+   */
   app.get("/api/supplies", async (req, res) => {
     try {
       const result = await pool.query(`
@@ -1098,7 +1097,9 @@ if (cluster.isMaster) {
     }
   });
 
-  // Endpoint to fetch past supply requests for a merchant
+  /**
+   * Fetch past supply requests for a merchant.
+   */
   app.get("/api/supply-requests", async (req, res) => {
     const client = await pool.connect();
     try {
@@ -1139,6 +1140,11 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Add supply stock by supply ID.
+   * @param {number} id - The ID of the supply.
+   * @param {number} quantity - The quantity to add to the supply.
+   */
   app.post("/api/add-supply-by-id", async (req, res) => {
     const { id, quantity } = req.body;
 
@@ -1180,6 +1186,13 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Fulfill a supply request.
+   * @param {number} supplierId - The ID of the supplier.
+   * @param {number} merchantId - The ID of the merchant.
+   * @param {number} productId - The ID of the product.
+   * @param {number} quantity - The quantity of the product.
+   */
   app.post("/api/fulfill-supply-request", async (req, res) => {
     const { supplierId, merchantId, productId, quantity } = req.body;
 
@@ -1266,6 +1279,11 @@ if (cluster.isMaster) {
     }
   });
 
+  /**
+   * Generate a JWT token for a user.
+   * @param {number} userId - The ID of the user.
+   * @returns {string} The generated JWT token.
+   */
   function generateToken(userId) {
     const secretKey = "your_secret_key";
     return jwt.sign({ userId }, secretKey, { expiresIn: "1h" });
