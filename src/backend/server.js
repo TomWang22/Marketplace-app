@@ -628,20 +628,14 @@ if (cluster.isMaster) {
       res.status(500).json({ success: false, message: "Internal server error" });
     }
   });
-  /*
+  
   app.get("/api/supply-requests", async (req, res) => {
-    const client = await pool.connect();
     try {
-      const result = await client.query(`
-            SELECT sr.id, sr.merchant_id, sr.product_id, sr.quantity, sr.request_date, sr.status, p.name
-            FROM supply_requests sr
-            JOIN products p ON sr.product_id = p.id
-            WHERE sr.status = 'pending'
-        `);
-
+      const result = await pool.query("SELECT * FROM get_pending_supply_requests()");
+  
       // Log the raw SQL result
       console.log("Raw SQL Query Result:", result.rows);
-
+  
       const requests = result.rows.map((row) => ({
         id: row.id,
         merchant_id: row.merchant_id,
@@ -651,24 +645,20 @@ if (cluster.isMaster) {
         status: row.status,
         name: row.name || "Unknown", // Default to 'Unknown' if name is null or undefined
       }));
-
+  
       // Log the constructed response
       console.log("Constructed Response:", requests);
-
+  
       res.json({
         success: true,
         requests: requests,
       });
     } catch (error) {
       console.error("Error fetching supply requests:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error." });
-    } finally {
-      client.release();
+      res.status(500).json({ success: false, message: "Internal server error." });
     }
   });
-  /*
+  
 
   /**
    * Add supply stock by supply ID.
