@@ -499,93 +499,86 @@ if (cluster.isMaster) {
     console.log("Request payload:", req.body); // Log the request payload
 
     if (!orderId || !productId || !quantity) {
-        return res.status(400).json({ success: false, message: "Missing required fields." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields." });
     }
 
     try {
-        const client = await pool.connect();
-        try {
-            await client.query("BEGIN");
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
 
-            // Fetch userId and fulfilled status from order_summary table
-            const orderResult = await client.query(
-                "SELECT user_id, fulfilled FROM order_summary WHERE id = $1",
-                [orderId]
-            );
-            const order = orderResult.rows[0];
-            if (!order) {
-                throw new Error("Order not found.");
-            }
-            if (order.fulfilled) {
-                throw new Error("Order already fulfilled.");
-            }
-            const userId = order.user_id;
-
-            // Get product price and stock
-            const productResult = await client.query(
-                "SELECT price, stock FROM products WHERE id = $1",
-                [productId]
-            );
-            const product = productResult.rows[0];
-
-            if (!product) {
-                throw new Error("Product not found.");
-            }
-
-            if (product.stock < quantity) {
-                throw new Error("Insufficient stock.");
-            }
-
-            const totalCost = product.price * quantity;
-
-            // Update merchant's balance
-            await client.query(
-                "UPDATE users SET balance = balance + $1 WHERE id = $2",
-                [totalCost, userId]
-            );
-
-            // Reduce product stock
-            await client.query(
-                "UPDATE products SET stock = stock - $1 WHERE id = $2",
-                [quantity, productId]
-            );
-
-            // Mark the order as fulfilled in order_summary table
-            await client.query(
-                "UPDATE order_summary SET fulfilled = true WHERE id = $1",
-                [orderId]
-            );
-
-            await client.query("COMMIT");
-            res.json({
-                success: true,
-                message: "Order fulfilled successfully.",
-            });
-        } catch (e) {
-            await client.query("ROLLBACK");
-            console.error("Error fulfilling order:", e);
-            res.status(500).json({ success: false, message: "Internal server error." });
-        } finally {
-            client.release();
+        // Fetch userId and status from order_summary table
+        const orderResult = await client.query(
+          "SELECT user_id, status FROM order_summary WHERE order_id = $1 AND product_id = $2",
+          [orderId, productId]
+        );
+        const order = orderResult.rows[0];
+        if (!order) {
+          throw new Error("Order not found.");
         }
+        if (order.status === "fulfilled") {
+          throw new Error("Order already fulfilled.");
+        }
+        const userId = order.user_id;
+
+        // Get product price and stock
+        const productResult = await client.query(
+          "SELECT price, stock FROM products WHERE id = $1",
+          [productId]
+        );
+        const product = productResult.rows[0];
+
+        if (!product) {
+          throw new Error("Product not found.");
+        }
+
+        if (product.stock < quantity) {
+          throw new Error("Insufficient stock.");
+        }
+
+        const totalCost = product.price * quantity;
+
+        // Update merchant's balance
+        await client.query(
+          "UPDATE users SET balance = balance + $1 WHERE id = $2",
+          [totalCost, userId]
+        );
+
+        // Reduce product stock
+        await client.query(
+          "UPDATE products SET stock = stock - $1 WHERE id = $2",
+          [quantity, productId]
+        );
+
+        // Mark the order as fulfilled in order_summary table
+        await client.query(
+          "UPDATE order_summary SET status = 'fulfilled' WHERE order_id = $1 AND product_id = $2",
+          [orderId, productId]
+        );
+
+        await client.query("COMMIT");
+        res.json({
+          success: true,
+          message: "Order fulfilled successfully.",
+        });
+      } catch (e) {
+        await client.query("ROLLBACK");
+        console.error("Error fulfilling order:", e);
+        res
+          .status(500)
+          .json({ success: false, message: "Internal server error." });
+      } finally {
+        client.release();
+      }
     } catch (e) {
-        console.error("Error connecting to database:", e);
-        res.status(500).json({ success: false, message: "Internal server error." });
+      console.error("Error connecting to database:", e);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
     }
-});
-
-app.get("/api/unfulfilled-orders", async (req, res) => {
-  try {
-      const result = await pool.query(
-          "SELECT * FROM order_summary WHERE status = 'pending'"
-      );
-      res.json({ success: true, orders: result.rows });
-  } catch (error) {
-      console.error("Error fetching unfulfilled orders:", error);
-      res.status(500).json({ success: false, message: "Internal server error." });
-  }
-});
-
+  });
 
   app.get("/api/products", async (req, res) => {
     try {
@@ -631,81 +624,97 @@ app.get("/api/unfulfilled-orders", async (req, res) => {
     console.log("Request payload:", req.body); // Log the request payload
 
     if (!orderId || !productId || !quantity) {
-        return res.status(400).json({ success: false, message: "Missing required fields." });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields." });
     }
 
     try {
-        const client = await pool.connect();
-        try {
-            await client.query("BEGIN");
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
 
-            // Fetch userId and status from order_summary table
-            const orderResult = await client.query(
-                "SELECT user_id, status FROM order_summary WHERE id = $1",
-                [orderId]
-            );
-            const order = orderResult.rows[0];
-            if (!order) {
-                throw new Error("Order not found.");
-            }
-            if (order.status === 'fulfilled') {
-                throw new Error("Order already fulfilled.");
-            }
-            const userId = order.user_id;
-
-            // Get product price and stock
-            const productResult = await client.query(
-                "SELECT price, stock FROM products WHERE id = $1",
-                [productId]
-            );
-            const product = productResult.rows[0];
-
-            if (!product) {
-                throw new Error("Product not found.");
-            }
-
-            if (product.stock < quantity) {
-                throw new Error("Insufficient stock.");
-            }
-
-            const totalCost = product.price * quantity;
-
-            // Update merchant's balance
-            await client.query(
-                "UPDATE users SET balance = balance + $1 WHERE id = $2",
-                [totalCost, userId]
-            );
-
-            // Reduce product stock
-            await client.query(
-                "UPDATE products SET stock = stock - $1 WHERE id = $2",
-                [quantity, productId]
-            );
-
-            // Mark the order as fulfilled in order_summary table
-            await client.query(
-                "UPDATE order_summary SET status = 'fulfilled' WHERE id = $1",
-                [orderId]
-            );
-
-            await client.query("COMMIT");
-            res.json({
-                success: true,
-                message: "Order fulfilled successfully.",
-            });
-        } catch (e) {
-            await client.query("ROLLBACK");
-            console.error("Error fulfilling order:", e);
-            res.status(500).json({ success: false, message: "Internal server error." });
-        } finally {
-            client.release();
+        // Fetch userId and status from order_summary table
+        const orderResult = await client.query(
+          "SELECT user_id, status FROM order_summary WHERE id = $1",
+          [orderId]
+        );
+        const order = orderResult.rows[0];
+        if (!order) {
+          throw new Error("Order not found.");
         }
-    } catch (e) {
-        console.error("Error connecting to database:", e);
-        res.status(500).json({ success: false, message: "Internal server error." });
-    }
-});
+        if (order.status === "fulfilled") {
+          throw new Error("Order already fulfilled.");
+        }
+        const userId = order.user_id;
 
+        // Get product price and stock
+        const productResult = await client.query(
+          "SELECT price, stock FROM products WHERE id = $1",
+          [productId]
+        );
+        const product = productResult.rows[0];
+
+        if (!product) {
+          throw new Error("Product not found.");
+        }
+
+        if (product.stock < quantity) {
+          throw new Error("Insufficient stock.");
+        }
+
+        const totalCost = product.price * quantity;
+
+        // Update merchant's balance
+        await client.query(
+          "UPDATE users SET balance = balance + $1 WHERE id = $2",
+          [totalCost, userId]
+        );
+
+        // Reduce product stock
+        await client.query(
+          "UPDATE products SET stock = stock - $1 WHERE id = $2",
+          [quantity, productId]
+        );
+
+        // Mark the order as fulfilled in order_summary table
+        await client.query(
+          "UPDATE order_summary SET status = 'fulfilled' WHERE id = $1",
+          [orderId]
+        );
+
+        await client.query("COMMIT");
+        res.json({ success: true, message: "Order fulfilled successfully." });
+      } catch (e) {
+        await client.query("ROLLBACK");
+        console.error("Error fulfilling order:", e);
+        res
+          .status(500)
+          .json({ success: false, message: "Internal server error." });
+      } finally {
+        client.release();
+      }
+    } catch (e) {
+      console.error("Error connecting to database:", e);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  });
+
+  app.get("/api/unfulfilled-orders", async (req, res) => {
+    try {
+      const result = await pool.query(
+        "SELECT * FROM order_summary WHERE status = 'pending'"
+      );
+      res.json({ success: true, orders: result.rows });
+    } catch (error) {
+      console.error("Error fetching unfulfilled orders:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  });
 
   app.get("/api/supplies", async (req, res) => {
     try {
@@ -1072,61 +1081,63 @@ app.get("/api/unfulfilled-orders", async (req, res) => {
   server.listen(port, () => {
     console.log(`Worker ${process.pid} is running on http://localhost:${port}`);
   });
-  
+
   app.get("/api/supplies", async (req, res) => {
     try {
-        const result = await pool.query(`
+      const result = await pool.query(`
             SELECT s.*, p.name, p.description
             FROM supplies s
             JOIN products p ON s.product_id = p.id;
         `);
-        res.json({ success: true, supplies: result.rows });
+      res.json({ success: true, supplies: result.rows });
     } catch (error) {
-        console.error("Error fetching supplies:", error);
-        res.status(500).json({ success: false, message: "Internal server error" });
+      console.error("Error fetching supplies:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
     }
-});
-
+  });
 
   // Endpoint to fetch past supply requests for a merchant
   app.get("/api/supply-requests", async (req, res) => {
     const client = await pool.connect();
     try {
-        const result = await client.query(`
+      const result = await client.query(`
             SELECT sr.id, sr.merchant_id, sr.product_id, sr.quantity, sr.request_date, sr.status, p.name
             FROM supply_requests sr
             JOIN products p ON sr.product_id = p.id
             WHERE sr.status = 'pending'
         `);
 
-        // Log the raw SQL result
-        console.log("Raw SQL Query Result:", result.rows);
+      // Log the raw SQL result
+      console.log("Raw SQL Query Result:", result.rows);
 
-        const requests = result.rows.map(row => ({
-            id: row.id,
-            merchant_id: row.merchant_id,
-            product_id: row.product_id,
-            quantity: row.quantity,
-            request_date: row.request_date,
-            status: row.status,
-            name: row.name || 'Unknown' // Default to 'Unknown' if name is null or undefined
-        }));
+      const requests = result.rows.map((row) => ({
+        id: row.id,
+        merchant_id: row.merchant_id,
+        product_id: row.product_id,
+        quantity: row.quantity,
+        request_date: row.request_date,
+        status: row.status,
+        name: row.name || "Unknown", // Default to 'Unknown' if name is null or undefined
+      }));
 
-        // Log the constructed response
-        console.log("Constructed Response:", requests);
+      // Log the constructed response
+      console.log("Constructed Response:", requests);
 
-        res.json({
-            success: true,
-            requests: requests
-        });
+      res.json({
+        success: true,
+        requests: requests,
+      });
     } catch (error) {
-        console.error("Error fetching supply requests:", error);
-        res.status(500).json({ success: false, message: "Internal server error." });
+      console.error("Error fetching supply requests:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
     } finally {
-        client.release();
+      client.release();
     }
-});
-
+  });
 
   app.post("/api/add-supply-by-id", async (req, res) => {
     const { id, quantity } = req.body;
