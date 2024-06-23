@@ -1,5 +1,6 @@
+// Event listener for when the DOM content is fully loaded
 document.addEventListener("DOMContentLoaded", async () => {
-  // Define your variables and DOM elements
+  // Define variables and DOM elements
   const showOrdersButton = document.getElementById("showOrdersButton");
   const ordersList = document.getElementById("ordersList");
   const notificationsList = document.getElementById("notificationsList");
@@ -38,6 +39,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
   const receivedSuppliesList = document.getElementById("receivedSuppliesList");
   const productList = document.getElementById("productList");
+
+  // Get merchant ID from local storage
   const merchantId = localStorage.getItem("userId");
 
   if (!merchantId) {
@@ -45,6 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  // Initialize WebSocket connection
   const socket = io("http://localhost:3000", {
     transports: ["websocket"],
     query: { userId: merchantId },
@@ -54,6 +58,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let suppliesVisible = false;
   let productsVisible = false;
 
+  // Event listener for receiving previous chat messages
   socket.on("previousChats", (chats) => {
     chatList.innerHTML = "";
     chats.forEach((chat) => {
@@ -63,16 +68,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
+  // Event listener for receiving new chat messages
   socket.on("receiveMessage", (chat) => {
     const chatItem = document.createElement("li");
     chatItem.textContent = `${chat.username} (${chat.role}, ID: ${chat.user_id}): ${chat.message} (${chat.timestamp})`;
     chatList.appendChild(chatItem);
   });
 
+  // Event listener for new supply requests
   socket.on("newSupplyRequest", (supply) => {
     displaySupplyRequest(supply);
   });
 
+  // Send chat message
   chatSendButton.addEventListener("click", () => {
     const message = chatInput.value;
     if (message) {
@@ -85,6 +93,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Display notification
   function displayNotification(message) {
     if (!notificationsList) {
       console.error("notificationsList element not found");
@@ -95,6 +104,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     notificationsList.appendChild(listItem);
   }
 
+  // Show or hide orders list
   showOrdersButton.addEventListener("click", async (event) => {
     event.preventDefault();
     ordersVisible = !ordersVisible;
@@ -108,6 +118,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Fetch unfulfilled orders from the server
   async function fetchUnfulfilledOrders() {
     try {
       const response = await fetch(
@@ -124,6 +135,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Display unfulfilled orders
   async function displayUnfulfilledOrders() {
     const orders = await fetchUnfulfilledOrders();
     ordersList.innerHTML = "";
@@ -139,6 +151,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       ordersList.appendChild(listItem);
     });
 
+    // Add event listener to fulfill order buttons
     document.querySelectorAll(".fulfill-button").forEach((button) => {
       button.addEventListener("click", async (event) => {
         const orderId = button.getAttribute("data-order-id");
@@ -155,6 +168,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // Fulfill an order
   async function fulfillOrder(orderId, productId, quantity, listItem) {
     try {
       console.log("Fulfilling order with payload:", {
@@ -184,6 +198,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Fetch supply requests from the server
   async function fetchSupplyRequests() {
     try {
       const response = await fetch(
@@ -199,6 +214,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Display a single supply request
   function displaySupplyRequest(request) {
     const listItem = document.createElement("li");
     listItem.textContent = `${request.product_name} - Quantity: ${
@@ -209,6 +225,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     supplyRequestsList.appendChild(listItem);
   }
 
+  // Request supply
   async function requestSupply(productId, quantity) {
     try {
       const response = await fetch("http://localhost:3000/api/request-supply", {
@@ -237,6 +254,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Event listener for request supply button
   requestSupplyButton.addEventListener("click", (event) => {
     event.preventDefault();
     const productId = document.getElementById("productIdToRequest").value;
@@ -250,6 +268,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Clear input fields for adding a new product
   function clearInputFields() {
     document.getElementById("productName").value = "";
     document.getElementById("productDescription").value = "";
@@ -258,6 +277,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("productImageUrl").value = "";
   }
 
+  // Event listener for logging out
   logoutButton.addEventListener("click", () => {
     localStorage.removeItem("userId");
     localStorage.removeItem("token");
@@ -265,14 +285,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = "login.html";
   });
 
+  // Event listener for home button
   homeButton.addEventListener("click", () => {
     window.location.href = "marketplace.html";
   });
 
+  // Event listener for account button to display merchant account info
   accountButton.addEventListener("click", async () => {
     await displayMerchantAccountInfo();
   });
 
+  // Fetch merchant data from the server
   async function fetchMerchantData(merchantId) {
     try {
       const response = await fetch(
@@ -294,6 +317,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Display merchant account information
   async function displayMerchantAccountInfo() {
     const merchantData = await fetchMerchantData(merchantId);
     if (merchantData) {
@@ -319,6 +343,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     chatContainer.style.display = "none";
   }
 
+  // Add a new product
   async function addProduct(name, description, price, stock, imageUrl) {
     try {
       const response = await fetch("http://localhost:3000/api/products", {
@@ -346,6 +371,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Fetch received supplies from the server
   async function fetchReceivedSupplies() {
     try {
       const response = await fetch(
@@ -363,6 +389,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Display received supplies
   async function displayReceivedSupplies() {
     const supplies = await fetchReceivedSupplies();
     receivedSuppliesList.innerHTML = "";
@@ -385,6 +412,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     receivedSuppliesList.style.display = "block";
   }
 
+  // Fetch all products from the server
   async function fetchAllProducts() {
     try {
       const response = await fetch("http://localhost:3000/api/products", {
@@ -399,6 +427,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Display all products
   async function displayAllProducts() {
     const products = await fetchAllProducts();
     productList.innerHTML = "";
@@ -425,6 +454,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     productList.style.display = "block";
   }
 
+  // Fetch purchased items from the server
   async function fetchPurchasedItems() {
     try {
       const response = await fetch("http://localhost:3000/api/purchased-items");
@@ -436,6 +466,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Display purchased items
   async function displayPurchasedItems() {
     const items = await fetchPurchasedItems();
     ordersList.innerHTML = "";
@@ -451,6 +482,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       ordersList.appendChild(listItem);
     });
 
+    // Add event listener to fulfill order buttons
     document.querySelectorAll(".fulfill-button").forEach((button) => {
       button.addEventListener("click", async (event) => {
         const orderId = button.getAttribute("data-order-id");
@@ -464,6 +496,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     ordersList.style.display = "block";
   }
 
+  // Event listener for add product button
   addProductButton.addEventListener("click", (event) => {
     event.preventDefault();
     const name = document.getElementById("productName").value;
@@ -474,6 +507,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     addProduct(name, description, price, stock, imageUrl);
   });
 
+  // Event listener for show received supplies button
   showReceivedSuppliesButton.addEventListener("click", (event) => {
     event.preventDefault();
     suppliesVisible = !suppliesVisible;
@@ -484,6 +518,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Event listener for list all products button
   listAllProductsButton.addEventListener("click", async (event) => {
     event.preventDefault();
     productsVisible = !productsVisible;
@@ -496,6 +531,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // Event listener for send merchandise button
   sendMerchandiseButton.addEventListener("click", (event) => {
     event.preventDefault();
     const customerId = document.getElementById("customerId").value;
@@ -504,6 +540,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     sendMerchandise(customerId, productId, quantity);
   });
 
+  // Send merchandise to a customer
   async function sendMerchandise(customerId, productId, quantity) {
     try {
       const response = await fetch(
