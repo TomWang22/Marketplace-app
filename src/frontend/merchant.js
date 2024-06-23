@@ -131,11 +131,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const listItem = document.createElement("div");
       listItem.className = "order-item";
       listItem.innerHTML = `
-                  <div>
-                      <span>Order ID: ${order.id} - Product ID: ${order.product_id} - Quantity: ${order.quantity}</span>
-                      <button class="fulfill-button" data-order-id="${order.id}" data-product-id="${order.product_id}" data-quantity="${order.quantity}">Fulfill Order</button>
-                  </div>
-              `;
+          <div>
+            <span>Order ID: ${order.order_id} - Product ID: ${order.product_id} - Quantity: ${order.quantity}</span>
+            <button class="fulfill-button" data-order-id="${order.order_id}" data-product-id="${order.product_id}" data-quantity="${order.quantity}">Fulfill Order</button>
+          </div>
+        `;
       ordersList.appendChild(listItem);
     });
 
@@ -145,6 +145,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         const productId = button.getAttribute("data-product-id");
         const quantity = button.getAttribute("data-quantity");
         const listItem = button.parentElement; // Get the parent element to remove it later
+
+        console.log("Order ID:", orderId); // Debugging statement
+        console.log("Product ID:", productId); // Debugging statement
+        console.log("Quantity:", quantity); // Debugging statement
+
         await fulfillOrder(orderId, productId, quantity, listItem);
       });
     });
@@ -366,15 +371,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       const listItem = document.createElement("div");
       listItem.className = "supply-item";
       listItem.innerHTML = `
-                  <div>
-                      <img src="${supply.image_url}" alt="${
+          <div>
+            <img src="${supply.image_url}" alt="${
         supply.name
       }" width="50" height="50">
-                      <span>${supply.name} - ${supply.description} - $${
+            <span>${supply.name} - ${supply.description} - $${
         !isNaN(price) ? price.toFixed(2) : "N/A"
       } - Stock: ${supply.stock}</span>
-                  </div>
-              `;
+          </div>
+        `;
       receivedSuppliesList.appendChild(listItem);
     });
     receivedSuppliesList.style.display = "block";
@@ -403,15 +408,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         const productItem = document.createElement("div");
         productItem.className = "product-item";
         productItem.innerHTML = `
-                      <div>
-                          <img src="${product.image_url}" alt="${
+            <div>
+              <img src="${product.image_url}" alt="${
           product.name
         }" width="50" height="50">
-                          <span>${product.name} - ${product.description} - $${
+              <span>${product.name} - ${product.description} - $${
           !isNaN(price) ? price.toFixed(2) : "N/A"
         } - Stock: ${product.stock}</span>
-                      </div>
-                  `;
+            </div>
+          `;
         productList.appendChild(productItem);
       });
     } else {
@@ -438,11 +443,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const listItem = document.createElement("div");
       listItem.className = "order-item";
       listItem.innerHTML = `
-                  <div>
-                      <span>Order ID: ${item.id} - Product ID: ${item.product_id} - Quantity: ${item.quantity} - Spent: $${item.spent}</span>
-                      <button class="fulfill-button" data-order-id="${item.id}" data-product-id="${item.product_id}" data-quantity="${item.quantity}">Fulfill Order</button>
-                  </div>
-              `;
+          <div>
+            <span>Order ID: ${item.id} - Product ID: ${item.product_id} - Quantity: ${item.quantity} - Spent: $${item.spent}</span>
+            <button class="fulfill-button" data-order-id="${item.id}" data-product-id="${item.product_id}" data-quantity="${item.quantity}">Fulfill Order</button>
+          </div>
+        `;
       ordersList.appendChild(listItem);
     });
 
@@ -527,28 +532,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("Error sending merchandise:", error);
       displayNotification("An error occurred while sending merchandise.");
     }
-  }
-
-  async function displayReceivedSupplies() {
-    const supplies = await fetchReceivedSupplies();
-    receivedSuppliesList.innerHTML = "";
-    supplies.forEach((supply) => {
-      const price = parseFloat(supply.price);
-      const listItem = document.createElement("div");
-      listItem.className = "supply-item";
-      listItem.innerHTML = `
-                  <div>
-                      <img src="${supply.image_url}" alt="${
-        supply.name
-      }" width="50" height="50">
-                      <span>${supply.name} - ${supply.description} - $${
-        !isNaN(price) ? price.toFixed(2) : "N/A"
-      } - Stock: ${supply.stock}</span>
-                  </div>
-              `;
-      receivedSuppliesList.appendChild(listItem);
-    });
-    receivedSuppliesList.style.display = "block";
   }
 
   // Initial fetch of supply requests

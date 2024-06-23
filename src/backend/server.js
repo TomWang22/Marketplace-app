@@ -617,11 +617,8 @@ if (cluster.isMaster) {
         .json({ success: false, message: "Internal server error" });
     }
   });
-
   app.post("/api/fulfill-order", async (req, res) => {
     const { orderId, productId, quantity } = req.body;
-
-    console.log("Request payload:", req.body); // Log the request payload
 
     if (!orderId || !productId || !quantity) {
       return res
@@ -634,10 +631,10 @@ if (cluster.isMaster) {
       try {
         await client.query("BEGIN");
 
-        // Fetch userId and status from order_summary table
+        // Fetch userId, status, and product details
         const orderResult = await client.query(
-          "SELECT user_id, status FROM order_summary WHERE id = $1",
-          [orderId]
+          "SELECT user_id, status FROM order_summary WHERE order_id = $1 AND product_id = $2",
+          [orderId, productId]
         );
         const order = orderResult.rows[0];
         if (!order) {
@@ -648,17 +645,14 @@ if (cluster.isMaster) {
         }
         const userId = order.user_id;
 
-        // Get product price and stock
         const productResult = await client.query(
-          "SELECT price, stock FROM products WHERE id = $1",
+          "SELECT name, price, stock FROM products WHERE id = $1",
           [productId]
         );
         const product = productResult.rows[0];
-
         if (!product) {
           throw new Error("Product not found.");
         }
-
         if (product.stock < quantity) {
           throw new Error("Insufficient stock.");
         }
@@ -679,8 +673,14 @@ if (cluster.isMaster) {
 
         // Mark the order as fulfilled in order_summary table
         await client.query(
-          "UPDATE order_summary SET status = 'fulfilled' WHERE id = $1",
-          [orderId]
+          "UPDATE order_summary SET status = 'fulfilled' WHERE order_id = $1 AND product_id = $2",
+          [orderId, productId]
+        );
+
+        // Insert the fulfilled order into the inventory table
+        await client.query(
+          "INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)",
+          [userId, product.name, quantity, product.price, productId]
         );
 
         await client.query("COMMIT");
