@@ -212,22 +212,27 @@ if (cluster.isMaster) {
    */
   app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
-  
+
     try {
-      const result = await pool.query("SELECT * FROM login_user($1)", [username]);
-      const user = result.rows[0];
-  
-      if (user && (await bcrypt.compare(password, user.password))) {
-        const token = generateToken(user.id);
-        res.json({ success: true, userId: user.id, role: user.role, token });
-      } else {
+        console.log(`Login attempt for username: ${username}`);
+
+        const result = await pool.query("SELECT * FROM login_user($1)", [username]);
+        const user = result.rows[0];
+
+        if (user) {
+            const isPasswordValid = await bcrypt.compare(password, user.password);
+            if (isPasswordValid) {
+                const token = generateToken(user.id);
+                console.log(`Login successful for user ID: ${user.id}`);
+                return res.json({ success: true, userId: user.id, role: user.role, token });
+            }
+        }
         res.status(401).json({ success: false, message: "Invalid credentials" });
-      }
     } catch (error) {
-      res.status(500).json({ success: false, message: "Internal server error" });
+        console.error("Error during login:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
     }
-  });
-  
+});
 
   /**
    * Fetch cart items for a user.
