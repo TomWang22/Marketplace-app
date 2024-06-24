@@ -1,55 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <!-- Set the character encoding for the document -->
+    <meta charset="UTF-8" />
+    <!-- Set the viewport to ensure the page is responsive -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Title of the page -->
     <title>Product Details</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+    <!-- Link to the external CSS file for styling -->
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Header section containing the logo and navigation -->
     <header>
-        <div class="logo">Marketplace</div>
-        <nav>
-            <a href="marketplace.html">Home</a>
-            <a href="shopping-cart.html">Cart (<span id="cartItemCount">0</span>)</a>
-            <button id="logoutButton">Logout</button>
-        </nav>
+      <!-- Logo of the marketplace -->
+      <div class="logo">Marketplace</div>
+      <!-- Navigation menu -->
+      <nav>
+        <a href="marketplace.html">Home</a>
+        <a href="shopping-cart.html"
+          >Cart (<span id="cartItemCount">0</span>)</a
+        >
+        <button id="logoutButton">Logout</button>
+      </nav>
     </header>
+    <!-- Main content section -->
     <main>
-        <section id="product-details" class="product-details">
-            <!-- Product details content will be dynamically inserted here -->
-        </section>
-        <section id="product-specifications" class="product-specifications">
-            <h2>Specifications</h2>
-            <ul id="specifications-list" class="no-bullets">
-                <!-- Specifications content will be dynamically inserted here -->
-            </ul>
-        </section>
-        <section id="product-reviews" class="product-reviews">
-            <h2>Reviews</h2>
-            <div id="reviews-summary">
-                <p id="average-rating">Average Rating: N/A</p>
-                <p id="total-reviews">Total Reviews: 0</p>
-            </div>
-            <div id="reviews-list">
-                <!-- Reviews content will be dynamically inserted here -->
-            </div>
-        </section>
-        <section id="related-products" class="related-products">
-            <h2>Related Products</h2>
-            <div id="related-products-list">
-                <!-- Related products content will be dynamically inserted here -->
-            </div>
-        </section>
+      <!-- Product details section where product information will be dynamically inserted -->
+      <section id="product-details" class="product-details">
+        <!-- Product details content will be dynamically inserted here -->
+      </section>
+      <!-- Product specifications section -->
+      <section id="product-specifications" class="product-specifications">
+        <h2>Specifications</h2>
+        <ul id="specifications-list" class="no-bullets">
+          <!-- Specifications content will be dynamically inserted here -->
+        </ul>
+      </section>
+      <!-- Product reviews section -->
+      <section id="product-reviews" class="product-reviews">
+        <h2>Reviews</h2>
+        <div id="reviews-summary">
+          <p id="average-rating">Average Rating: N/A</p>
+          <p id="total-reviews">Total Reviews: 0</p>
+        </div>
+        <div id="reviews-list">
+          <!-- Reviews content will be dynamically inserted here -->
+        </div>
+      </section>
+      <!-- Related products section -->
+      <section id="related-products" class="related-products">
+        <h2>Related Products</h2>
+        <div id="related-products-list">
+          <!-- Related products content will be dynamically inserted here -->
+        </div>
+      </section>
     </main>
+    <!-- Footer section containing additional navigation links -->
     <footer>
-        <nav>
-            <a href="about.html">About Us</a>
-            <a href="contact.html">Contact</a>
-            <a href="privacy.html">Privacy Policy</a>
-            <a href="terms.html">Terms of Service</a>
-        </nav>
+      <nav>
+        <a href="about.html">About Us</a>
+        <a href="contact.html">Contact</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+      </nav>
     </footer>
+    <!-- Link to the external JavaScript file for dynamic content handling -->
     <script src="product-details.js"></script>
-</body>
+  </body>
 </html>
