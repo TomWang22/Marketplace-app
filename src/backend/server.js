@@ -1084,9 +1084,7 @@ if (cluster.isMaster) {
   app.get("/api/supplies", async (req, res) => {
     try {
       const result = await pool.query(`
-            SELECT s.*, p.name, p.description
-            FROM supplies s
-            JOIN products p ON s.product_id = p.id;
+            SELECT * FROM supplies;
         `);
       res.json({ success: true, supplies: result.rows });
     } catch (error) {
