@@ -42,18 +42,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       const cartItem = document.createElement("div");
       cartItem.className = "cart-item";
       cartItem.innerHTML = `
-                <div>
-                    <img src="${item.image_url}" alt="${
-        item.product
-      }" width="50">
-                    <span>Product: ${item.product} - Quantity: ${
-        item.quantity
-      } - Price: $${parseFloat(item.price).toFixed(2)}</span>
-                    <button class="removeButton" data-id="${
-                      item.id
-                    }" data-quantity="${item.quantity}">Remove</button>
-                </div>
-            `;
+        <div>
+          <img src="${item.image_url}" alt="${item.product}" width="50">
+          <span>Product: ${item.product} - Size: ${item.size ? item.size : 'N/A'} - Quantity: ${item.quantity} - Price: $${parseFloat(item.price).toFixed(2)}</span>
+          <button class="removeButton" data-id="${item.id}" data-quantity="${item.quantity}">Remove</button>
+        </div>
+      `;
       cartList.appendChild(cartItem);
       total += parseFloat(item.price) * parseInt(item.quantity, 10);
     });

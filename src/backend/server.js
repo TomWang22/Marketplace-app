@@ -258,21 +258,19 @@ if (cluster.isMaster) {
    * Fetch cart items for a user.
    * @param {number} userId - The ID of the user.
    */
-  app.get("/api/cart", async (req, res) => {
-    const userId = req.query.userId;
-    try {
-      const result = await pool.query(
-        "SELECT id, user_id, product_id, product, SUM(quantity) as quantity, price FROM shopping_cart WHERE user_id = $1 GROUP BY id, user_id, product_id, product, price",
-        [userId]
-      );
-      res.json({ success: true, items: result.rows });
-    } catch (error) {
-      console.error("Error fetching cart items:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-  });
+  // Assuming you have a route to get cart items
+app.get('/api/cart', async (req, res) => {
+  const userId = req.query.userId;
+
+  try {
+    const result = await pool.query('SELECT * FROM shopping_cart WHERE user_id = $1', [userId]);
+    res.json({ items: result.rows });
+  } catch (error) {
+    console.error('Error fetching cart items:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
   /**
    * Place an order for a user.
@@ -647,7 +645,7 @@ if (cluster.isMaster) {
         .json({ success: false, message: "Internal server error" });
     }
   });
-  
+
   app.get('/api/products/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -802,43 +800,45 @@ if (cluster.isMaster) {
    * @param {number} productId - The ID of the product.
    * @param {number} quantity - The quantity of the product.
    */
-  app.post("/api/cart", async (req, res) => {
-    const { userId, productId, quantity, size } = req.body;
+  // Assuming you have a route to add items to the cart
+app.post("/api/cart", async (req, res) => {
+  const { userId, productId, quantity, size } = req.body;
 
-    // Log the received request body
-    console.log("Received request body:", req.body);
+  // Log the received request body
+  console.log("Received request body:", req.body);
 
-    if (!userId || !productId || !quantity || !size) {
-      console.error("Missing fields in request body:", req.body);
+  if (!userId || !productId || !quantity || !size) {
+    console.error("Missing fields in request body:", req.body);
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing fields" });
+  }
+
+  try {
+    const productResult = await pool.query(
+      "SELECT name, price, image_url FROM products WHERE id = $1",
+      [productId]
+    );
+    if (productResult.rows.length === 0) {
       return res
-        .status(400)
-        .json({ success: false, message: "Missing fields" });
+        .status(404)
+        .json({ success: false, message: "Product not found" });
     }
 
-    try {
-      const productResult = await pool.query(
-        "SELECT name, price FROM products WHERE id = $1",
-        [productId]
-      );
-      if (productResult.rows.length === 0) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Product not found" });
-      }
+    const product = productResult.rows[0];
+    const result = await pool.query(
+      "INSERT INTO shopping_cart (user_id, product_id, product, quantity, price, size, image_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+      [userId, productId, product.name, quantity, product.price, size, product.image_url]
+    );
+    res.json({ success: true, item: result.rows[0] });
+  } catch (error) {
+    console.error("Error adding item to cart:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+});
 
-      const product = productResult.rows[0];
-      const result = await pool.query(
-        "INSERT INTO shopping_cart (user_id, product_id, product, quantity, price, size) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
-        [userId, productId, product.name, quantity, product.price, size]
-      );
-      res.json({ success: true, item: result.rows[0] });
-    } catch (error) {
-      console.error("Error adding item to cart:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-  });
 
   /**
    * Update the quantity of an item in the cart.
