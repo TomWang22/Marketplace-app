@@ -647,6 +647,31 @@ if (cluster.isMaster) {
         .json({ success: false, message: "Internal server error" });
     }
   });
+  
+  app.get('/api/products/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
+      if (result.rows.length === 0) {
+        return res.status(404).json({ success: false, message: 'Product not found' });
+      }
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+  
+  app.get('/api/reviews', async (req, res) => {
+    const { productId } = req.query;
+    try {
+      const result = await pool.query('SELECT * FROM reviews WHERE product_id = $1', [productId]);
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
 
   /**
    * Add a new product.
@@ -688,7 +713,7 @@ if (cluster.isMaster) {
 
   app.get("/api/product/:id", async (req, res) => {
     const productId = req.params.id;
-  
+
     try {
       // Fetch the product details with the total quantity
       const result = await pool.query(
@@ -708,21 +733,24 @@ if (cluster.isMaster) {
          name, 
          description, 
          price, 
-         image_url`, 
+         image_url`,
         [productId]
       );
-  
+
       if (result.rows.length === 0) {
-        return res.status(404).json({ success: false, message: "Product not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Product not found" });
       }
-  
+
       res.json({ success: true, product: result.rows[0] });
     } catch (error) {
       console.error("Error fetching product details:", error);
-      res.status(500).json({ success: false, message: "Internal server error" });
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
     }
   });
-  
 
   /**
    * Fetch account information for a user.
@@ -775,9 +803,13 @@ if (cluster.isMaster) {
    * @param {number} quantity - The quantity of the product.
    */
   app.post("/api/cart", async (req, res) => {
-    const { userId, productId, quantity } = req.body;
+    const { userId, productId, quantity, size } = req.body;
 
-    if (!userId || !productId || !quantity) {
+    // Log the received request body
+    console.log("Received request body:", req.body);
+
+    if (!userId || !productId || !quantity || !size) {
+      console.error("Missing fields in request body:", req.body);
       return res
         .status(400)
         .json({ success: false, message: "Missing fields" });
@@ -796,8 +828,8 @@ if (cluster.isMaster) {
 
       const product = productResult.rows[0];
       const result = await pool.query(
-        "INSERT INTO shopping_cart (user_id, product_id, product, quantity, price) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        [userId, productId, product.name, quantity, product.price]
+        "INSERT INTO shopping_cart (user_id, product_id, product, quantity, price, size) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+        [userId, productId, product.name, quantity, product.price, size]
       );
       res.json({ success: true, item: result.rows[0] });
     } catch (error) {
