@@ -198,6 +198,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Display related products
   // Display related products
   // Display related products
+  // Display related products
   async function displayRelatedProducts(product) {
     const relatedProductsList = document.getElementById(
       "related-products-list"
