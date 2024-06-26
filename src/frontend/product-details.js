@@ -12,14 +12,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = "login.html";
   });
 
+  // WebSocket connection
+  const socket = new WebSocket("ws://localhost:8080");
+
+  socket.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    if (message.productId === productId) {
+      document.getElementById(
+        "product-quantity"
+      ).textContent = `In Stock: ${message.updatedQuantity}`;
+    }
+  };
+
   // Fetch product details from server
   async function fetchProductDetails(productId) {
     try {
       const response = await fetch(
-        `http://localhost:3000/api/products/${productId}`
+        `http://localhost:3000/api/product/${productId}`
       );
-      const product = await response.json();
-      return product;
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || "Failed to fetch product details");
+      }
+      return data.product;
     } catch (error) {
       console.error("Error fetching product details:", error);
       return null;
@@ -70,34 +85,41 @@ document.addEventListener("DOMContentLoaded", async () => {
       const product = await fetchProductDetails(productId);
       if (!product) throw new Error("Product not found");
 
-      const productDetailsSection = document.querySelector("#product-details");
+      const price = parseFloat(product.price).toFixed(2);
+      const quantity = parseInt(product.total_quantity, 10);
 
-      // Ensure product.price is a number before using toFixed
-      const price =
-        typeof product.price === "number" ? product.price.toFixed(2) : "N/A";
+      document.getElementById("product-name").textContent = product.name;
+      document.getElementById("product-description").textContent =
+        product.description;
+      document.getElementById("product-price").textContent = `$${price}`;
+      document.getElementById(
+        "product-quantity"
+      ).textContent = `In Stock: ${quantity}`;
+      document.getElementById("product-image").src = product.image_url;
+      document.getElementById("product-image").alt = product.name;
 
-      productDetailsSection.innerHTML = `
-          <img src="${product.image_url}" alt="${product.name}">
-          <h1>${product.name}</h1>
-          <p>${product.description}</p>
-          <p>$${price}</p>
-          <label for="sizeSelect">Select Size:</label>
-          <select id="sizeSelect">${getSizeOptions(product.name)
-            .map((size) => `<option value="${size}">${size}</option>`)
-            .join("")}</select>
-          <label for="quantityInput">Quantity:</label>
-          <input type="number" id="quantityInput" min="1" value="1">
-          <button id="addToCartButton">Add to Cart</button>
-        `;
+      const sizeSelectHtml = `
+        <label for="sizeSelect">Select Size:</label>
+        <select id="sizeSelect">${getSizeOptions(product.name)
+          .map((size) => `<option value="${size}">${size}</option>`)
+          .join("")}</select>
+        <label for="quantityInput">Quantity:</label>
+        <input type="number" id="quantityInput" min="1" value="1">
+        <button id="addToCartButton">Add to Cart</button>
+      `;
+
+      document
+        .querySelector("#product-details")
+        .insertAdjacentHTML("beforeend", sizeSelectHtml);
+
       document
         .getElementById("addToCartButton")
         .addEventListener("click", async () => {
-          await addToCart(product.id);
+          await addToCart(productId);
         });
 
       displayProductSpecifications(product);
       displayProductReviews(productId);
-      displayRelatedProducts(product);
     } catch (error) {
       console.error("Error displaying product details:", error);
     }
@@ -116,7 +138,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ userId, productId, quantity, size }),
+        body: JSON.stringify({ userId, productId, quantity, size }), // Ensure productId is included here
       });
       const data = await response.json();
       if (data.success) {
@@ -135,11 +157,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   function displayProductSpecifications(product) {
     const specificationsList = document.getElementById("specifications-list");
     specificationsList.innerHTML = `
-        <li><strong>Material:</strong> Cotton</li>
-        <li><strong>Color:</strong> ${product.name.split(" ")[1]}</li>
-        <li><strong>Size:</strong> S, M, L, XL</li>
-        <li><strong>Weight:</strong> 200g</li>
-      `;
+      <li><strong>Material:</strong> Cotton</li>
+      <li><strong>Color:</strong> ${product.name.split(" ")[1]}</li>
+      <li><strong>Size:</strong> S, M, L, XL</li>
+      <li><strong>Weight:</strong> 200g</li>
+    `;
   }
 
   // Highlight keywords in review text
@@ -181,56 +203,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         const reviewElement = document.createElement("div");
         reviewElement.className = "review";
         reviewElement.innerHTML = `
-            <p><strong>${review.username}:</strong> ${highlightKeywords(
+          <p><strong>${review.username}:</strong> ${highlightKeywords(
           review.text,
           ["great", "good", "bad", "excellent"]
         )}</p>
-            <p>${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</p>
-            <p><small>${new Date(review.date).toLocaleDateString()}</small></p>
-          `;
+          <p>${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</p>
+          <p><small>${new Date(review.date).toLocaleDateString()}</small></p>
+        `;
         reviewsList.appendChild(reviewElement);
       });
     } catch (error) {
       console.error("Error displaying reviews:", error);
     }
   }
-
-  // Display related products
-  async function displayRelatedProducts(product) {
-    const relatedProductsList = document.getElementById('related-products-list');
-    try {
-      const keywords = product.name.split(' ').map(word => word.toLowerCase());
-      console.log(`Fetching related products with keywords: ${keywords} and excludeId: ${product.id}`);
-      const response = await fetch(
-        `http://localhost:3000/api/products/related?keywords=${keywords.join(',')}&excludeId=${product.id}`
-      );
-      const products = await response.json();
-  
-      if (!Array.isArray(products)) {
-        console.error('Error fetching related products: Expected an array of products, got ', typeof products);
-        relatedProductsList.innerHTML = '<p>Related products not available.</p>';
-        return;
-      }
-  
-      if (products.length === 0) {
-        relatedProductsList.innerHTML = '<p>No related products available.</p>';
-        return;
-      }
-  
-      relatedProductsList.innerHTML = products.slice(0, 3).map(relatedProduct => `
-        <div class="related-product">
-          <img src="${relatedProduct.image_url}" alt="${relatedProduct.name}">
-          <p>${relatedProduct.name}</p>
-          <p>$${relatedProduct.price.toFixed(2)}</p>
-        </div>
-      `).join('');
-    } catch (error) {
-      console.error('Error fetching related products:', error);
-      relatedProductsList.innerHTML = '<p>Error displaying related products.</p>';
-    }
-  }
-  
-  
 
   // Generate size options based on product type
   function getSizeOptions(productType) {

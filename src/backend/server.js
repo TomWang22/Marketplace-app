@@ -274,6 +274,10 @@ if (cluster.isMaster) {
     }
   });
 
+  function notifyProductUpdate(productId, updatedQuantity) {
+    io.emit("productUpdate", { productId, updatedQuantity });
+  }
+
   /**
    * Place an order for a user.
    * @param {number} userId - The ID of the user.
@@ -281,28 +285,28 @@ if (cluster.isMaster) {
    */
   app.post("/api/place-order", async (req, res) => {
     const { userId, cartItems } = req.body;
-
+  
     if (!userId || !Array.isArray(cartItems) || cartItems.length === 0) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid order data." });
     }
-
+  
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
-
+  
       const totalCost = cartItems.reduce(
         (total, item) => total + item.price * item.quantity,
         0
       );
-
+  
       const balanceResult = await client.query(
         "SELECT balance FROM users WHERE id = $1",
         [userId]
       );
       const userBalance = balanceResult.rows[0].balance;
-
+  
       if (userBalance < totalCost) {
         await client.query("ROLLBACK");
         return res.status(400).json({
@@ -310,63 +314,70 @@ if (cluster.isMaster) {
           message: "Insufficient balance to complete the purchase.",
         });
       }
-
+  
       await client.query(
         "UPDATE users SET balance = balance - $1 WHERE id = $2",
         [totalCost, userId]
       );
-
+  
       const orderResult = await client.query(
         "INSERT INTO orders (user_id, total_cost, order_date, status) VALUES ($1, $2, NOW(), 'pending') RETURNING id",
         [userId, totalCost]
       );
       const orderId = orderResult.rows[0].id;
-
+  
       for (const item of cartItems) {
         const { product_id, quantity, price } = item;
-
+  
         await client.query(
           "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)",
           [orderId, product_id, quantity, price]
         );
-
+  
         await client.query(
           "INSERT INTO purchase_history (user_id, product_id, quantity, price, purchase_date) VALUES ($1, $2, $3, $4, NOW())",
           [userId, product_id, quantity, price]
         );
-
+  
         await client.query(
           "INSERT INTO order_summary (order_id, total_cost, product_id, quantity, user_id, status) VALUES ($1, $2, $3, $4, $5, 'pending')",
           [orderId, totalCost, product_id, quantity, userId]
         );
-
+  
         const productResult = await client.query(
-          "SELECT merchant_id FROM products WHERE id = $1",
+          "SELECT merchant_id, stock, name FROM products WHERE id = $1",
           [product_id]
         );
-        const merchantId = productResult.rows[0]?.merchant_id;
-
+        const product = productResult.rows[0];
+        const merchantId = product.merchant_id;
+  
         if (!merchantId) {
-          throw new Error(
-            `Merchant ID not found for product ID ${product_id}.`
-          );
+          throw new Error(`Merchant ID not found for product ID ${product_id}.`);
         }
-
+  
         await client.query(
           "UPDATE users SET balance = balance + $1 WHERE id = $2",
           [price * quantity, merchantId]
         );
-
+  
+        // Reduce product stock and notify clients
+        const newStock = product.stock - quantity;
+        await client.query(
+          "UPDATE products SET stock = $1 WHERE id = $2",
+          [newStock, product_id]
+        );
+        notifyProductUpdate(product_id, newStock);  // Notify clients about stock update
+  
         await client.query(
           "INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp) VALUES ($1, $2, $3, $4, $5, NOW())",
-          [userId, item.product, quantity, price, product_id]
+          [userId, product.name, quantity, price, product_id]
         );
       }
-
+  
       await client.query("DELETE FROM shopping_cart WHERE user_id = $1", [
         userId,
       ]);
-
+  
       await client.query("COMMIT");
       res.json({ success: true, message: "Order placed successfully." });
     } catch (error) {
@@ -379,7 +390,7 @@ if (cluster.isMaster) {
       client.release();
     }
   });
-
+    
   /**
    * Fetch inventory items for a user.
    * @param {number} userId - The ID of the user.
@@ -669,39 +680,6 @@ if (cluster.isMaster) {
   });
 
   // Endpoint to fetch related products based on a keyword and excluding a specific product ID
-  app.get('/api/products/related', async (req, res) => {
-    const { keywords, excludeId } = req.query;
-    console.log(`Received request with keywords: ${keywords}, excludeId: ${excludeId}`);
-  
-    try {
-      // Validate excludeId
-      const excludeIdInt = parseInt(excludeId, 10);
-      if (isNaN(excludeIdInt)) {
-        console.error('Invalid excludeId:', excludeId);
-        return res.status(400).json({ success: false, message: 'Invalid excludeId' });
-      }
-  
-      if (!keywords) {
-        console.error('Keywords are required');
-        return res.status(400).json({ success: false, message: 'Keywords are required' });
-      }
-  
-      const keywordArray = keywords.split(',').map(keyword => `%${keyword.toLowerCase()}%`);
-  
-      const query = `
-        SELECT * FROM products 
-        WHERE id != $1 AND (${keywordArray.map((_, index) => `LOWER(name) LIKE $${index + 2}`).join(' OR ')})
-      `;
-      const params = [excludeIdInt, ...keywordArray];
-      
-      const result = await pool.query(query, params);
-      console.log('Query result:', result.rows);
-      res.json(result.rows);
-    } catch (error) {
-      console.error('Error fetching related products:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
-    }
-  });
 
   app.get("/api/reviews", async (req, res) => {
     const { productId } = req.query;
@@ -851,17 +829,17 @@ if (cluster.isMaster) {
   // Assuming you have a route to add items to the cart
   app.post("/api/cart", async (req, res) => {
     const { userId, productId, quantity, size } = req.body;
-
+  
     // Log the received request body
     console.log("Received request body:", req.body);
-
+  
     if (!userId || !productId || !quantity || !size) {
       console.error("Missing fields in request body:", req.body);
       return res
         .status(400)
         .json({ success: false, message: "Missing fields" });
     }
-
+  
     try {
       const productResult = await pool.query(
         "SELECT name, price, image_url FROM products WHERE id = $1",
@@ -872,7 +850,7 @@ if (cluster.isMaster) {
           .status(404)
           .json({ success: false, message: "Product not found" });
       }
-
+  
       const product = productResult.rows[0];
       const result = await pool.query(
         "INSERT INTO shopping_cart (user_id, product_id, product, quantity, price, size, image_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
@@ -893,7 +871,7 @@ if (cluster.isMaster) {
         .status(500)
         .json({ success: false, message: "Internal server error" });
     }
-  });
+  });  
 
   /**
    * Update the quantity of an item in the cart.
