@@ -659,6 +659,20 @@ app.get('/api/cart', async (req, res) => {
       res.status(500).json({ success: false, message: 'Internal server error' });
     }
   });
+
+  app.get('/api/products/related', async (req, res) => {
+    const { keyword, excludeId } = req.query;
+    try {
+      const result = await pool.query(
+        `SELECT * FROM products WHERE id != $1 AND LOWER(name) LIKE LOWER($2)`, 
+        [excludeId, `%${keyword}%`]
+      );
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching related products:', error);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });  
   
   app.get('/api/reviews', async (req, res) => {
     const { productId } = req.query;
