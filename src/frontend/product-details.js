@@ -199,51 +199,42 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Display related products
   // Display related products
   // Display related products
-  async function displayRelatedProducts(product) {
-    const relatedProductsList = document.getElementById(
-      "related-products-list"
+  // Display related products
+async function displayRelatedProducts(product) {
+  const relatedProductsList = document.getElementById('related-products-list');
+  try {
+    const keyword = product.name.split(' ')[0]; // Using the first word of the product name as the keyword
+    console.log(`Fetching related products with keyword: ${keyword} and excludeId: ${product.id}`);
+    const response = await fetch(
+      `http://localhost:3000/api/products/related?keyword=${keyword}&excludeId=${product.id}`
     );
-    try {
-      const keyword = product.name.split(" ")[0]; // Using the first word of the product name as the keyword
-      const response = await fetch(
-        `http://localhost:3000/api/products/related?keyword=${keyword}&excludeId=${product.id}`
-      );
-      const products = await response.json();
+    const products = await response.json();
 
-      // Ensure products is an array before calling slice
-      if (!Array.isArray(products)) {
-        console.error(
-          "Error fetching related products: Expected an array of products, got ",
-          typeof products
-        );
-        relatedProductsList.innerHTML =
-          "<p>Related products not available.</p>";
-        return;
-      }
+    // Ensure products is an array before calling slice
+    if (!Array.isArray(products)) {
+      console.error('Error fetching related products: Expected an array of products, got ', typeof products);
+      relatedProductsList.innerHTML = '<p>Related products not available.</p>';
+      return;
+    }
 
-      if (products.length === 0) {
-        relatedProductsList.innerHTML = "<p>No related products available.</p>";
-        return;
-      }
+    if (products.length === 0) {
+      relatedProductsList.innerHTML = '<p>No related products available.</p>';
+      return;
+    }
 
-      relatedProductsList.innerHTML = products
-        .slice(0, 3)
-        .map(
-          (relatedProduct) => `
+    relatedProductsList.innerHTML = products.slice(0, 3).map(relatedProduct => `
       <div class="related-product">
         <img src="${relatedProduct.image_url}" alt="${relatedProduct.name}">
         <p>${relatedProduct.name}</p>
         <p>$${relatedProduct.price.toFixed(2)}</p>
       </div>
-    `
-        )
-        .join("");
-    } catch (error) {
-      console.error("Error fetching related products:", error);
-      relatedProductsList.innerHTML =
-        "<p>Error displaying related products.</p>";
-    }
+    `).join('');
+  } catch (error) {
+    console.error('Error fetching related products:', error);
+    relatedProductsList.innerHTML = '<p>Error displaying related products.</p>';
   }
+}
+
 
   // Generate size options based on product type
   function getSizeOptions(productType) {

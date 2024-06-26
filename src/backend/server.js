@@ -660,23 +660,31 @@ app.get('/api/cart', async (req, res) => {
     }
   });
 
-  app.get('/api/products/related', async (req, res) => {
-    const { keyword, excludeId } = req.query;
-    try {
-      const excludeIdInt = parseInt(excludeId, 10); // Parse excludeId to an integer
-      if (isNaN(excludeIdInt)) {
-        return res.status(400).json({ success: false, message: 'Invalid excludeId' });
-      }
-      const result = await pool.query(
-        `SELECT * FROM products WHERE id != $1 AND LOWER(name) LIKE LOWER($2)`, 
-        [excludeIdInt, `%${keyword}%`]
-      );
-      res.json(result.rows);
-    } catch (error) {
-      console.error('Error fetching related products:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+  // Endpoint to fetch related products based on a keyword and excluding a specific product ID
+app.get('/api/products/related', async (req, res) => {
+  const { keyword, excludeId } = req.query;
+  console.log(`Received request with keyword: ${keyword}, excludeId: ${excludeId}`);
+
+  try {
+    const excludeIdInt = parseInt(excludeId, 10);
+    
+    if (isNaN(excludeIdInt)) {
+      console.error('Invalid excludeId:', excludeId);
+      return res.status(400).json({ success: false, message: 'Invalid excludeId' });
     }
-  });
+
+    const result = await pool.query(
+      `SELECT * FROM products WHERE id != $1 AND LOWER(name) LIKE LOWER($2)`, 
+      [excludeIdInt, `%${keyword}%`]
+    );
+    console.log('Query result:', result.rows);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching related products:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
     
   app.get('/api/reviews', async (req, res) => {
     const { productId } = req.query;
