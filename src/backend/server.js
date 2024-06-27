@@ -737,37 +737,35 @@ if (cluster.isMaster) {
 
   app.get("/api/product/:id", async (req, res) => {
     const productId = req.params.id;
-
+  
     try {
-      // Fetch the product details with the total quantity
+      // Fetch the product details with the size-specific quantities
       const result = await pool.query(
         `SELECT 
-         name, 
-         description, 
-         price, 
-         image_url, 
-         SUM(stock) AS total_quantity 
-       FROM 
-         products 
-       WHERE 
-         name = (
-           SELECT name FROM products WHERE id = $1
-         ) 
-       GROUP BY 
-         name, 
-         description, 
-         price, 
-         image_url`,
+           id,
+           name, 
+           description, 
+           price, 
+           image_url, 
+           size, 
+           stock 
+         FROM 
+           products 
+         WHERE 
+           id = $1
+           OR name = (
+             SELECT name FROM products WHERE id = $1
+           )`,
         [productId]
       );
-
+  
       if (result.rows.length === 0) {
         return res
           .status(404)
           .json({ success: false, message: "Product not found" });
       }
-
-      res.json({ success: true, product: result.rows[0] });
+  
+      res.json({ success: true, product: result.rows });
     } catch (error) {
       console.error("Error fetching product details:", error);
       res
@@ -775,6 +773,7 @@ if (cluster.isMaster) {
         .json({ success: false, message: "Internal server error" });
     }
   });
+  
 
   /**
    * Fetch account information for a user.
