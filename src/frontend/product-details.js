@@ -82,38 +82,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Display product details on the page
   async function displayProductDetails() {
     try {
-      const productDetails = await fetchProductDetails(productId);
-      if (!productDetails) throw new Error("Product not found");
+      const product = await fetchProductDetails(productId);
+      if (!product) throw new Error("Product not found");
 
-      const product = productDetails[0];
       const price = parseFloat(product.price).toFixed(2);
-      const totalQuantity = productDetails.reduce((sum, item) => sum + parseInt(item.stock, 10), 0);
+      const quantity = parseInt(product.total_quantity, 10);
 
       document.getElementById("product-name").textContent = product.name;
-      document.getElementById("product-description").textContent = product.description;
+      document.getElementById("product-description").textContent =
+        product.description;
       document.getElementById("product-price").textContent = `$${price}`;
-      document.getElementById("product-quantity").textContent = `In Stock: ${totalQuantity}`;
+      document.getElementById(
+        "product-quantity"
+      ).textContent = `In Stock: ${quantity}`;
       document.getElementById("product-image").src = product.image_url;
       document.getElementById("product-image").alt = product.name;
 
-      const sizeOptionsHtml = productDetails
-        .filter(item => parseInt(item.stock, 10) > 0)
-        .map(item => `<option value="${item.size}">${item.size}</option>`)
-        .join("");
-
       const sizeSelectHtml = `
         <label for="sizeSelect">Select Size:</label>
-        <select id="sizeSelect">${sizeOptionsHtml}</select>
+        <select id="sizeSelect">${getSizeOptions(product.name)
+          .map((size) => `<option value="${size}">${size}</option>`)
+          .join("")}</select>
         <label for="quantityInput">Quantity:</label>
         <input type="number" id="quantityInput" min="1" value="1">
         <button id="addToCartButton">Add to Cart</button>
       `;
 
-      document.querySelector("#product-details").insertAdjacentHTML('beforeend', sizeSelectHtml);
+      document
+        .querySelector("#product-details")
+        .insertAdjacentHTML("beforeend", sizeSelectHtml);
 
-      document.getElementById("addToCartButton").addEventListener("click", async () => {
-        await addToCart(productId);
-      });
+      document
+        .getElementById("addToCartButton")
+        .addEventListener("click", async () => {
+          await addToCart(productId);
+        });
 
       displayProductSpecifications(product);
       displayProductReviews(productId);
@@ -125,7 +128,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Add product to cart
   async function addToCart(productId) {
     const size = document.getElementById("sizeSelect").value;
-    const quantity = parseInt(document.getElementById("quantityInput").value, 10);
+    const quantity = parseInt(
+      document.getElementById("quantityInput").value,
+      10
+    );
     try {
       const response = await fetch("http://localhost:3000/api/cart", {
         method: "POST",
@@ -138,19 +144,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (data.success) {
         await updateCartItemCount(); // Update cart item count after adding item
         alert("Item added to cart");
-        // Fetch the updated product details
-        const updatedProductDetails = await fetchProductDetails(productId);
-        if (updatedProductDetails) {
-          const updatedProduct = updatedProductDetails.find(item => item.size === size);
-          if (updatedProduct) {
-            document.getElementById("product-quantity").textContent = `In Stock: ${updatedProduct.stock}`;
-            const sizeSelectElement = document.getElementById("sizeSelect");
-            sizeSelectElement.innerHTML = updatedProductDetails
-              .filter(item => parseInt(item.stock, 10) > 0)
-              .map(item => `<option value="${item.size}">${item.size}</option>`)
-              .join("");
-          }
-        }
       } else {
         alert("Failed to add item to cart");
       }
