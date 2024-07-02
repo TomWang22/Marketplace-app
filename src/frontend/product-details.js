@@ -72,8 +72,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const productDetailsSection = document.querySelector("#product-details");
 
+      // Ensure product.price is a number before using toFixed
       const price =
-        typeof product.price === "number" ? product.price.toFixed(2) : "N/A";
+        !isNaN(parseFloat(product.price)) && isFinite(product.price)
+          ? parseFloat(product.price).toFixed(2)
+          : "N/A";
 
       productDetailsSection.innerHTML = `
         <img src="${product.image_url}" alt="${product.name}">
@@ -94,7 +97,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           await addToCart(product.id);
         });
 
-      displayProductSpecifications(product);
       displayProductReviews(productId);
       displayRelatedProducts(product);
     } catch (error) {
@@ -128,17 +130,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("Error adding item to cart:", error);
       alert("Error adding item to cart");
     }
-  }
-
-  // Display product specifications
-  function displayProductSpecifications(product) {
-    const specificationsList = document.getElementById("specifications-list");
-    specificationsList.innerHTML = `
-      <li><strong>Material:</strong> Cotton</li>
-      <li><strong>Color:</strong> ${product.name.split(" ")[1]}</li>
-      <li><strong>Size:</strong> S, M, L, XL</li>
-      <li><strong>Weight:</strong> 200g</li>
-    `;
   }
 
   // Highlight keywords in review text
@@ -218,7 +209,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="related-product">
             <img src="${relatedProduct.image_url}" alt="${relatedProduct.name}">
             <p>${relatedProduct.name}</p>
-            <p>$${parseFloat(relatedProduct.price).toFixed(2)}</p>
+            <p>$${
+              !isNaN(parseFloat(relatedProduct.price)) &&
+              isFinite(relatedProduct.price)
+                ? parseFloat(relatedProduct.price).toFixed(2)
+                : "N/A"
+            }</p>
           </div>
         `
         )
