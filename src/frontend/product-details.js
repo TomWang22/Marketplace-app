@@ -72,7 +72,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const productDetailsSection = document.querySelector("#product-details");
 
-      // Ensure product.price is a number before using toFixed
       const price =
         typeof product.price === "number" ? product.price.toFixed(2) : "N/A";
 
@@ -120,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
       const data = await response.json();
       if (data.success) {
-        await updateCartItemCount(); // Update cart item count after adding item
+        await updateCartItemCount();
         alert("Item added to cart");
       } else {
         alert("Failed to add item to cart");
@@ -137,6 +136,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     specificationsList.innerHTML = `
       <li><strong>Material:</strong> Cotton</li>
       <li><strong>Color:</strong> ${product.name.split(" ")[1]}</li>
+      <li><strong>Size:</strong> S, M, L, XL</li>
+      <li><strong>Weight:</strong> 200g</li>
     `;
   }
 
@@ -193,36 +194,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // Handle review form submission
-  async function handleReviewFormSubmit(event) {
-    event.preventDefault();
-
-    const username = document.getElementById("review-username").value;
-    const text = document.getElementById("review-text").value;
-    const rating = parseInt(document.getElementById("review-rating").value, 10);
-
-    try {
-      const response = await fetch("http://localhost:3000/api/reviews", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ productId, username, text, rating }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        displayProductReviews(productId);
-        alert("Review submitted successfully");
-        document.getElementById("review-form").reset();
-      } else {
-        alert("Failed to submit review");
-      }
-    } catch (error) {
-      console.error("Error submitting review:", error);
-      alert("Error submitting review");
-    }
-  }
-
   // Display related products
   async function displayRelatedProducts(product) {
     const relatedProductsList = document.getElementById(
@@ -232,22 +203,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       const response = await fetch(
         `http://localhost:3000/api/products?exclude=${product.id}`
       );
-      const products = await response.json();
+      const data = await response.json();
 
-      if (!Array.isArray(products)) {
+      if (!data.success || !Array.isArray(data.products)) {
         throw new Error("Expected an array of products");
       }
+
+      const products = data.products;
 
       relatedProductsList.innerHTML = products
         .slice(0, 3)
         .map(
           (relatedProduct) => `
-        <div class="related-product">
-          <img src="${relatedProduct.image_url}" alt="${relatedProduct.name}">
-          <p>${relatedProduct.name}</p>
-          <p>$${relatedProduct.price.toFixed(2)}</p>
-        </div>
-      `
+          <div class="related-product">
+            <img src="${relatedProduct.image_url}" alt="${relatedProduct.name}">
+            <p>${relatedProduct.name}</p>
+            <p>$${parseFloat(relatedProduct.price).toFixed(2)}</p>
+          </div>
+        `
         )
         .join("");
     } catch (error) {
@@ -456,9 +429,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   displayProductDetails();
-  updateCartItemCount(); // Initial cart item count update on page load
-
-  // Add event listener for review form submission
-  const reviewForm = document.getElementById("review-form");
-  reviewForm.addEventListener("submit", handleReviewFormSubmit);
+  updateCartItemCount();
 });
