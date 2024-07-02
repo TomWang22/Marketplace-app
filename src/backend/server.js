@@ -178,16 +178,10 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/register Register a new user
-   * @apiName RegisterUser
-   * @apiGroup User
-   *
-   * @apiParam {String} username The username of the new user.
-   * @apiParam {String} password The password of the new user.
-   * @apiParam {String} role The role of the new user ('shopper', 'merchant', 'supplier').
-   *
-   * @apiSuccess {Object} user The newly created user.
-   * @apiError {String} message Error message.
+   * Register a new user.
+   * @param {string} username - The username of the new user.
+   * @param {string} password - The password of the new user.
+   * @param {string} role - The role of the new user ('shopper', 'merchant', 'supplier').
    */
   app.post("/api/register", async (req, res) => {
     const { username, password, role } = req.body;
@@ -231,17 +225,9 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/login Login a user
-   * @apiName LoginUser
-   * @apiGroup User
-   *
-   * @apiParam {String} username The username of the user.
-   * @apiParam {String} password The password of the user.
-   *
-   * @apiSuccess {Number} userId The ID of the logged-in user.
-   * @apiSuccess {String} role The role of the logged-in user.
-   * @apiSuccess {String} token The JWT token for authentication.
-   * @apiError {String} message Error message.
+   * Login a user.
+   * @param {string} username - The username of the user.
+   * @param {string} password - The password of the user.
    */
   app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
@@ -269,15 +255,10 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {get} /api/cart Fetch cart items for a user
-   * @apiName GetCartItems
-   * @apiGroup Cart
-   *
-   * @apiParam {Number} userId The ID of the user.
-   *
-   * @apiSuccess {Array} items The items in the user's cart.
-   * @apiError {String} message Error message.
+   * Fetch cart items for a user.
+   * @param {number} userId - The ID of the user.
    */
+  // Assuming you have a route to get cart items
   app.get("/api/cart", async (req, res) => {
     const userId = req.query.userId;
 
@@ -293,20 +274,10 @@ if (cluster.isMaster) {
     }
   });
 
-  function notifyProductUpdate(productId, updatedQuantity) {
-    io.emit("productUpdate", { productId, updatedQuantity });
-  }
-
   /**
-   * @api {post} /api/place-order Place an order for a user
-   * @apiName PlaceOrder
-   * @apiGroup Order
-   *
-   * @apiParam {Number} userId The ID of the user.
-   * @apiParam {Array} cartItems The items in the user's cart.
-   *
-   * @apiSuccess {String} message Success message.
-   * @apiError {String} message Error message.
+   * Place an order for a user.
+   * @param {number} userId - The ID of the user.
+   * @param {array} cartItems - The items in the user's cart.
    */
   app.post("/api/place-order", async (req, res) => {
     const { userId, cartItems } = req.body;
@@ -370,11 +341,10 @@ if (cluster.isMaster) {
         );
 
         const productResult = await client.query(
-          "SELECT merchant_id, stock, name FROM products WHERE id = $1",
+          "SELECT merchant_id FROM products WHERE id = $1",
           [product_id]
         );
-        const product = productResult.rows[0];
-        const merchantId = product.merchant_id;
+        const merchantId = productResult.rows[0]?.merchant_id;
 
         if (!merchantId) {
           throw new Error(
@@ -387,17 +357,9 @@ if (cluster.isMaster) {
           [price * quantity, merchantId]
         );
 
-        // Reduce product stock and notify clients
-        const newStock = product.stock - quantity;
-        await client.query("UPDATE products SET stock = $1 WHERE id = $2", [
-          newStock,
-          product_id,
-        ]);
-        notifyProductUpdate(product_id, newStock); // Notify clients about stock update
-
         await client.query(
           "INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp) VALUES ($1, $2, $3, $4, $5, NOW())",
-          [userId, product.name, quantity, price, product_id]
+          [userId, item.product, quantity, price, product_id]
         );
       }
 
@@ -419,14 +381,8 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {get} /api/inventory Fetch inventory items for a user
-   * @apiName GetInventory
-   * @apiGroup Inventory
-   *
-   * @apiParam {Number} userId The ID of the user.
-   *
-   * @apiSuccess {Array} items The items in the user's inventory.
-   * @apiError {String} message Error message.
+   * Fetch inventory items for a user.
+   * @param {number} userId - The ID of the user.
    */
   app.get("/api/inventory", async (req, res) => {
     const userId = req.query.userId;
@@ -445,16 +401,10 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/return-merchandise Return merchandise for a user
-   * @apiName ReturnMerchandise
-   * @apiGroup Merchandise
-   *
-   * @apiParam {Number} userId The ID of the user.
-   * @apiParam {Number} productId The ID of the product to be returned.
-   * @apiParam {Number} quantity The quantity of the product to be returned.
-   *
-   * @apiSuccess {String} message Success message.
-   * @apiError {String} message Error message.
+   * Return merchandise for a user.
+   * @param {number} userId - The ID of the user.
+   * @param {number} productId - The ID of the product to be returned.
+   * @param {number} quantity - The quantity of the product to be returned.
    */
   app.post("/api/return-merchandise", async (req, res) => {
     const { userId, productId, quantity } = req.body;
@@ -506,16 +456,10 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/receive-supplies Receive supplies for a merchant
-   * @apiName ReceiveSupplies
-   * @apiGroup Supplies
-   *
-   * @apiParam {Number} merchantId The ID of the merchant.
-   * @apiParam {Number} productId The ID of the product.
-   * @apiParam {Number} quantity The quantity of the product.
-   *
-   * @apiSuccess {String} message Success message.
-   * @apiError {String} message Error message.
+   * Receive supplies for a merchant.
+   * @param {number} merchantId - The ID of the merchant.
+   * @param {number} productId - The ID of the product.
+   * @param {number} quantity - The quantity of the product.
    */
   app.post("/api/receive-supplies", async (req, res) => {
     const { merchantId, productId, quantity } = req.body;
@@ -575,16 +519,10 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/fulfill-order Fulfill an order
-   * @apiName FulfillOrder
-   * @apiGroup Order
-   *
-   * @apiParam {Number} orderId The ID of the order.
-   * @apiParam {Number} productId The ID of the product in the order.
-   * @apiParam {Number} quantity The quantity of the product to fulfill.
-   *
-   * @apiSuccess {String} message Success message.
-   * @apiError {String} message Error message.
+   * Fulfill an order.
+   * @param {number} orderId - The ID of the order.
+   * @param {number} productId - The ID of the product in the order.
+   * @param {number} quantity - The quantity of the product to fulfill.
    */
   app.post("/api/fulfill-order", async (req, res) => {
     const { orderId, productId, quantity } = req.body;
@@ -640,10 +578,10 @@ if (cluster.isMaster) {
         );
 
         // Reduce product stock
-        await client.query("UPDATE products SET stock = $1 WHERE id = $2", [
-          quantity,
-          productId,
-        ]);
+        await client.query(
+          "UPDATE products SET stock = stock - $1 WHERE id = $2",
+          [quantity, productId]
+        );
 
         // Mark the order as fulfilled in order_summary table
         await client.query(
@@ -680,12 +618,7 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {get} /api/unfulfilled-orders Fetch unfulfilled orders
-   * @apiName GetUnfulfilledOrders
-   * @apiGroup Order
-   *
-   * @apiSuccess {Array} orders The list of unfulfilled orders.
-   * @apiError {String} message Error message.
+   * Fetch unfulfilled orders.
    */
   app.get("/api/unfulfilled-orders", async (req, res) => {
     try {
@@ -702,12 +635,7 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {get} /api/products Fetch all products
-   * @apiName GetProducts
-   * @apiGroup Product
-   *
-   * @apiSuccess {Array} products The list of all products.
-   * @apiError {String} message Error message.
+   * Fetch all products.
    */
   app.get("/api/products", async (req, res) => {
     try {
@@ -720,16 +648,6 @@ if (cluster.isMaster) {
     }
   });
 
-  /**
-   * @api {get} /api/products/:id Fetch a product by ID
-   * @apiName GetProductById
-   * @apiGroup Product
-   *
-   * @apiParam {Number} id The ID of the product.
-   *
-   * @apiSuccess {Object} product The product details.
-   * @apiError {String} message Error message.
-   */
   app.get("/api/products/:id", async (req, res) => {
     const { id } = req.params;
     try {
@@ -750,16 +668,6 @@ if (cluster.isMaster) {
     }
   });
 
-  /**
-   * @api {get} /api/reviews Fetch product reviews
-   * @apiName GetProductReviews
-   * @apiGroup Review
-   *
-   * @apiParam {Number} productId The ID of the product.
-   *
-   * @apiSuccess {Array} reviews The list of reviews for the product.
-   * @apiError {String} message Error message.
-   */
   app.get("/api/reviews", async (req, res) => {
     const { productId } = req.query;
     try {
@@ -777,18 +685,12 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/products Add a new product
-   * @apiName AddProduct
-   * @apiGroup Product
-   *
-   * @apiParam {String} name The name of the product.
-   * @apiParam {String} description The description of the product.
-   * @apiParam {Number} price The price of the product.
-   * @apiParam {Number} stock The stock quantity of the product.
-   * @apiParam {String} image_url The image URL of the product.
-   *
-   * @apiSuccess {Object} product The newly created product.
-   * @apiError {String} message Error message.
+   * Add a new product.
+   * @param {string} name - The name of the product.
+   * @param {string} description - The description of the product.
+   * @param {number} price - The price of the product.
+   * @param {number} stock - The stock quantity of the product.
+   * @param {string} image_url - The image URL of the product.
    */
   app.post("/api/products", async (req, res) => {
     const { name, description, price, stock, image_url } = req.body;
@@ -806,12 +708,7 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {get} /api/purchased-items Fetch purchased items
-   * @apiName GetPurchasedItems
-   * @apiGroup Purchase
-   *
-   * @apiSuccess {Array} items The list of purchased items.
-   * @apiError {String} message Error message.
+   * Fetch purchased items.
    */
   app.get("/api/purchased-items", async (req, res) => {
     try {
@@ -825,16 +722,6 @@ if (cluster.isMaster) {
     }
   });
 
-  /**
-   * @api {get} /api/product/:id Fetch product details by ID
-   * @apiName GetProductDetailsById
-   * @apiGroup Product
-   *
-   * @apiParam {Number} id The ID of the product.
-   *
-   * @apiSuccess {Object} product The product details with total quantity.
-   * @apiError {String} message Error message.
-   */
   app.get("/api/product/:id", async (req, res) => {
     const productId = req.params.id;
 
@@ -877,14 +764,8 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {get} /api/account-info Fetch account information for a user
-   * @apiName GetAccountInfo
-   * @apiGroup Account
-   *
-   * @apiParam {Number} userId The ID of the user.
-   *
-   * @apiSuccess {Object} account The account information of the user.
-   * @apiError {String} message Error message.
+   * Fetch account information for a user.
+   * @param {number} userId - The ID of the user.
    */
   app.get("/api/account-info", async (req, res) => {
     const userId = req.query.userId;
@@ -908,14 +789,8 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {get} /api/purchase-history Fetch purchase history for a user
-   * @apiName GetPurchaseHistory
-   * @apiGroup Purchase
-   *
-   * @apiParam {Number} userId The ID of the user.
-   *
-   * @apiSuccess {Array} history The purchase history of the user.
-   * @apiError {String} message Error message.
+   * Fetch purchase history for a user.
+   * @param {number} userId - The ID of the user.
    */
   app.get("/api/purchase-history", async (req, res) => {
     const userId = req.query.userId;
@@ -933,18 +808,12 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/cart Add an item to the cart
-   * @apiName AddToCart
-   * @apiGroup Cart
-   *
-   * @apiParam {Number} userId The ID of the user.
-   * @apiParam {Number} productId The ID of the product.
-   * @apiParam {Number} quantity The quantity of the product.
-   * @apiParam {String} size The size of the product.
-   *
-   * @apiSuccess {Object} item The newly added cart item.
-   * @apiError {String} message Error message.
+   * Add an item to the cart.
+   * @param {number} userId - The ID of the user.
+   * @param {number} productId - The ID of the product.
+   * @param {number} quantity - The quantity of the product.
    */
+  // Assuming you have a route to add items to the cart
   app.post("/api/cart", async (req, res) => {
     const { userId, productId, quantity, size } = req.body;
 
@@ -992,15 +861,9 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {put} /api/cart/:id Update the quantity of an item in the cart
-   * @apiName UpdateCartItem
-   * @apiGroup Cart
-   *
-   * @apiParam {Number} id The ID of the cart item.
-   * @apiParam {Number} quantity The new quantity of the item.
-   *
-   * @apiSuccess {String} message Success message.
-   * @apiError {String} message Error message.
+   * Update the quantity of an item in the cart.
+   * @param {number} itemId - The ID of the cart item.
+   * @param {number} quantity - The new quantity of the item.
    */
   app.put("/api/cart/:id", async (req, res) => {
     const itemId = req.params.id;
@@ -1020,14 +883,8 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {delete} /api/cart/:id Remove an item from the cart
-   * @apiName RemoveFromCart
-   * @apiGroup Cart
-   *
-   * @apiParam {Number} id The ID of the cart item.
-   *
-   * @apiSuccess {String} message Success message.
-   * @apiError {String} message Error message.
+   * Remove an item from the cart.
+   * @param {number} itemId - The ID of the cart item.
    */
   app.delete("/api/cart/:id", async (req, res) => {
     const itemId = req.params.id;
@@ -1043,15 +900,9 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/add-funds Add funds to a user's account
-   * @apiName AddFunds
-   * @apiGroup Account
-   *
-   * @apiParam {Number} userId The ID of the user.
-   * @apiParam {Number} amount The amount to add.
-   *
-   * @apiSuccess {String} message Success message.
-   * @apiError {String} message Error message.
+   * Add funds to a user's account.
+   * @param {number} userId - The ID of the user.
+   * @param {number} amount - The amount to add.
    */
   app.post("/api/add-funds", async (req, res) => {
     const { userId, amount } = req.body;
@@ -1076,12 +927,7 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {get} /api/received-supplies Fetch received supplies
-   * @apiName GetReceivedSupplies
-   * @apiGroup Supplies
-   *
-   * @apiSuccess {Array} supplies The list of received supplies.
-   * @apiError {String} message Error message.
+   * Fetch received supplies.
    */
   app.get("/api/received-supplies", async (req, res) => {
     try {
@@ -1124,14 +970,8 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {get} /api/users/:userId Fetch user data, including shopping and search history
-   * @apiName GetUserData
-   * @apiGroup User
-   *
-   * @apiParam {Number} userId The ID of the user.
-   *
-   * @apiSuccess {Object} user The user data, including username, balance, shopping history, and search history.
-   * @apiError {String} message Error message.
+   * Fetch user data, including shopping and search history.
+   * @param {number} userId - The ID of the user.
    */
   app.get("/api/users/:userId", async (req, res) => {
     const userId = req.params.userId;
@@ -1173,15 +1013,9 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/search-history Add a search query to a user's search history
-   * @apiName AddSearchHistory
-   * @apiGroup Search
-   *
-   * @apiParam {Number} userId The ID of the user.
-   * @apiParam {String} searchQuery The search query.
-   *
-   * @apiSuccess {String} message Success message.
-   * @apiError {String} message Error message.
+   * Add a search query to a user's search history.
+   * @param {number} userId - The ID of the user.
+   * @param {string} searchQuery - The search query.
    */
   app.post("/api/search-history", async (req, res) => {
     const { userId, searchQuery } = req.body;
@@ -1199,16 +1033,10 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/request-supply Request supplies for a merchant
-   * @apiName RequestSupply
-   * @apiGroup Supplies
-   *
-   * @apiParam {Number} merchantId The ID of the merchant.
-   * @apiParam {Number} productId The ID of the product.
-   * @apiParam {Number} quantity The quantity of the product.
-   *
-   * @apiSuccess {Object} request The newly created supply request.
-   * @apiError {String} message Error message.
+   * Request supplies for a merchant.
+   * @param {number} merchantId - The ID of the merchant.
+   * @param {number} productId - The ID of the product.
+   * @param {number} quantity - The quantity of the product.
    */
   app.post("/api/request-supply", async (req, res) => {
     const { merchantId, productId, quantity } = req.body;
@@ -1227,12 +1055,7 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {get} /api/supply-requests Fetch pending supply requests
-   * @apiName GetPendingSupplyRequests
-   * @apiGroup Supplies
-   *
-   * @apiSuccess {Array} requests The list of pending supply requests.
-   * @apiError {String} message Error message.
+   * Fetch pending supply requests.
    */
   app.get("/api/supply-requests", async (req, res) => {
     const client = await pool.connect();
@@ -1252,15 +1075,163 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/add-supply-by-id Add supply stock by supply ID
-   * @apiName AddSupplyById
-   * @apiGroup Supplies
-   *
-   * @apiParam {Number} id The ID of the supply.
-   * @apiParam {Number} quantity The quantity to add to the supply.
-   *
-   * @apiSuccess {String} message Success message.
-   * @apiError {String} message Error message.
+   * Send supplies from a supplier to a merchant.
+   * @param {number} supplierId - The ID of the supplier.
+   * @param {number} merchantId - The ID of the merchant.
+   * @param {number} productId - The ID of the product.
+   * @param {number} quantity - The quantity of the product.
+   */
+  app.post("/api/send-supplies", async (req, res) => {
+    const { supplierId, merchantId, productId, quantity } = req.body;
+
+    console.log("Request payload:", req.body); // Log the request payload
+
+    if (!supplierId || !merchantId || !productId || !quantity) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields." });
+    }
+
+    try {
+      // Retrieve the supply details
+      const supplyResult = await pool.query(
+        "SELECT * FROM supplies WHERE id = $1",
+        [productId]
+      );
+      const supply = supplyResult.rows[0];
+
+      if (!supply) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Supply not found." });
+      }
+
+      // Check if enough stock is available
+      if (supply.stock < quantity) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Insufficient stock." });
+      }
+
+      // Calculate the total cost and profit
+      const totalCost = supply.cost * quantity;
+      const totalProfit = (supply.price - supply.cost) * quantity;
+
+      // Reduce the supplier's stock
+      await pool.query(
+        "UPDATE supplies SET stock = stock - $1, profit = profit + $2 WHERE id = $3",
+        [quantity, totalProfit, productId]
+      );
+
+      // Update the merchant's balance
+      await pool.query(
+        "UPDATE users SET balance = balance - $1 WHERE id = $2",
+        [totalCost, merchantId]
+      );
+
+      // Record the received supplies with necessary adjustments
+      const receivedSupplyResult = await pool.query(
+        "INSERT INTO received_supplies (name, description, price, stock, image_url, merchant_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+        [
+          supply.name,
+          supply.description,
+          supply.price,
+          quantity,
+          supply.image_url,
+          merchantId,
+        ]
+      );
+
+      // Update the supply request status to completed
+      await pool.query(
+        "UPDATE supply_requests SET status = $1 WHERE merchant_id = $2 AND product_id = $3 AND status = $4",
+        ["completed", merchantId, productId, "pending"]
+      );
+
+      // Emit the new supply event
+      const newSupply = receivedSupplyResult.rows[0];
+      io.emit("newSupply", newSupply);
+
+      res.json({
+        success: true,
+        message: `Sent ${quantity} units of product ID ${productId} to merchant ID ${merchantId}`,
+      });
+    } catch (error) {
+      console.error("Error sending supplies:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    }
+  });
+
+  server.listen(port, () => {
+    console.log(`Worker ${process.pid} is running on http://localhost:${port}`);
+  });
+
+  /**
+   * Fetch all supplies.
+   */
+  app.get("/api/supplies", async (req, res) => {
+    try {
+      const result = await pool.query(`
+            SELECT * FROM supplies;
+        `);
+      res.json({ success: true, supplies: result.rows });
+    } catch (error) {
+      console.error("Error fetching supplies:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+  });
+
+  /**
+   * Fetch past supply requests for a merchant.
+   */
+  app.get("/api/supply-requests", async (req, res) => {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(`
+            SELECT sr.id, sr.merchant_id, sr.product_id, sr.quantity, sr.request_date, sr.status, p.name
+            FROM supply_requests sr
+            JOIN products p ON sr.product_id = p.id
+            WHERE sr.status = 'pending'
+        `);
+
+      // Log the raw SQL result
+      console.log("Raw SQL Query Result:", result.rows);
+
+      const requests = result.rows.map((row) => ({
+        id: row.id,
+        merchant_id: row.merchant_id,
+        product_id: row.product_id,
+        quantity: row.quantity,
+        request_date: row.request_date,
+        status: row.status,
+        name: row.name || "Unknown", // Default to 'Unknown' if name is null or undefined
+      }));
+
+      // Log the constructed response
+      console.log("Constructed Response:", requests);
+
+      res.json({
+        success: true,
+        requests: requests,
+      });
+    } catch (error) {
+      console.error("Error fetching supply requests:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error." });
+    } finally {
+      client.release();
+    }
+  });
+
+  /**
+   * Add supply stock by supply ID.
+   * @param {number} id - The ID of the supply.
+   * @param {number} quantity - The quantity to add to the supply.
    */
   app.post("/api/add-supply-by-id", async (req, res) => {
     const { id, quantity } = req.body;
@@ -1304,17 +1275,11 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/fulfill-supply-request Fulfill a supply request
-   * @apiName FulfillSupplyRequest
-   * @apiGroup Supplies
-   *
-   * @apiParam {Number} supplierId The ID of the supplier.
-   * @apiParam {Number} merchantId The ID of the merchant.
-   * @apiParam {Number} productId The ID of the product.
-   * @apiParam {Number} quantity The quantity of the product.
-   *
-   * @apiSuccess {String} message Success message.
-   * @apiError {String} message Error message.
+   * Fulfill a supply request.
+   * @param {number} supplierId - The ID of the supplier.
+   * @param {number} merchantId - The ID of the merchant.
+   * @param {number} productId - The ID of the product.
+   * @param {number} quantity - The quantity of the product.
    */
   app.post("/api/fulfill-supply-request", async (req, res) => {
     const { supplierId, merchantId, productId, quantity } = req.body;
