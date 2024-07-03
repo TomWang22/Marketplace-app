@@ -87,8 +87,6 @@ if (cluster.isMaster) {
   app.use(express.static(path.join(__dirname, "../frontend")));
 
   io.on("connection", (socket) => {
-    console.log("A user connected");
-
     // Retrieve and send previous chats from the database
     pool.query(
       "SELECT * FROM chat ORDER BY timestamp ASC",
@@ -102,7 +100,7 @@ if (cluster.isMaster) {
     );
 
     socket.on("sendMessage", async (data) => {
-      const { message, userId, role } = data; // role can be 'shopper' or 'merchant'
+      const { message, userId, role } = data;
       const timestamp = new Date();
 
       try {
@@ -112,14 +110,12 @@ if (cluster.isMaster) {
         );
         const username = userResult.rows[0]?.username || "Unknown User";
 
-        // Insert the chat message into the database
         const result = await pool.query(
           "INSERT INTO chat (user_id, role, message, timestamp, username) VALUES ($1, $2, $3, $4, $5) RETURNING *",
           [userId, role, message, timestamp, username]
         );
         const chatMessage = result.rows[0];
 
-        // Broadcast the new message to all connected clients
         io.emit("receiveMessage", chatMessage);
       } catch (error) {
         console.error("Error inserting chat message into database:", error);
@@ -178,10 +174,19 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Register a new user.
-   * @param {string} username - The username of the new user.
-   * @param {string} password - The password of the new user.
-   * @param {string} role - The role of the new user ('shopper', 'merchant', 'supplier').
+   * @api {post} /api/register Register a new user
+   * @apiName RegisterUser
+   * @apiGroup User
+   *
+   * @apiParam {String} username The username of the new user.
+   * @apiParam {String} password The password of the new user.
+   * @apiParam {String} role The role of the new user ('shopper', 'merchant', 'supplier').
+   *
+   * @apiSuccess {Boolean} success Indicates if the registration was successful.
+   * @apiSuccess {Object} user The registered user object.
+   *
+   * @apiError {Boolean} success Indicates if the registration was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/register", async (req, res) => {
     const { username, password, role } = req.body;
@@ -199,12 +204,10 @@ if (cluster.isMaster) {
       );
       const newUser = result.rows[0];
 
-      // Add default products if the new user is a merchant
       if (role === "merchant") {
         await pool.query("SELECT add_default_products($1)", [newUser.id]);
       }
 
-      // Add default supplies if the new user is a supplier
       if (role === "supplier") {
         await pool.query("SELECT add_default_supplies($1)", [newUser.id]);
       }
@@ -225,9 +228,20 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Login a user.
-   * @param {string} username - The username of the user.
-   * @param {string} password - The password of the user.
+   * @api {post} /api/login Login a user
+   * @apiName LoginUser
+   * @apiGroup User
+   *
+   * @apiParam {String} username The username of the user.
+   * @apiParam {String} password The password of the user.
+   *
+   * @apiSuccess {Boolean} success Indicates if the login was successful.
+   * @apiSuccess {Number} userId The ID of the logged-in user.
+   * @apiSuccess {String} role The role of the logged-in user.
+   * @apiSuccess {String} token The JWT token for the user.
+   *
+   * @apiError {Boolean} success Indicates if the login was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
@@ -255,10 +269,18 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fetch cart items for a user.
-   * @param {number} userId - The ID of the user.
+   * @api {get} /api/cart Fetch cart items
+   * @apiName FetchCartItems
+   * @apiGroup Cart
+   *
+   * @apiParam {Number} userId The ID of the user.
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object[]} items The items in the user's cart.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
    */
-  // Assuming you have a route to get cart items
   app.get("/api/cart", async (req, res) => {
     const userId = req.query.userId;
 
@@ -275,9 +297,18 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Place an order for a user.
-   * @param {number} userId - The ID of the user.
-   * @param {array} cartItems - The items in the user's cart.
+   * @api {post} /api/place-order Place an order
+   * @apiName PlaceOrder
+   * @apiGroup Order
+   *
+   * @apiParam {Number} userId The ID of the user.
+   * @apiParam {Object[]} cartItems The items in the user's cart.
+   *
+   * @apiSuccess {Boolean} success Indicates if the order was placed successfully.
+   * @apiSuccess {String} message The success message.
+   *
+   * @apiError {Boolean} success Indicates if the order was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/place-order", async (req, res) => {
     const { userId, cartItems } = req.body;
@@ -381,8 +412,17 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fetch inventory items for a user.
-   * @param {number} userId - The ID of the user.
+   * @api {get} /api/inventory Fetch inventory items
+   * @apiName FetchInventoryItems
+   * @apiGroup Inventory
+   *
+   * @apiParam {Number} userId The ID of the user.
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object[]} items The items in the user's inventory.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.get("/api/inventory", async (req, res) => {
     const userId = req.query.userId;
@@ -401,10 +441,19 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Return merchandise for a user.
-   * @param {number} userId - The ID of the user.
-   * @param {number} productId - The ID of the product to be returned.
-   * @param {number} quantity - The quantity of the product to be returned.
+   * @api {post} /api/return-merchandise Return merchandise
+   * @apiName ReturnMerchandise
+   * @apiGroup Merchandise
+   *
+   * @apiParam {Number} userId The ID of the user.
+   * @apiParam {Number} productId The ID of the product to be returned.
+   * @apiParam {Number} quantity The quantity of the product to be returned.
+   *
+   * @apiSuccess {Boolean} success Indicates if the return was successful.
+   * @apiSuccess {String} message The success message.
+   *
+   * @apiError {Boolean} success Indicates if the return was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/return-merchandise", async (req, res) => {
     const { userId, productId, quantity } = req.body;
@@ -449,6 +498,7 @@ if (cluster.isMaster) {
         message: "Merchandise returned and refunded successfully.",
       });
     } catch (error) {
+      console.error("Error returning merchandise:", error);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
@@ -456,10 +506,19 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Receive supplies for a merchant.
-   * @param {number} merchantId - The ID of the merchant.
-   * @param {number} productId - The ID of the product.
-   * @param {number} quantity - The quantity of the product.
+   * @api {post} /api/receive-supplies Receive supplies for a merchant
+   * @apiName ReceiveSupplies
+   * @apiGroup Supplies
+   *
+   * @apiParam {Number} merchantId The ID of the merchant.
+   * @apiParam {Number} productId The ID of the product.
+   * @apiParam {Number} quantity The quantity of the product.
+   *
+   * @apiSuccess {Boolean} success Indicates if the supplies were received successfully.
+   * @apiSuccess {String} message The success message.
+   *
+   * @apiError {Boolean} success Indicates if the request was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/receive-supplies", async (req, res) => {
     const { merchantId, productId, quantity } = req.body;
@@ -519,15 +578,22 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fulfill an order.
-   * @param {number} orderId - The ID of the order.
-   * @param {number} productId - The ID of the product in the order.
-   * @param {number} quantity - The quantity of the product to fulfill.
+   * @api {post} /api/fulfill-order Fulfill an order
+   * @apiName FulfillOrder
+   * @apiGroup Order
+   *
+   * @apiParam {Number} orderId The ID of the order.
+   * @apiParam {Number} productId The ID of the product in the order.
+   * @apiParam {Number} quantity The quantity of the product to fulfill.
+   *
+   * @apiSuccess {Boolean} success Indicates if the order was fulfilled successfully.
+   * @apiSuccess {String} message The success message.
+   *
+   * @apiError {Boolean} success Indicates if the order fulfillment was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/fulfill-order", async (req, res) => {
     const { orderId, productId, quantity } = req.body;
-
-    console.log("Request payload:", req.body); // Log the request payload
 
     if (!orderId || !productId || !quantity) {
       return res
@@ -540,7 +606,6 @@ if (cluster.isMaster) {
       try {
         await client.query("BEGIN");
 
-        // Fetch userId and status from order_summary table
         const orderResult = await client.query(
           "SELECT user_id, status FROM order_summary WHERE order_id = $1 AND product_id = $2",
           [orderId, productId]
@@ -554,7 +619,6 @@ if (cluster.isMaster) {
         }
         const userId = order.user_id;
 
-        // Get product price and stock
         const productResult = await client.query(
           "SELECT price, stock FROM products WHERE id = $1",
           [productId]
@@ -571,35 +635,28 @@ if (cluster.isMaster) {
 
         const totalCost = product.price * quantity;
 
-        // Update merchant's balance
         await client.query(
           "UPDATE users SET balance = balance + $1 WHERE id = $2",
           [totalCost, userId]
         );
 
-        // Reduce product stock
         await client.query(
           "UPDATE products SET stock = stock - $1 WHERE id = $2",
           [quantity, productId]
         );
 
-        // Mark the order as fulfilled in order_summary table
         await client.query(
           "UPDATE order_summary SET status = 'fulfilled' WHERE order_id = $1 AND product_id = $2",
           [orderId, productId]
         );
 
-        // Insert the fulfilled order into the inventory table
         await client.query(
           "INSERT INTO inventory (user_id, product, quantity, price, product_id, timestamp) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)",
           [userId, product.name, quantity, product.price, productId]
         );
 
         await client.query("COMMIT");
-        res.json({
-          success: true,
-          message: "Order fulfilled successfully.",
-        });
+        res.json({ success: true, message: "Order fulfilled successfully." });
       } catch (e) {
         await client.query("ROLLBACK");
         console.error("Error fulfilling order:", e);
@@ -618,7 +675,15 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fetch unfulfilled orders.
+   * @api {get} /api/unfulfilled-orders Fetch unfulfilled orders
+   * @apiName FetchUnfulfilledOrders
+   * @apiGroup Order
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object[]} orders The unfulfilled orders.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.get("/api/unfulfilled-orders", async (req, res) => {
     try {
@@ -635,19 +700,41 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fetch all products.
+   * @api {get} /api/products Fetch all products
+   * @apiName FetchProducts
+   * @apiGroup Product
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object[]} products The products.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.get("/api/products", async (req, res) => {
     try {
       const result = await pool.query("SELECT * FROM products;");
       res.json({ success: true, products: result.rows });
     } catch (error) {
+      console.error("Error fetching products:", error);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
     }
   });
 
+  /**
+   * @api {get} /api/products/:id Fetch product by ID
+   * @apiName FetchProductById
+   * @apiGroup Product
+   *
+   * @apiParam {Number} id The ID of the product.
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object} product The product.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
+   */
   app.get("/api/products/:id", async (req, res) => {
     const { id } = req.params;
     try {
@@ -659,7 +746,7 @@ if (cluster.isMaster) {
           .status(404)
           .json({ success: false, message: "Product not found" });
       }
-      res.json(result.rows[0]);
+      res.json({ success: true, product: result.rows[0] });
     } catch (error) {
       console.error("Error fetching product:", error);
       res
@@ -668,16 +755,39 @@ if (cluster.isMaster) {
     }
   });
 
-  app.get("/api/reviews", async (req, res) => {
-    const { productId } = req.query;
+  /**
+   * @api {post} /api/reviews Add a review
+   * @apiName AddReview
+   * @apiGroup Review
+   *
+   * @apiParam {Number} product_id The ID of the product.
+   * @apiParam {String} username The username of the reviewer.
+   * @apiParam {String} text The review text.
+   * @apiParam {Number} rating The rating given by the reviewer.
+   *
+   * @apiSuccess {Boolean} success Indicates if the review was added successfully.
+   * @apiSuccess {Object} review The added review.
+   *
+   * @apiError {Boolean} success Indicates if the review addition was unsuccessful.
+   * @apiError {String} message The error message.
+   */
+  app.post("/api/reviews", async (req, res) => {
+    const { product_id, username, text, rating } = req.body;
+
+    if (!product_id || !username || !text || !rating) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required fields" });
+    }
+
     try {
       const result = await pool.query(
-        "SELECT * FROM reviews WHERE product_id = $1",
-        [productId]
+        "INSERT INTO reviews (product_id, username, text, rating, date) VALUES ($1, $2, $3, $4, NOW()) RETURNING *",
+        [product_id, username, text, rating]
       );
-      res.json(result.rows);
+      res.status(201).json({ success: true, review: result.rows[0] });
     } catch (error) {
-      console.error("Error fetching reviews:", error);
+      console.error("Error inserting review:", error);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
@@ -685,12 +795,21 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Add a new product.
-   * @param {string} name - The name of the product.
-   * @param {string} description - The description of the product.
-   * @param {number} price - The price of the product.
-   * @param {number} stock - The stock quantity of the product.
-   * @param {string} image_url - The image URL of the product.
+   * @api {post} /api/products Add a new product
+   * @apiName AddProduct
+   * @apiGroup Product
+   *
+   * @apiParam {String} name The name of the product.
+   * @apiParam {String} description The description of the product.
+   * @apiParam {Number} price The price of the product.
+   * @apiParam {Number} stock The stock quantity of the product.
+   * @apiParam {String} image_url The image URL of the product.
+   *
+   * @apiSuccess {Boolean} success Indicates if the product was added successfully.
+   * @apiSuccess {Object} product The added product.
+   *
+   * @apiError {Boolean} success Indicates if the product addition was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/products", async (req, res) => {
     const { name, description, price, stock, image_url } = req.body;
@@ -701,6 +820,7 @@ if (cluster.isMaster) {
       );
       res.json({ success: true, product: result.rows[0] });
     } catch (error) {
+      console.error("Error adding product:", error);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
@@ -708,7 +828,15 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fetch purchased items.
+   * @api {get} /api/purchased-items Fetch purchased items
+   * @apiName FetchPurchasedItems
+   * @apiGroup Purchase
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object[]} items The purchased items.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.get("/api/purchased-items", async (req, res) => {
     try {
@@ -722,50 +850,18 @@ if (cluster.isMaster) {
     }
   });
 
-  app.get("/api/product/:id", async (req, res) => {
-    const productId = req.params.id;
-
-    try {
-      // Fetch the product details with the total quantity
-      const result = await pool.query(
-        `SELECT 
-         name, 
-         description, 
-         price, 
-         image_url, 
-         SUM(stock) AS total_quantity 
-       FROM 
-         products 
-       WHERE 
-         name = (
-           SELECT name FROM products WHERE id = $1
-         ) 
-       GROUP BY 
-         name, 
-         description, 
-         price, 
-         image_url`,
-        [productId]
-      );
-
-      if (result.rows.length === 0) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Product not found" });
-      }
-
-      res.json({ success: true, product: result.rows[0] });
-    } catch (error) {
-      console.error("Error fetching product details:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-  });
-
   /**
-   * Fetch account information for a user.
-   * @param {number} userId - The ID of the user.
+   * @api {get} /api/account-info Fetch account information
+   * @apiName FetchAccountInfo
+   * @apiGroup User
+   *
+   * @apiParam {Number} userId The ID of the user.
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object} account The account information.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.get("/api/account-info", async (req, res) => {
     const userId = req.query.userId;
@@ -789,8 +885,17 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fetch purchase history for a user.
-   * @param {number} userId - The ID of the user.
+   * @api {get} /api/purchase-history Fetch purchase history
+   * @apiName FetchPurchaseHistory
+   * @apiGroup Purchase
+   *
+   * @apiParam {Number} userId The ID of the user.
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object[]} history The purchase history.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.get("/api/purchase-history", async (req, res) => {
     const userId = req.query.userId;
@@ -801,6 +906,7 @@ if (cluster.isMaster) {
       );
       res.json({ success: true, history: result.rows });
     } catch (error) {
+      console.error("Error fetching purchase history:", error);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
@@ -808,20 +914,25 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Add an item to the cart.
-   * @param {number} userId - The ID of the user.
-   * @param {number} productId - The ID of the product.
-   * @param {number} quantity - The quantity of the product.
+   * @api {post} /api/cart Add an item to the cart
+   * @apiName AddToCart
+   * @apiGroup Cart
+   *
+   * @apiParam {Number} userId The ID of the user.
+   * @apiParam {Number} productId The ID of the product.
+   * @apiParam {Number} quantity The quantity of the product.
+   * @apiParam {String} size The size of the product.
+   *
+   * @apiSuccess {Boolean} success Indicates if the item was added successfully.
+   * @apiSuccess {Object} item The added item.
+   *
+   * @apiError {Boolean} success Indicates if the addition was unsuccessful.
+   * @apiError {String} message The error message.
    */
-  // Assuming you have a route to add items to the cart
   app.post("/api/cart", async (req, res) => {
     const { userId, productId, quantity, size } = req.body;
 
-    // Log the received request body
-    console.log("Received request body:", req.body);
-
     if (!userId || !productId || !quantity || !size) {
-      console.error("Missing fields in request body:", req.body);
       return res
         .status(400)
         .json({ success: false, message: "Missing fields" });
@@ -861,9 +972,17 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Update the quantity of an item in the cart.
-   * @param {number} itemId - The ID of the cart item.
-   * @param {number} quantity - The new quantity of the item.
+   * @api {put} /api/cart/:id Update the quantity of an item in the cart
+   * @apiName UpdateCartItem
+   * @apiGroup Cart
+   *
+   * @apiParam {Number} id The ID of the cart item.
+   * @apiParam {Number} quantity The new quantity of the item.
+   *
+   * @apiSuccess {Boolean} success Indicates if the update was successful.
+   *
+   * @apiError {Boolean} success Indicates if the update was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.put("/api/cart/:id", async (req, res) => {
     const itemId = req.params.id;
@@ -876,6 +995,7 @@ if (cluster.isMaster) {
       ]);
       res.json({ success: true });
     } catch (error) {
+      console.error("Error updating cart item:", error);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
@@ -883,8 +1003,16 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Remove an item from the cart.
-   * @param {number} itemId - The ID of the cart item.
+   * @api {delete} /api/cart/:id Remove an item from the cart
+   * @apiName RemoveCartItem
+   * @apiGroup Cart
+   *
+   * @apiParam {Number} id The ID of the cart item.
+   *
+   * @apiSuccess {Boolean} success Indicates if the removal was successful.
+   *
+   * @apiError {Boolean} success Indicates if the removal was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.delete("/api/cart/:id", async (req, res) => {
     const itemId = req.params.id;
@@ -893,6 +1021,7 @@ if (cluster.isMaster) {
       await pool.query("DELETE FROM shopping_cart WHERE id = $1", [itemId]);
       res.json({ success: true });
     } catch (error) {
+      console.error("Error removing cart item:", error);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
@@ -900,9 +1029,18 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Add funds to a user's account.
-   * @param {number} userId - The ID of the user.
-   * @param {number} amount - The amount to add.
+   * @api {post} /api/add-funds Add funds to a user's account
+   * @apiName AddFunds
+   * @apiGroup User
+   *
+   * @apiParam {Number} userId The ID of the user.
+   * @apiParam {Number} amount The amount to add.
+   *
+   * @apiSuccess {Boolean} success Indicates if the addition was successful.
+   * @apiSuccess {String} message The success message.
+   *
+   * @apiError {Boolean} success Indicates if the addition was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/add-funds", async (req, res) => {
     const { userId, amount } = req.body;
@@ -920,6 +1058,7 @@ if (cluster.isMaster) {
       );
       res.json({ success: true, message: "Funds added successfully" });
     } catch (error) {
+      console.error("Error adding funds:", error);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
@@ -927,13 +1066,22 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fetch received supplies.
+   * @api {get} /api/received-supplies Fetch received supplies
+   * @apiName FetchReceivedSupplies
+   * @apiGroup Supplies
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object[]} supplies The received supplies.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.get("/api/received-supplies", async (req, res) => {
     try {
       const result = await pool.query("SELECT * FROM received_supplies");
       res.json({ success: true, supplies: result.rows });
     } catch (error) {
+      console.error("Error fetching received supplies:", error);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
@@ -970,8 +1118,17 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fetch user data, including shopping and search history.
-   * @param {number} userId - The ID of the user.
+   * @api {get} /api/users/:userId Fetch user data
+   * @apiName FetchUserData
+   * @apiGroup User
+   *
+   * @apiParam {Number} userId The ID of the user.
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object} user The user data.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.get("/api/users/:userId", async (req, res) => {
     const userId = req.params.userId;
@@ -1006,6 +1163,7 @@ if (cluster.isMaster) {
 
       res.json({ success: true, user: userData });
     } catch (error) {
+      console.error("Error fetching user data:", error);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
@@ -1013,9 +1171,17 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Add a search query to a user's search history.
-   * @param {number} userId - The ID of the user.
-   * @param {string} searchQuery - The search query.
+   * @api {post} /api/search-history Add a search query to user's search history
+   * @apiName AddSearchQuery
+   * @apiGroup User
+   *
+   * @apiParam {Number} userId The ID of the user.
+   * @apiParam {String} searchQuery The search query.
+   *
+   * @apiSuccess {Boolean} success Indicates if the addition was successful.
+   *
+   * @apiError {Boolean} success Indicates if the addition was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/search-history", async (req, res) => {
     const { userId, searchQuery } = req.body;
@@ -1026,6 +1192,7 @@ if (cluster.isMaster) {
       );
       res.json({ success: true });
     } catch (error) {
+      console.error("Error adding search query to history:", error);
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
@@ -1033,10 +1200,19 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Request supplies for a merchant.
-   * @param {number} merchantId - The ID of the merchant.
-   * @param {number} productId - The ID of the product.
-   * @param {number} quantity - The quantity of the product.
+   * @api {post} /api/request-supply Request supplies for a merchant
+   * @apiName RequestSupply
+   * @apiGroup Supplies
+   *
+   * @apiParam {Number} merchantId The ID of the merchant.
+   * @apiParam {Number} productId The ID of the product.
+   * @apiParam {Number} quantity The quantity of the product.
+   *
+   * @apiSuccess {Boolean} success Indicates if the request was successful.
+   * @apiSuccess {Object} request The supply request.
+   *
+   * @apiError {Boolean} success Indicates if the request was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/request-supply", async (req, res) => {
     const { merchantId, productId, quantity } = req.body;
@@ -1055,12 +1231,19 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fetch pending supply requests.
+   * @api {get} /api/supply-requests Fetch pending supply requests
+   * @apiName FetchSupplyRequests
+   * @apiGroup Supplies
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object[]} requests The pending supply requests.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.get("/api/supply-requests", async (req, res) => {
-    const client = await pool.connect();
     try {
-      const result = await client.query(
+      const result = await pool.query(
         "SELECT * FROM supply_requests WHERE status = 'pending'"
       );
       res.json({ success: true, requests: result.rows });
@@ -1068,23 +1251,28 @@ if (cluster.isMaster) {
       console.error("Error fetching supply requests:", error);
       res
         .status(500)
-        .json({ success: false, message: "Internal server error." });
-    } finally {
-      client.release();
+        .json({ success: false, message: "Internal server error" });
     }
   });
 
   /**
-   * Send supplies from a supplier to a merchant.
-   * @param {number} supplierId - The ID of the supplier.
-   * @param {number} merchantId - The ID of the merchant.
-   * @param {number} productId - The ID of the product.
-   * @param {number} quantity - The quantity of the product.
+   * @api {post} /api/send-supplies Send supplies from a supplier to a merchant
+   * @apiName SendSupplies
+   * @apiGroup Supplies
+   *
+   * @apiParam {Number} supplierId The ID of the supplier.
+   * @apiParam {Number} merchantId The ID of the merchant.
+   * @apiParam {Number} productId The ID of the product.
+   * @apiParam {Number} quantity The quantity of the product.
+   *
+   * @apiSuccess {Boolean} success Indicates if the send was successful.
+   * @apiSuccess {String} message The success message.
+   *
+   * @apiError {Boolean} success Indicates if the send was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/send-supplies", async (req, res) => {
     const { supplierId, merchantId, productId, quantity } = req.body;
-
-    console.log("Request payload:", req.body); // Log the request payload
 
     if (!supplierId || !merchantId || !productId || !quantity) {
       return res
@@ -1093,7 +1281,6 @@ if (cluster.isMaster) {
     }
 
     try {
-      // Retrieve the supply details
       const supplyResult = await pool.query(
         "SELECT * FROM supplies WHERE id = $1",
         [productId]
@@ -1106,30 +1293,25 @@ if (cluster.isMaster) {
           .json({ success: false, message: "Supply not found." });
       }
 
-      // Check if enough stock is available
       if (supply.stock < quantity) {
         return res
           .status(400)
           .json({ success: false, message: "Insufficient stock." });
       }
 
-      // Calculate the total cost and profit
       const totalCost = supply.cost * quantity;
       const totalProfit = (supply.price - supply.cost) * quantity;
 
-      // Reduce the supplier's stock
       await pool.query(
         "UPDATE supplies SET stock = stock - $1, profit = profit + $2 WHERE id = $3",
         [quantity, totalProfit, productId]
       );
 
-      // Update the merchant's balance
       await pool.query(
         "UPDATE users SET balance = balance - $1 WHERE id = $2",
         [totalCost, merchantId]
       );
 
-      // Record the received supplies with necessary adjustments
       const receivedSupplyResult = await pool.query(
         "INSERT INTO received_supplies (name, description, price, stock, image_url, merchant_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
         [
@@ -1142,13 +1324,11 @@ if (cluster.isMaster) {
         ]
       );
 
-      // Update the supply request status to completed
       await pool.query(
         "UPDATE supply_requests SET status = $1 WHERE merchant_id = $2 AND product_id = $3 AND status = $4",
         ["completed", merchantId, productId, "pending"]
       );
 
-      // Emit the new supply event
       const newSupply = receivedSupplyResult.rows[0];
       io.emit("newSupply", newSupply);
 
@@ -1164,18 +1344,20 @@ if (cluster.isMaster) {
     }
   });
 
-  server.listen(port, () => {
-    console.log(`Worker ${process.pid} is running on http://localhost:${port}`);
-  });
-
   /**
-   * Fetch all supplies.
+   * @api {get} /api/supplies Fetch all supplies
+   * @apiName FetchSupplies
+   * @apiGroup Supplies
+   *
+   * @apiSuccess {Boolean} success Indicates if the fetch was successful.
+   * @apiSuccess {Object[]} supplies The supplies.
+   *
+   * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.get("/api/supplies", async (req, res) => {
     try {
-      const result = await pool.query(`
-            SELECT * FROM supplies;
-        `);
+      const result = await pool.query("SELECT * FROM supplies;");
       res.json({ success: true, supplies: result.rows });
     } catch (error) {
       console.error("Error fetching supplies:", error);
@@ -1186,52 +1368,18 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fetch past supply requests for a merchant.
-   */
-  app.get("/api/supply-requests", async (req, res) => {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(`
-            SELECT sr.id, sr.merchant_id, sr.product_id, sr.quantity, sr.request_date, sr.status, p.name
-            FROM supply_requests sr
-            JOIN products p ON sr.product_id = p.id
-            WHERE sr.status = 'pending'
-        `);
-
-      // Log the raw SQL result
-      console.log("Raw SQL Query Result:", result.rows);
-
-      const requests = result.rows.map((row) => ({
-        id: row.id,
-        merchant_id: row.merchant_id,
-        product_id: row.product_id,
-        quantity: row.quantity,
-        request_date: row.request_date,
-        status: row.status,
-        name: row.name || "Unknown", // Default to 'Unknown' if name is null or undefined
-      }));
-
-      // Log the constructed response
-      console.log("Constructed Response:", requests);
-
-      res.json({
-        success: true,
-        requests: requests,
-      });
-    } catch (error) {
-      console.error("Error fetching supply requests:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error." });
-    } finally {
-      client.release();
-    }
-  });
-
-  /**
-   * Add supply stock by supply ID.
-   * @param {number} id - The ID of the supply.
-   * @param {number} quantity - The quantity to add to the supply.
+   * @api {post} /api/add-supply-by-id Add supply stock by supply ID
+   * @apiName AddSupplyById
+   * @apiGroup Supplies
+   *
+   * @apiParam {Number} id The ID of the supply.
+   * @apiParam {Number} quantity The quantity to add to the supply.
+   *
+   * @apiSuccess {Boolean} success Indicates if the addition was successful.
+   * @apiSuccess {String} message The success message.
+   *
+   * @apiError {Boolean} success Indicates if the addition was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/add-supply-by-id", async (req, res) => {
     const { id, quantity } = req.body;
@@ -1243,7 +1391,6 @@ if (cluster.isMaster) {
     }
 
     try {
-      // Retrieve the supply details
       const supplyResult = await pool.query(
         "SELECT * FROM supplies WHERE id = $1",
         [id]
@@ -1256,7 +1403,6 @@ if (cluster.isMaster) {
           .json({ success: false, message: "Supply not found." });
       }
 
-      // Update the supply stock
       await pool.query("UPDATE supplies SET stock = stock + $1 WHERE id = $2", [
         quantity,
         id,
@@ -1275,11 +1421,20 @@ if (cluster.isMaster) {
   });
 
   /**
-   * Fulfill a supply request.
-   * @param {number} supplierId - The ID of the supplier.
-   * @param {number} merchantId - The ID of the merchant.
-   * @param {number} productId - The ID of the product.
-   * @param {number} quantity - The quantity of the product.
+   * @api {post} /api/fulfill-supply-request Fulfill a supply request
+   * @apiName FulfillSupplyRequest
+   * @apiGroup Supplies
+   *
+   * @apiParam {Number} supplierId The ID of the supplier.
+   * @apiParam {Number} merchantId The ID of the merchant.
+   * @apiParam {Number} productId The ID of the product.
+   * @apiParam {Number} quantity The quantity of the product.
+   *
+   * @apiSuccess {Boolean} success Indicates if the request was fulfilled successfully.
+   * @apiSuccess {String} message The success message.
+   *
+   * @apiError {Boolean} success Indicates if the request fulfillment was unsuccessful.
+   * @apiError {String} message The error message.
    */
   app.post("/api/fulfill-supply-request", async (req, res) => {
     const { supplierId, merchantId, productId, quantity } = req.body;
@@ -1295,7 +1450,6 @@ if (cluster.isMaster) {
     try {
       await client.query("BEGIN");
 
-      // Retrieve the supply details
       const supplyResult = await client.query(
         "SELECT * FROM supplies WHERE id = $1",
         [productId]
@@ -1310,16 +1464,13 @@ if (cluster.isMaster) {
         throw new Error("Insufficient stock.");
       }
 
-      // Calculate the total cost
       const totalCost = supply.cost * quantity;
 
-      // Reduce the supplier's stock
       await client.query(
         "UPDATE supplies SET stock = stock - $1 WHERE id = $2",
         [quantity, productId]
       );
 
-      // Update the merchant's stock
       const receivedSupplyResult = await client.query(
         "SELECT * FROM received_supplies WHERE name = $1 AND merchant_id = $2",
         [supply.name, merchantId]
@@ -1344,7 +1495,6 @@ if (cluster.isMaster) {
         );
       }
 
-      // Update the supply request status to completed
       await client.query(
         "UPDATE supply_requests SET status = 'completed' WHERE merchant_id = $1 AND product_id = $2 AND status = 'pending'",
         [merchantId, productId]
@@ -1376,4 +1526,8 @@ if (cluster.isMaster) {
     const secretKey = "your_secret_key";
     return jwt.sign({ userId }, secretKey, { expiresIn: "1h" });
   }
+
+  server.listen(port, () => {
+    console.log(`Worker ${process.pid} is running on http://localhost:${port}`);
+  });
 }
