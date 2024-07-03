@@ -210,7 +210,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await response.json();
       if (data.success) {
-        alert("Funds added successfully.");
+        alert(`Funds added successfully. Amount: $${amount.toFixed(2)}`);
+        fundsAmountInput.value = ""; // Clear the input field
       } else {
         alert("Failed to add funds: " + data.message);
       }
