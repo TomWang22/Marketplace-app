@@ -1,13 +1,8 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const params = new URLSearchParams(window.location.search);
-  const productId = parseInt(params.get("id"), 10);
-  if (!productId) {
-    alert("Invalid product ID. Please check the URL and try again.");
-    return;
-  }
-
+  const productId = params.get("id");
   const cartItemCount = document.getElementById("cartItemCount");
-  const userId = parseInt(localStorage.getItem("userId"), 10) || 5;
+  const userId = localStorage.getItem("userId");
   const logoutButton = document.getElementById("logoutButton");
 
   logoutButton.addEventListener("click", () => {
@@ -17,22 +12,33 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = "login.html";
   });
 
+  // Fetch product details from server
   async function fetchProductDetails(productId) {
     try {
-      const response = await fetch(`http://localhost:3000/api/products/${productId}`);
+      const response = await fetch(
+        `http://localhost:3000/api/products/${productId}`
+      );
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Error fetching product details');
-      return data;
+      if (data.success) {
+        return data.product;
+      } else {
+        throw new Error(data.message || "Failed to fetch product details");
+      }
     } catch (error) {
       console.error("Error fetching product details:", error);
       return null;
     }
   }
 
+  // Fetch product reviews from server
   async function fetchProductReviews(productId) {
     try {
-      const response = await fetch(`http://localhost:3000/api/reviews?productId=${productId}`);
-      if (!response.ok) throw new Error('Network response was not ok');
+      const response = await fetch(
+        `http://localhost:3000/api/reviews?productId=${productId}`
+      );
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
       const reviews = await response.json();
       return reviews;
     } catch (error) {
@@ -41,9 +47,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Fetch cart items from server
   async function fetchCartItems() {
     try {
-      const response = await fetch(`http://localhost:3000/api/cart?userId=${userId}`);
+      const response = await fetch(
+        `http://localhost:3000/api/cart?userId=${userId}`
+      );
       const data = await response.json();
       return data.items;
     } catch (error) {
@@ -52,12 +61,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Update cart item count
   async function updateCartItemCount() {
     const cartItems = await fetchCartItems();
-    const itemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+    const itemCount = cartItems.reduce(
+      (total, item) => total + item.quantity,
+      0
+    );
     cartItemCount.textContent = itemCount;
   }
 
+  // Display product details on the page
   async function displayProductDetails() {
     try {
       const product = await fetchProductDetails(productId);
@@ -65,9 +79,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const productDetailsSection = document.querySelector("#product-details");
 
-      const price = !isNaN(parseFloat(product.price)) && isFinite(product.price)
-        ? parseFloat(product.price).toFixed(2)
-        : "N/A";
+      // Ensure product.price is a number before using toFixed
+      const price =
+        !isNaN(parseFloat(product.price)) && isFinite(product.price)
+          ? parseFloat(product.price).toFixed(2)
+          : "N/A";
 
       productDetailsSection.innerHTML = `
         <img src="${product.image_url}" alt="${product.name}">
@@ -82,20 +98,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         <input type="number" id="quantityInput" min="1" value="1">
         <button id="addToCartButton">Add to Cart</button>
       `;
-      document.getElementById("addToCartButton").addEventListener("click", async () => {
-        await addToCart(product.id);
-      });
+      document
+        .getElementById("addToCartButton")
+        .addEventListener("click", async () => {
+          await addToCart(product.id);
+        });
 
-      await displayProductReviews(productId);
-      await displayRelatedProducts(product);
+      displayProductReviews(productId);
+      displayRelatedProducts(product);
     } catch (error) {
       console.error("Error displaying product details:", error);
     }
   }
 
+  // Add product to cart
   async function addToCart(productId) {
     const size = document.getElementById("sizeSelect").value;
-    const quantity = parseInt(document.getElementById("quantityInput").value, 10);
+    const quantity = parseInt(
+      document.getElementById("quantityInput").value,
+      10
+    );
     try {
       const response = await fetch("http://localhost:3000/api/cart", {
         method: "POST",
@@ -117,23 +139,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Highlight keywords in review text
   function highlightKeywords(reviewText, keywords) {
     let highlightedText = reviewText;
     keywords.forEach((keyword) => {
       const regex = new RegExp(`(${keyword})`, "gi");
-      highlightedText = highlightedText.replace(regex, '<span class="highlight">$1</span>');
+      highlightedText = highlightedText.replace(
+        regex,
+        '<span class="highlight">$1</span>'
+      );
     });
     return highlightedText;
   }
 
+  // Display product reviews
   async function displayProductReviews(productId) {
     const reviewsList = document.getElementById("reviews-list");
     const reviewsSummary = document.getElementById("reviews-summary");
     try {
       const reviews = await fetchProductReviews(productId);
+
       if (reviews.length === 0) {
         reviewsList.innerHTML = "<p>No reviews available.</p>";
-        reviewsSummary.innerHTML = "<p>Average Rating: N/A</p><p>Total Reviews: 0</p>";
+        reviewsSummary.innerHTML =
+          "<p>Average Rating: N/A</p><p>Total Reviews: 0</p>";
         return;
       }
 
@@ -163,10 +192,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Display related products
   async function displayRelatedProducts(product) {
-    const relatedProductsList = document.getElementById("related-products-list");
+    const relatedProductsList = document.getElementById(
+      "related-products-list"
+    );
     try {
-      const response = await fetch(`http://localhost:3000/api/products?exclude=${product.id}`);
+      const response = await fetch(
+        `http://localhost:3000/api/products?exclude=${product.id}`
+      );
       const data = await response.json();
 
       if (!data.success || !Array.isArray(data.products)) {
@@ -181,7 +215,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           <img src="${relatedProduct.image_url}" alt="${relatedProduct.name}">
           <p>${relatedProduct.name}</p>
           <p>$${
-            !isNaN(parseFloat(relatedProduct.price)) && isFinite(relatedProduct.price)
+            !isNaN(parseFloat(relatedProduct.price)) &&
+            isFinite(relatedProduct.price)
               ? parseFloat(relatedProduct.price).toFixed(2)
               : "N/A"
           }</p>
@@ -193,6 +228,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Generate size options based on product type
   function getSizeOptions(productType) {
     const sizeOptionsMap = {
       suit: [
@@ -392,60 +428,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return ["One Size"];
   }
 
-  await displayProductDetails();
-  await updateCartItemCount();
-
-  // Prevent default form submission and handle review submission with JavaScript
-  const reviewForm = document.getElementById("review-form");
-  reviewForm.addEventListener("submit", async (event) => {
-    event.preventDefault(); // Prevent the default form submission
-
-    const reviewText = document.getElementById("review-text").value;
-    const reviewUsername = document.getElementById("review-username").value;
-    const reviewRating = parseInt(document.getElementById("review-rating").value, 10); // Ensure reviewRating is an integer
-    const reviewMessage = document.getElementById("reviewMessage");
-
-    // Log the form data to debug the issue
-    const reviewData = {
-      product_id: productId, // Ensure correct field name
-      username: reviewUsername,
-      text: reviewText,
-      rating: reviewRating,
-    };
-    console.log("Review Data:", reviewData);
-
-    // Check for missing fields before making the request
-    if (!reviewData.product_id || !reviewData.username || !reviewData.text || !reviewData.rating) {
-      reviewMessage.textContent = 'Please fill in all required fields.';
-      reviewMessage.style.color = 'red';
-      console.error('Missing required fields:', reviewData);
-      return;
-    }
-
-    try {
-      const response = await fetch("http://localhost:3000/api/reviews", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(reviewData),
-      });
-
-      console.log("Response status:", response.status); // Log the response status
-      const data = await response.json();
-      console.log("Response data:", data); // Log the response data
-
-      if (response.ok) {
-        reviewMessage.textContent = "Review submitted successfully!";
-        reviewMessage.style.color = "green";
-        await displayProductReviews(productId); // Refresh the reviews
-      } else {
-        throw new Error(data.message || 'Error submitting review');
-      }
-    } catch (error) {
-      reviewMessage.textContent = `Error: ${error.message}`;
-      reviewMessage.style.color = "red";
-      console.error("Error submitting review:", error);
-    }
-  });
+  displayProductDetails();
+  updateCartItemCount();
 });

@@ -756,6 +756,38 @@ if (cluster.isMaster) {
   });
 
   /**
+ * @api {get} /api/reviews Get product reviews
+ * @apiName GetProductReviews
+ * @apiGroup Reviews
+ *
+ * @apiParam {String} productId The ID of the product for which to fetch reviews.
+ *
+ * @apiSuccess {Object[]} reviews List of reviews.
+ * @apiSuccess {Number} reviews.id Review ID.
+ * @apiSuccess {String} reviews.user_id User ID.
+ * @apiSuccess {String} reviews.product_id Product ID.
+ * @apiSuccess {String} reviews.text Review text.
+ * @apiSuccess {Number} reviews.rating Review rating (1-5).
+ * @apiSuccess {Date} reviews.date Date of the review.
+ *
+ * @apiError {Boolean} success Indicates failure (false).
+ * @apiError {String} message Error message.
+ */
+app.get("/api/reviews", async (req, res) => {
+  const { productId } = req.query;
+  try {
+    const result = await pool.query(
+      "SELECT * FROM reviews WHERE product_id = $1",
+      [productId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+  /**
    * @api {post} /api/reviews Add a review
    * @apiName AddReview
    * @apiGroup Review
