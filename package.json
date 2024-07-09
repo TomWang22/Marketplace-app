@@ -41,6 +41,7 @@
     "connect-redis": "^7.1.1",
     "cors": "^2.8.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^7.3.1",
     "express-session": "^1.18.0",
     "http-server": "^14.1.1",
     "ioredis": "^5.4.1",

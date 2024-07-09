@@ -12,6 +12,7 @@ const RedisStore = require("connect-redis").default;
 const Redis = require("ioredis");
 const http = require("http");
 const socketIo = require("socket.io");
+const rateLimit = require("express-rate-limit");
 
 const numCPUs = os.cpus().length;
 const port = 3000;
@@ -87,7 +88,6 @@ if (cluster.isMaster) {
   app.use(express.static(path.join(__dirname, "../frontend")));
 
   io.on("connection", (socket) => {
-    // Retrieve and send previous chats from the database
     pool.query(
       "SELECT * FROM chat ORDER BY timestamp ASC",
       (error, results) => {
@@ -174,6 +174,185 @@ if (cluster.isMaster) {
   });
 
   /**
+   * Generate a JWT token for a user.
+   * @param {number} userId - The ID of the user.
+   * @returns {string} The generated JWT token.
+   */
+  const generateToken = (userId) => {
+    const secretKey = "your_secret_key";
+    return jwt.sign({ userId }, secretKey, { expiresIn: "1h" });
+  };
+
+  /**
+   * Retrieve user rate limit settings from Redis.
+   * @param {string} username - The username of the user.
+   * @returns {Object} The user rate limit settings.
+   * @memberof RateLimiter
+   * @author Tom Wang
+   */
+  const getUserRateLimitSettings = async (username) => {
+    const data = await redisClient.get(username);
+    let userSettings = {
+      attempts: 0,
+      windowMs: 5 * 60 * 1000, // 5 minutes
+      maxAttempts: 3,
+    };
+
+    if (data) {
+      userSettings = JSON.parse(data);
+    }
+
+    return userSettings;
+  };
+
+  /**
+   * Set user rate limit settings in Redis.
+   * @param {string} username - The username of the user.
+   * @param {Object} settings - The rate limit settings to store.
+   * @memberof RateLimiter
+   * @author Tom Wang
+   */
+  const setUserRateLimitSettings = async (username, settings) => {
+    await redisClient.set(
+      username,
+      JSON.stringify(settings),
+      "EX",
+      24 * 60 * 60
+    ); // Expire after 24 hours
+  };
+
+  /**
+   * Rate limiting middleware for login route.
+   * Dynamically adjusts based on user's failed login attempts.
+   * @memberof RateLimiter
+   * @author Tom Wang
+   */
+  const loginLimiter = rateLimit({
+    keyGenerator: (req) => req.body.username,
+    handler: async (req, res, next, options) => {
+      const username = req.body.username;
+      const settings = await getUserRateLimitSettings(username);
+
+      settings.attempts += 1;
+
+      if (settings.attempts >= settings.maxAttempts) {
+        settings.attempts = 0;
+        settings.windowMs *= 4;
+        if (settings.windowMs > 20 * 60 * 1000) {
+          // Cap at 20 minutes
+          settings.windowMs = 20 * 60 * 1000;
+        }
+      }
+
+      await setUserRateLimitSettings(username, settings);
+
+      res.status(options.statusCode).send(options.message);
+    },
+    onLimitReached: async (req, res, options) => {
+      const username = req.body.username;
+      const settings = await getUserRateLimitSettings(username);
+
+      settings.attempts = 0;
+      settings.windowMs *= 4;
+      if (settings.windowMs > 20 * 60 * 1000) {
+        // Cap at 20 minutes
+        settings.windowMs = 20 * 60 * 1000;
+      }
+
+      await setUserRateLimitSettings(username, settings);
+    },
+    skipFailedRequests: true,
+    max: async (req) => {
+      const username = req.body.username;
+      const settings = await getUserRateLimitSettings(username);
+      return settings.maxAttempts;
+    },
+    windowMs: async (req) => {
+      const username = req.body.username;
+      const settings = await getUserRateLimitSettings(username);
+      return settings.windowMs;
+    },
+    message: "Too many login attempts from this IP, please try again later.",
+  });
+
+  /**
+   * @api {post} /api/login Login a user
+   * @apiName LoginUser
+   * @apiGroup User
+   *
+   * @apiParam {String} username The username of the user.
+   * @apiParam {String} password The password of the user.
+   *
+   * @apiSuccess {Boolean} success Indicates if the login was successful.
+   * @apiSuccess {Number} userId The ID of the logged-in user.
+   * @apiSuccess {String} role The role of the logged-in user.
+   * @apiSuccess {String} token The JWT token for the user.
+   *
+   * @apiError {Boolean} success Indicates if the login was unsuccessful.
+   * @apiError {String} message The error message.
+   * @memberof Auth
+   * @author Tom Wang
+   */
+  app.post("/api/login", loginLimiter, async (req, res) => {
+    const { username, password } = req.body;
+
+    try {
+      const result = await pool.query(
+        "SELECT * FROM users WHERE username = $1",
+        [username]
+      );
+      const user = result.rows[0];
+
+      if (user && (await bcrypt.compare(password, user.password))) {
+        const token = generateToken(user.id);
+        await setUserRateLimitSettings(username, {
+          attempts: 0,
+          windowMs: 5 * 60 * 1000, // Reset to 5 minutes
+          maxAttempts: 3,
+        });
+        res.json({ success: true, userId: user.id, role: user.role, token });
+      } else {
+        res
+          .status(401)
+          .json({ success: false, message: "Invalid credentials" });
+      }
+    } catch (error) {
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+  });
+
+  app.use(express.static(path.join(__dirname, "../frontend")));
+
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend/login.html"));
+  });
+
+  app.get("/:page", (req, res) => {
+    const page = req.params.page;
+    const allowedPages = [
+      "login.html",
+      "merchant.html",
+      "supplier.html",
+      "shopper.html",
+      "dashboard.html",
+      "marketplace.html",
+      "about.html",
+      "contact.html",
+      "privacy.html",
+      "terms.html",
+      "shopping-cart.html",
+      "product-details.html",
+    ];
+    if (allowedPages.includes(page)) {
+      res.sendFile(path.join(__dirname, `../frontend/${page}`));
+    } else {
+      res.status(404).send("Page not found");
+    }
+  });
+
+  /**
    * @api {post} /api/register Register a new user
    * @apiName RegisterUser
    * @apiGroup User
@@ -187,6 +366,8 @@ if (cluster.isMaster) {
    *
    * @apiError {Boolean} success Indicates if the registration was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Auth
+   * @author Tom Wang
    */
   app.post("/api/register", async (req, res) => {
     const { username, password, role } = req.body;
@@ -228,47 +409,6 @@ if (cluster.isMaster) {
   });
 
   /**
-   * @api {post} /api/login Login a user
-   * @apiName LoginUser
-   * @apiGroup User
-   *
-   * @apiParam {String} username The username of the user.
-   * @apiParam {String} password The password of the user.
-   *
-   * @apiSuccess {Boolean} success Indicates if the login was successful.
-   * @apiSuccess {Number} userId The ID of the logged-in user.
-   * @apiSuccess {String} role The role of the logged-in user.
-   * @apiSuccess {String} token The JWT token for the user.
-   *
-   * @apiError {Boolean} success Indicates if the login was unsuccessful.
-   * @apiError {String} message The error message.
-   */
-  app.post("/api/login", async (req, res) => {
-    const { username, password } = req.body;
-
-    try {
-      const result = await pool.query(
-        "SELECT * FROM users WHERE username = $1",
-        [username]
-      );
-      const user = result.rows[0];
-
-      if (user && (await bcrypt.compare(password, user.password))) {
-        const token = generateToken(user.id);
-        res.json({ success: true, userId: user.id, role: user.role, token });
-      } else {
-        res
-          .status(401)
-          .json({ success: false, message: "Invalid credentials" });
-      }
-    } catch (error) {
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-  });
-
-  /**
    * @api {get} /api/cart Fetch cart items
    * @apiName FetchCartItems
    * @apiGroup Cart
@@ -280,6 +420,8 @@ if (cluster.isMaster) {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Cart
+   * @author Tom Wang
    */
   app.get("/api/cart", async (req, res) => {
     const userId = req.query.userId;
@@ -309,6 +451,8 @@ if (cluster.isMaster) {
    *
    * @apiError {Boolean} success Indicates if the order was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Order
+   * @author Tom Wang
    */
   app.post("/api/place-order", async (req, res) => {
     const { userId, cartItems } = req.body;
@@ -423,6 +567,8 @@ if (cluster.isMaster) {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Inventory
+   * @author Tom Wang
    */
   app.get("/api/inventory", async (req, res) => {
     const userId = req.query.userId;
@@ -454,6 +600,8 @@ if (cluster.isMaster) {
    *
    * @apiError {Boolean} success Indicates if the return was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Merchandise
+   * @author Tom Wang
    */
   app.post("/api/return-merchandise", async (req, res) => {
     const { userId, productId, quantity } = req.body;
@@ -519,6 +667,8 @@ if (cluster.isMaster) {
    *
    * @apiError {Boolean} success Indicates if the request was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Supplies
+   * @author Tom Wang
    */
   app.post("/api/receive-supplies", async (req, res) => {
     const { merchantId, productId, quantity } = req.body;
@@ -591,6 +741,8 @@ if (cluster.isMaster) {
    *
    * @apiError {Boolean} success Indicates if the order fulfillment was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Order
+   * @author Tom Wang
    */
   app.post("/api/fulfill-order", async (req, res) => {
     const { orderId, productId, quantity } = req.body;
@@ -684,6 +836,8 @@ if (cluster.isMaster) {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Order
+   * @author Tom Wang
    */
   app.get("/api/unfulfilled-orders", async (req, res) => {
     try {
@@ -709,6 +863,8 @@ if (cluster.isMaster) {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Product
+   * @author Tom Wang
    */
   app.get("/api/products", async (req, res) => {
     try {
@@ -734,6 +890,8 @@ if (cluster.isMaster) {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Product
+   * @author Tom Wang
    */
   app.get("/api/products/:id", async (req, res) => {
     const { id } = req.params;
@@ -756,36 +914,40 @@ if (cluster.isMaster) {
   });
 
   /**
- * @api {get} /api/reviews Get product reviews
- * @apiName GetProductReviews
- * @apiGroup Reviews
- *
- * @apiParam {String} productId The ID of the product for which to fetch reviews.
- *
- * @apiSuccess {Object[]} reviews List of reviews.
- * @apiSuccess {Number} reviews.id Review ID.
- * @apiSuccess {String} reviews.user_id User ID.
- * @apiSuccess {String} reviews.product_id Product ID.
- * @apiSuccess {String} reviews.text Review text.
- * @apiSuccess {Number} reviews.rating Review rating (1-5).
- * @apiSuccess {Date} reviews.date Date of the review.
- *
- * @apiError {Boolean} success Indicates failure (false).
- * @apiError {String} message Error message.
- */
-app.get("/api/reviews", async (req, res) => {
-  const { productId } = req.query;
-  try {
-    const result = await pool.query(
-      "SELECT * FROM reviews WHERE product_id = $1",
-      [productId]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error fetching reviews:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
-});
+   * @api {get} /api/reviews Get product reviews
+   * @apiName GetProductReviews
+   * @apiGroup Reviews
+   *
+   * @apiParam {String} productId The ID of the product for which to fetch reviews.
+   *
+   * @apiSuccess {Object[]} reviews List of reviews.
+   * @apiSuccess {Number} reviews.id Review ID.
+   * @apiSuccess {String} reviews.user_id User ID.
+   * @apiSuccess {String} reviews.product_id Product ID.
+   * @apiSuccess {String} reviews.text Review text.
+   * @apiSuccess {Number} reviews.rating Review rating (1-5).
+   * @apiSuccess {Date} reviews.date Date of the review.
+   *
+   * @apiError {Boolean} success Indicates failure (false).
+   * @apiError {String} message Error message.
+   * @memberof Reviews
+   * @author Tom Wang
+   */
+  app.get("/api/reviews", async (req, res) => {
+    const { productId } = req.query;
+    try {
+      const result = await pool.query(
+        "SELECT * FROM reviews WHERE product_id = $1",
+        [productId]
+      );
+      res.json(result.rows);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+  });
 
   /**
    * @api {post} /api/reviews Add a review
@@ -802,6 +964,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the review addition was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Review
+   * @author Tom Wang
    */
   app.post("/api/reviews", async (req, res) => {
     const { product_id, username, text, rating } = req.body;
@@ -842,6 +1006,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the product addition was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Product
+   * @author Tom Wang
    */
   app.post("/api/products", async (req, res) => {
     const { name, description, price, stock, image_url } = req.body;
@@ -869,6 +1035,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Purchase
+   * @author Tom Wang
    */
   app.get("/api/purchased-items", async (req, res) => {
     try {
@@ -894,6 +1062,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof User
+   * @author Tom Wang
    */
   app.get("/api/account-info", async (req, res) => {
     const userId = req.query.userId;
@@ -928,6 +1098,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Purchase
+   * @author Tom Wang
    */
   app.get("/api/purchase-history", async (req, res) => {
     const userId = req.query.userId;
@@ -960,6 +1132,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the addition was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Cart
+   * @author Tom Wang
    */
   app.post("/api/cart", async (req, res) => {
     const { userId, productId, quantity, size } = req.body;
@@ -1015,6 +1189,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the update was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Cart
+   * @author Tom Wang
    */
   app.put("/api/cart/:id", async (req, res) => {
     const itemId = req.params.id;
@@ -1045,6 +1221,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the removal was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Cart
+   * @author Tom Wang
    */
   app.delete("/api/cart/:id", async (req, res) => {
     const itemId = req.params.id;
@@ -1073,6 +1251,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the addition was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof User
+   * @author Tom Wang
    */
   app.post("/api/add-funds", async (req, res) => {
     const { userId, amount } = req.body;
@@ -1107,6 +1287,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Supplies
+   * @author Tom Wang
    */
   app.get("/api/received-supplies", async (req, res) => {
     try {
@@ -1117,35 +1299,6 @@ app.get("/api/reviews", async (req, res) => {
       res
         .status(500)
         .json({ success: false, message: "Internal server error" });
-    }
-  });
-
-  app.use(express.static(path.join(__dirname, "../frontend")));
-
-  app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "../frontend/login.html"));
-  });
-
-  app.get("/:page", (req, res) => {
-    const page = req.params.page;
-    const allowedPages = [
-      "login.html",
-      "merchant.html",
-      "supplier.html",
-      "shopper.html",
-      "dashboard.html",
-      "marketplace.html",
-      "about.html",
-      "contact.html",
-      "privacy.html",
-      "terms.html",
-      "shopping-cart.html",
-      "product-details.html",
-    ];
-    if (allowedPages.includes(page)) {
-      res.sendFile(path.join(__dirname, `../frontend/${page}`));
-    } else {
-      res.status(404).send("Page not found");
     }
   });
 
@@ -1161,6 +1314,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof User
+   * @author Tom Wang
    */
   app.get("/api/users/:userId", async (req, res) => {
     const userId = req.params.userId;
@@ -1214,6 +1369,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the addition was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof User
+   * @author Tom Wang
    */
   app.post("/api/search-history", async (req, res) => {
     const { userId, searchQuery } = req.body;
@@ -1245,6 +1402,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the request was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Supplies
+   * @author Tom Wang
    */
   app.post("/api/request-supply", async (req, res) => {
     const { merchantId, productId, quantity } = req.body;
@@ -1272,6 +1431,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Supplies
+   * @author Tom Wang
    */
   app.get("/api/supply-requests", async (req, res) => {
     try {
@@ -1302,6 +1463,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the send was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Supplies
+   * @author Tom Wang
    */
   app.post("/api/send-supplies", async (req, res) => {
     const { supplierId, merchantId, productId, quantity } = req.body;
@@ -1386,6 +1549,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the fetch was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Supplies
+   * @author Tom Wang
    */
   app.get("/api/supplies", async (req, res) => {
     try {
@@ -1412,6 +1577,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the addition was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Supplies
+   * @author Tom Wang
    */
   app.post("/api/add-supply-by-id", async (req, res) => {
     const { id, quantity } = req.body;
@@ -1467,6 +1634,8 @@ app.get("/api/reviews", async (req, res) => {
    *
    * @apiError {Boolean} success Indicates if the request fulfillment was unsuccessful.
    * @apiError {String} message The error message.
+   * @memberof Supplies
+   * @author Tom Wang
    */
   app.post("/api/fulfill-supply-request", async (req, res) => {
     const { supplierId, merchantId, productId, quantity } = req.body;
@@ -1548,16 +1717,6 @@ app.get("/api/reviews", async (req, res) => {
       client.release();
     }
   });
-
-  /**
-   * Generate a JWT token for a user.
-   * @param {number} userId - The ID of the user.
-   * @returns {string} The generated JWT token.
-   */
-  function generateToken(userId) {
-    const secretKey = "your_secret_key";
-    return jwt.sign({ userId }, secretKey, { expiresIn: "1h" });
-  }
 
   server.listen(port, () => {
     console.log(`Worker ${process.pid} is running on http://localhost:${port}`);
