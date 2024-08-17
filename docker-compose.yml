@@ -1,0 +1,170 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14.12
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=marketplace
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chat-service:
+    build:
+      context: ./services/chat-service
+    ports:
+      - "4004:4004"
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=marketplace
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: pm2-runtime ecosystem.config.js --env production
+
+  cart-service:
+    build:
+      context: ./services/cart-service
+    ports:
+      - "4005:4005"
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=marketplace
+      - POSTGRES_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pm2-runtime ecosystem.config.js --env production
+
+  product-service:
+    build:
+      context: ./services/product-service
+    ports:
+      - "4002:4002"
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=marketplace
+      - POSTGRES_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pm2-runtime ecosystem.config.js --env production
+
+  order-service:
+    build:
+      context: ./services/order-service
+    ports:
+      - "4003:4003"
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=marketplace
+      - POSTGRES_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pm2-runtime ecosystem.config.js --env production
+
+  supply-service:
+    build:
+      context: ./services/supply-service
+    ports:
+      - "4006:4006"
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=marketplace
+      - POSTGRES_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pm2-runtime ecosystem.config.js --env production
+
+  user-service:
+    build:
+      context: ./services/user-service
+    ports:
+      - "4001:4001"
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=marketplace
+      - POSTGRES_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pm2-runtime ecosystem.config.js --env production
+
+  merchant-service:
+    build:
+      context: ./services/merchant-service
+    ports:
+      - "4007:4007"
+    environment:
+      - NODE_ENV=production
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=marketplace
+      - POSTGRES_HOST=postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pm2-runtime ecosystem.config.js --env production
+
+  frontend:
+    build:
+      context: ./marketplace-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5000"
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      chat-service:
+        condition: service_started
+      cart-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      supply-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+
+volumes:
+  postgres_data:
