@@ -1,0 +1,49 @@
+# k8s/chat-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service
+spec:
+  selector:
+    app: chat-service
+  ports:
+    - port: 4004
+      targetPort: 4004
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+    spec:
+      containers:
+        - name: chat-service
+          image: your-dockerhub/chat-service:latest
+          ports:
+            - containerPort: 4004
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: POSTGRES_DB
+              value: "marketplace"
+            - name: POSTGRES_HOST
+              value: "postgres"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+          command: ["pm2-runtime", "ecosystem.config.js", "--env", "production"]
+
+# Repeat above template for cart, product, order, supply, user, merchant services.

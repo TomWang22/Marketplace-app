@@ -1,0 +1,49 @@
+# k8s/product-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+spec:
+  selector:
+    app: product-service
+  ports:
+    - port: 4002
+      targetPort: 4002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+    spec:
+      containers:
+        - name: product-service
+          image: your-dockerhub/product-service:latest
+          ports:
+            - containerPort: 4002
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: POSTGRES_DB
+              value: "marketplace"
+            - name: POSTGRES_HOST
+              value: "postgres"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+          command: ["pm2-runtime", "ecosystem.config.js", "--env", "production"]
+
+# Repeat above template for cart, product, product, supply, user, merchant services.

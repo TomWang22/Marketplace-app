@@ -1,0 +1,48 @@
+# k8s/merchant-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: merchant-service
+spec:
+  selector:
+    app: merchant-service
+  ports:
+    - port: 4007
+      targetPort: 4007
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: merchant-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: merchant-service
+  template:
+    metadata:
+      labels:
+        app: merchant-service
+    spec:
+      containers:
+        - name: merchant-service
+          image: your-dockerhub/merchant-service:latest
+          ports:
+            - containerPort: 4007
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: POSTGRES_DB
+              value: "marketplace"
+            - name: POSTGRES_HOST
+              value: "postgres"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+          command: ["pm2-runtime", "ecosystem.config.js", "--env", "production"]
+# Repeat above template for cart, product, order, supply, user, merchant services.

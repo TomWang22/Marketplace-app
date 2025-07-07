@@ -1,0 +1,49 @@
+# k8s/order-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  selector:
+    app: order-service
+  ports:
+    - port: 4003
+      targetPort: 4003
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: your-dockerhub/order-service:latest
+          ports:
+            - containerPort: 4003
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: POSTGRES_DB
+              value: "marketplace"
+            - name: POSTGRES_HOST
+              value: "postgres"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+          command: ["pm2-runtime", "ecosystem.config.js", "--env", "production"]
+
+# Repeat above template for cart, product, order, supply, user, merchant services.

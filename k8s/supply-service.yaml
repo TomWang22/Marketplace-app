@@ -1,0 +1,49 @@
+# k8s/supply-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: supply-service
+spec:
+  selector:
+    app: supply-service
+  ports:
+    - port: 4006
+      targetPort: 4006
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supply-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: supply-service
+  template:
+    metadata:
+      labels:
+        app: supply-service
+    spec:
+      containers:
+        - name: supply-service
+          image: your-dockerhub/supply-service:latest
+          ports:
+            - containerPort: 4006
+          env:
+            - name: NODE_ENV
+              value: "supplyion"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: POSTGRES_DB
+              value: "marketplace"
+            - name: POSTGRES_HOST
+              value: "postgres"
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+          command: ["pm2-runtime", "ecosystem.config.js", "--env", "supplyion"]
+
+# Repeat above template for cart, supply, supply, supply, user, merchant services.
